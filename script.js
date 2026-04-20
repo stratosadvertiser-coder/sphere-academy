@@ -2716,6 +2716,116 @@ if (currentPage === 'login.html') {
   }
 }
 
+// ===== FIREBASE OAUTH (Google + Facebook) =====
+(function setupFirebaseAuth() {
+  const googleBtn = document.getElementById('googleSignIn');
+  const fbBtn = document.getElementById('facebookSignIn');
+  if (!googleBtn && !fbBtn) return;
+
+  function showErr(msg, isWarning) {
+    const loginError = document.getElementById('loginError') || document.getElementById('signupError');
+    if (!loginError) { alert(msg); return; }
+    loginError.textContent = msg;
+    loginError.style.display = 'block';
+    if (isWarning) {
+      loginError.style.background = '#fef3c7';
+      loginError.style.color = '#92400e';
+      loginError.style.borderColor = '#fcd34d';
+    } else {
+      loginError.style.background = '#fee2e2';
+      loginError.style.color = '#991b1b';
+      loginError.style.borderColor = '#fca5a5';
+    }
+  }
+
+  // Check if Firebase is configured
+  const firebaseReady = typeof FIREBASE_ENABLED !== 'undefined' && FIREBASE_ENABLED
+    && typeof FIREBASE_CONFIG !== 'undefined'
+    && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY_HERE'
+    && typeof firebase !== 'undefined';
+
+  // Initialize Firebase only if ready
+  let auth = null;
+  if (firebaseReady) {
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      auth = firebase.auth();
+    } catch (e) {
+      console.error('Firebase init failed:', e);
+    }
+  }
+
+  // Bridge Firebase user into existing AUTH system (localStorage)
+  function loginFirebaseUser(user) {
+    const email = user.email || '';
+    const displayName = user.displayName || email.split('@')[0] || 'User';
+    const username = (email.split('@')[0] || displayName).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Create user in AUTH if doesn't exist
+    const users = AUTH.getAllUsers();
+    if (!users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
+      users.push({
+        username: username,
+        password: '__firebase__' + user.uid,
+        role: 'student',
+        fullName: displayName,
+        email: email,
+        provider: user.providerData && user.providerData[0] ? user.providerData[0].providerId : 'oauth'
+      });
+      safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+    }
+
+    // Log in via existing AUTH system
+    safeSetItem('auth_logged_in', 'true');
+    safeSetItem('auth_user', username);
+    safeSetItem('auth_role', 'student');
+    const nameParts = displayName.split(' ');
+    safeSetItem('auth_profile', JSON.stringify({
+      firstName: nameParts[0] || '',
+      lastName: nameParts.slice(1).join(' ') || '',
+      email: email
+    }));
+    // Use photoURL if available
+    if (user.photoURL) {
+      safeSetItem('auth_avatar', user.photoURL);
+    }
+
+    window.location.href = 'course.html';
+  }
+
+  async function signInWith(providerName) {
+    if (!firebaseReady || !auth) {
+      showErr('Firebase is not configured yet. See FIREBASE_SETUP.md for setup instructions.', true);
+      return;
+    }
+    try {
+      let provider;
+      if (providerName === 'google') {
+        provider = new firebase.auth.GoogleAuthProvider();
+      } else if (providerName === 'facebook') {
+        provider = new firebase.auth.FacebookAuthProvider();
+      }
+      const result = await auth.signInWithPopup(provider);
+      if (result && result.user) {
+        loginFirebaseUser(result.user);
+      }
+    } catch (err) {
+      console.error('OAuth error:', err);
+      if (err.code === 'auth/popup-closed-by-user') return;
+      if (err.code === 'auth/account-exists-with-different-credential') {
+        showErr('An account with this email already exists via a different sign-in method.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        showErr('This domain is not authorized in Firebase. Add your domain in Firebase Console → Authentication → Settings → Authorized domains.');
+      } else {
+        showErr('Sign-in failed: ' + (err.message || 'Unknown error'));
+      }
+    }
+  }
+
+  if (googleBtn) googleBtn.addEventListener('click', () => signInWith('google'));
+  if (fbBtn) fbBtn.addEventListener('click', () => signInWith('facebook'));
+})();
+
 // ===== ADMIN: BULK PUBLISH =====
 if (currentPage === 'admin.html' && AUTH.isAdmin()) {
   const bulkBtn = document.getElementById('bulkPublishBtn');

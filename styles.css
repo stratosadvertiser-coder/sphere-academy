@@ -2748,6 +2748,23 @@ img {
   box-shadow: 0 0 0 2px var(--primary-glow);
 }
 
+/* OAuth buttons */
+.oauth-btn {
+  transition: all var(--transition);
+  position: relative;
+}
+
+.oauth-btn:hover {
+  border-color: var(--primary) !important;
+  background: var(--bg-alt) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.oauth-btn:active {
+  transform: translateY(0);
+}
+
 .admin-card-preview-img {
   width: 100%;
   height: auto;

@@ -66,8 +66,8 @@
       <div class="auth-divider">or continue with</div>
 
       <div class="auth-social">
-        <button type="button">G &nbsp; Google</button>
-        <button type="button">f &nbsp; Facebook</button>
+        <button type="button" id="googleSignIn" class="oauth-btn"><span style="color:#4285F4;font-weight:700;">G</span> &nbsp; Google</button>
+        <button type="button" id="facebookSignIn" class="oauth-btn"><span style="color:#1877F2;font-weight:700;">f</span> &nbsp; Facebook</button>
       </div>
 
       <p class="auth-footer">
@@ -76,6 +76,10 @@
     </div>
   </section>
 
+  <!-- Firebase SDK (compat mode for easy drop-in usage) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
