@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - Sphere Academy</title>
+  <meta name="description" content="Manage your Sphere Academy profile, track progress, and update account settings.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-loaded">
+
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <div class="nav-left">
+        <button class="back-btn" id="backBtn" aria-label="Go back" title="Go back">&#8592;</button>
+        <a href="index.html" class="logo">
+          <div class="logo-icon"><img src="logo.png" alt="Sphere Academy"></div>
+          Sphere Academy
+        </a>
+      </div>
+      <ul class="nav-links">
+        <li class="nav-mobile-cta"><a href="login.html" class="btn btn-outline">Log In</a></li>
+      </ul>
+      <div class="nav-cta">
+        <button class="theme-toggle" id="searchBtn" aria-label="Search" title="Search lessons">&#128269;</button>
+        <button class="notif-btn" id="notifBtn" aria-label="Notifications" title="Notifications">&#128276;<span class="notif-badge" id="notifBadge" style="display:none;">0</span></button>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">&#9790;</button>
+        <a href="login.html" class="btn btn-outline">Log In</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Profile Page -->
+  <section class="profile-page">
+    <div class="container">
+      <div class="profile-layout">
+
+        <!-- Profile Sidebar -->
+        <div class="profile-sidebar">
+          <div class="profile-avatar-section">
+            <div class="profile-avatar" id="profileAvatar">
+              <span class="profile-avatar-initials" id="avatarInitials">A</span>
+              <img class="profile-avatar-img" id="avatarImg" src="" alt="Profile" style="display:none;">
+            </div>
+            <label class="profile-avatar-upload" for="avatarUpload">
+              <span>&#128247;</span> Change Photo
+            </label>
+            <input type="file" id="avatarUpload" accept="image/*" hidden>
+            <button class="profile-avatar-remove" id="avatarRemove" style="display:none;">Remove Photo</button>
+          </div>
+          <div class="profile-sidebar-info">
+            <h3 id="sidebarName">Admin</h3>
+            <p id="sidebarRole">Marketing Intern</p>
+          </div>
+          <nav class="profile-sidebar-nav">
+            <a class="profile-nav-item active" data-section="personal">
+              <span>&#128100;</span> Personal Info
+            </a>
+            <a class="profile-nav-item" data-section="account">
+              <span>&#9881;</span> Account Settings
+            </a>
+            <a class="profile-nav-item" data-section="progress">
+              <span>&#128200;</span> My Progress
+            </a>
+            <a class="profile-nav-item" data-section="certificate">
+              <span>&#127942;</span> Certificate
+            </a>
+          </nav>
+        </div>
+
+        <!-- Profile Content -->
+        <div class="profile-content">
+
+          <!-- Success Message -->
+          <div class="profile-toast" id="profileToast" style="display:none;">
+            <span>&#10003;</span> Profile updated successfully!
+          </div>
+
+          <!-- Personal Info Section -->
+          <div class="profile-section active" id="section-personal">
+            <div class="profile-section-header">
+              <h2>Personal Information</h2>
+              <p>Update your personal details and profile picture.</p>
+            </div>
+            <form class="profile-form" id="profileForm">
+              <div class="profile-form-grid">
+                <div class="form-group">
+                  <label for="profileFirstName">First Name</label>
+                  <input type="text" id="profileFirstName" placeholder="Enter first name">
+                </div>
+                <div class="form-group">
+                  <label for="profileLastName">Last Name</label>
+                  <input type="text" id="profileLastName" placeholder="Enter last name">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="profileEmail">Email Address</label>
+                <input type="email" id="profileEmail" placeholder="you@example.com">
+              </div>
+              <div class="form-group">
+                <label for="profilePhone">Phone Number</label>
+                <input type="tel" id="profilePhone" placeholder="+63 9XX XXX XXXX">
+              </div>
+              <div class="profile-form-grid">
+                <div class="form-group">
+                  <label for="profileRole">Role</label>
+                  <select id="profileRole">
+                    <option value="Marketing Intern">Marketing Intern</option>
+                    <option value="Junior Marketer">Junior Marketer</option>
+                    <option value="Media Buyer">Media Buyer</option>
+                    <option value="Content Creator">Content Creator</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="profileStartDate">Start Date</label>
+                  <input type="date" id="profileStartDate">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="profileBio">Bio</label>
+                <textarea id="profileBio" rows="3" placeholder="Tell us a bit about yourself..."></textarea>
+              </div>
+              <div class="profile-form-actions">
+                <button type="button" class="btn btn-outline" id="profileCancel">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Account Settings Section -->
+          <div class="profile-section" id="section-account">
+            <div class="profile-section-header">
+              <h2>Account Settings</h2>
+              <p>Manage your account preferences and security.</p>
+            </div>
+            <form class="profile-form" id="accountForm">
+              <div class="form-group">
+                <label for="accountUsername">Username</label>
+                <input type="text" id="accountUsername" placeholder="Your username" readonly style="opacity:0.6; cursor:not-allowed;">
+              </div>
+              <div class="profile-form-grid">
+                <div class="form-group">
+                  <label for="accountNewPassword">New Password</label>
+                  <input type="password" id="accountNewPassword" placeholder="Enter new password" minlength="8">
+                </div>
+                <div class="form-group">
+                  <label for="accountConfirmPassword">Confirm Password</label>
+                  <input type="password" id="accountConfirmPassword" placeholder="Confirm new password" minlength="8">
+                </div>
+              </div>
+              <div class="profile-form-divider"></div>
+              <h3 style="font-size:1rem; margin-bottom:16px;">Preferences</h3>
+              <div class="profile-toggle-row">
+                <div>
+                  <strong>Email Notifications</strong>
+                  <p>Receive updates about new lessons and announcements.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="prefNotifications" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="profile-toggle-row">
+                <div>
+                  <strong>Weekly Progress Report</strong>
+                  <p>Get a weekly summary of your training progress.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="prefWeeklyReport" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="profile-form-actions">
+                <button type="button" class="btn btn-outline" id="accountCancel">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Progress Section -->
+          <div class="profile-section" id="section-progress">
+            <div class="profile-section-header">
+              <h2>My Progress</h2>
+              <p>Track your journey through the 4-month training program.</p>
+            </div>
+            <!-- Streak Card -->
+            <div class="streak-card" id="streakCard" style="display:none;">
+              <div class="streak-fire">&#128293;</div>
+              <div class="streak-info">
+                <strong id="streakCount">0-day streak!</strong>
+                <span>Keep learning daily to maintain your streak</span>
+              </div>
+            </div>
+            <!-- Export Button -->
+            <div style="margin-bottom:20px; text-align:right;">
+              <button class="btn btn-outline" id="exportProgressBtn" style="padding:8px 18px; font-size:0.82rem;">&#128229; Export Progress Report</button>
+            </div>
+            <div class="progress-overview">
+              <div class="progress-overview-card">
+                <div class="progress-overview-value" id="progressWeeks">1</div>
+                <div class="progress-overview-label">Weeks Completed</div>
+              </div>
+              <div class="progress-overview-card">
+                <div class="progress-overview-value" id="progressPercent">6%</div>
+                <div class="progress-overview-label">Overall Progress</div>
+              </div>
+              <div class="progress-overview-card">
+                <div class="progress-overview-value" id="progressMonth">Month 1</div>
+                <div class="progress-overview-label">Current Phase</div>
+              </div>
+            </div>
+            <div class="progress-timeline">
+              <div class="progress-timeline-item completed">
+                <div class="progress-timeline-dot"></div>
+                <div class="progress-timeline-content">
+                  <h4>Month 1: Creatives</h4>
+                  <p>Image &amp; Video creative foundation</p>
+                  <span class="progress-timeline-status">In Progress</span>
+                </div>
+              </div>
+              <div class="progress-timeline-item">
+                <div class="progress-timeline-dot"></div>
+                <div class="progress-timeline-content">
+                  <h4>Month 2: Creatives+</h4>
+                  <p>Reinforcement &amp; refinement</p>
+                  <span class="progress-timeline-status">Locked</span>
+                </div>
+              </div>
+              <div class="progress-timeline-item">
+                <div class="progress-timeline-dot"></div>
+                <div class="progress-timeline-content">
+                  <h4>Month 3: Tools &amp; Platforms</h4>
+                  <p>GSheets, Botcake, Chatfuel, Pancake</p>
+                  <span class="progress-timeline-status">Locked</span>
+                </div>
+              </div>
+              <div class="progress-timeline-item">
+                <div class="progress-timeline-dot"></div>
+                <div class="progress-timeline-content">
+                  <h4>Month 4: Ads Manager</h4>
+                  <p>Meta Ads campaigns &amp; optimization</p>
+                  <span class="progress-timeline-status">Locked</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Certificate Section -->
+          <div class="profile-section" id="section-certificate">
+            <div class="profile-section-header">
+              <h2>Certificate</h2>
+              <p>Earn your certificate by completing all 16 weekly modules.</p>
+            </div>
+            <div class="certificate-card" id="certificateCard">
+              <div class="certificate-icon" id="certIcon">&#128274;</div>
+              <h3 id="certTitle">Certificate Locked</h3>
+              <p id="certDesc">Complete all 16 lessons to unlock your certificate of completion.</p>
+              <div class="certificate-progress">
+                <div class="certificate-progress-bar">
+                  <div class="certificate-progress-fill" id="certProgressFill" style="width:0%"></div>
+                </div>
+                <div class="certificate-progress-text" id="certProgressText">0 of 16 lessons completed</div>
+              </div>
+              <button class="btn btn-primary" id="certDownloadBtn" style="display:none;">&#128229; Download Certificate</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo">
+            <div class="logo-icon"><img src="logo.png" alt="Sphere Academy"></div>
+            Sphere Academy
+          </div>
+          <p>A structured 4-month training program to turn marketing interns into confident, full-stack digital marketers.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Program</h4>
+          <a href="course.html">Overview</a>
+          <a href="index.html#curriculum">Roadmap</a>
+          <a href="index.html#testimonials">Reviews</a>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="#">Blog</a>
+          <a href="#">Templates</a>
+          <a href="#">Tools Guide</a>
+          <a href="#">FAQ</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#">About Us</a>
+          <a href="#">Contact</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 Sphere Academy. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">&#8593;</button>
+
+  
+  <!-- Search Overlay -->
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-box">
+      <div class="search-input-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="searchInput" placeholder="Search lessons..." autofocus>
+        <button class="search-close" id="searchClose">&#10005;</button>
+      </div>
+      <div class="search-results" id="searchResults">
+        <div class="search-empty">Type to search across all 16 lessons</div>
+      </div>
+    </div>
+  </div>
+  <!-- Notification Dropdown -->
+  <div class="notif-dropdown" id="notifDropdown">
+    <div class="notif-header">Notifications</div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (in case you add backend later)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
+
+# Build outputs
+dist/
+build/
+
+# Temp files
+*.tmp
+*.log
+*.bak
+logo_b64.txt

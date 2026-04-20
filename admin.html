@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Sphere Academy</title>
+  <meta name="description" content="Admin dashboard for managing lessons, content, and course settings in Sphere Academy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-loaded">
+
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <div class="nav-left">
+        <button class="back-btn" id="backBtn" aria-label="Go back" title="Go back">&#8592;</button>
+        <a href="index.html" class="logo">
+          <div class="logo-icon"><img src="logo.png" alt="Sphere Academy"></div>
+          Sphere Academy
+        </a>
+      </div>
+      <ul class="nav-links">
+        <li class="nav-mobile-cta"><a href="login.html" class="btn btn-outline">Log In</a></li>
+      </ul>
+      <div class="nav-cta">
+        <button class="theme-toggle" id="searchBtn" aria-label="Search" title="Search lessons">&#128269;</button>
+        <button class="notif-btn" id="notifBtn" aria-label="Notifications" title="Notifications">&#128276;<span class="notif-badge" id="notifBadge" style="display:none;">0</span></button>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">&#9790;</button>
+        <a href="login.html" class="btn btn-outline">Log In</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Admin Panel -->
+  <section class="admin-page">
+    <div class="container">
+
+      <!-- Admin Header -->
+      <div class="admin-header">
+        <div>
+          <h1>&#128218; Admin Panel</h1>
+          <p>Manage your lesson content, videos, and curriculum.</p>
+        </div>
+        <div class="admin-stats-bar">
+          <div class="admin-stat-chip">
+            <span class="admin-stat-value"><span id="adminPublishedCount">0</span> / <span id="adminTotalCount">16</span></span>
+            <span class="admin-stat-label">Published</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="profile-toast" id="adminToast" style="display:none;">
+        <span>&#10003;</span> Lesson saved successfully!
+      </div>
+
+      <!-- Admin Tabs -->
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="lessons">&#128218; Lesson Editor</button>
+        <button class="admin-tab" data-tab="cards">&#128444; Course Card Images</button>
+        <button class="admin-tab" data-tab="site">&#9881; Site Settings</button>
+      </div>
+
+      <!-- Course Cards Image Editor -->
+      <div class="admin-tab-panel" id="adminTab-cards" style="display:none;">
+        <div class="admin-editor-card" style="margin-bottom:24px;">
+          <h3>&#128444; Course Card Cover Images</h3>
+          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:24px;">Upload cover images for each month's course card. These appear on the Course Overview page.</p>
+          <div class="admin-cards-grid">
+
+            <div class="admin-card-upload" data-month="1">
+              <div class="admin-card-preview blue" id="cardPreview1">
+                <div class="admin-card-preview-icon" id="cardIcon1" contenteditable="true" title="Click to change emoji">&#9998;</div>
+                <img class="admin-card-preview-img" id="cardImg1" src="" alt="" style="display:none;">
+                <div class="admin-card-remove-overlay"><button id="cardRemove1" style="display:none;">&#10005; Remove</button></div>
+              </div>
+              <div class="admin-card-upload-info">
+                <strong class="card-month-label" data-month="1">Month 1</strong>
+                <label class="profile-avatar-upload" for="cardUpload1">
+                  <span>&#128247;</span> Upload Image
+                </label>
+                <input type="file" id="cardUpload1" accept="image/*" hidden>
+              </div>
+            </div>
+
+            <div class="admin-card-upload" data-month="2">
+              <div class="admin-card-preview amber" id="cardPreview2">
+                <div class="admin-card-preview-icon" id="cardIcon2" contenteditable="true" title="Click to change emoji">&#9889;</div>
+                <img class="admin-card-preview-img" id="cardImg2" src="" alt="" style="display:none;">
+                <div class="admin-card-remove-overlay"><button id="cardRemove2" style="display:none;">&#10005; Remove</button></div>
+              </div>
+              <div class="admin-card-upload-info">
+                <strong class="card-month-label" data-month="2">Month 2</strong>
+                <label class="profile-avatar-upload" for="cardUpload2">
+                  <span>&#128247;</span> Upload Image
+                </label>
+                <input type="file" id="cardUpload2" accept="image/*" hidden>
+              </div>
+            </div>
+
+            <div class="admin-card-upload" data-month="3">
+              <div class="admin-card-preview green" id="cardPreview3">
+                <div class="admin-card-preview-icon" id="cardIcon3" contenteditable="true" title="Click to change emoji">&#9881;</div>
+                <img class="admin-card-preview-img" id="cardImg3" src="" alt="" style="display:none;">
+                <div class="admin-card-remove-overlay"><button id="cardRemove3" style="display:none;">&#10005; Remove</button></div>
+              </div>
+              <div class="admin-card-upload-info">
+                <strong class="card-month-label" data-month="3">Month 3</strong>
+                <label class="profile-avatar-upload" for="cardUpload3">
+                  <span>&#128247;</span> Upload Image
+                </label>
+                <input type="file" id="cardUpload3" accept="image/*" hidden>
+              </div>
+            </div>
+
+            <div class="admin-card-upload" data-month="4">
+              <div class="admin-card-preview purple" id="cardPreview4">
+                <div class="admin-card-preview-icon" id="cardIcon4" contenteditable="true" title="Click to change emoji">&#9650;</div>
+                <img class="admin-card-preview-img" id="cardImg4" src="" alt="" style="display:none;">
+                <div class="admin-card-remove-overlay"><button id="cardRemove4" style="display:none;">&#10005; Remove</button></div>
+              </div>
+              <div class="admin-card-upload-info">
+                <strong class="card-month-label" data-month="4">Month 4</strong>
+                <label class="profile-avatar-upload" for="cardUpload4">
+                  <span>&#128247;</span> Upload Image
+                </label>
+                <input type="file" id="cardUpload4" accept="image/*" hidden>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Site Settings Tab -->
+      <div class="admin-tab-panel" id="adminTab-site" style="display:none;">
+        <div class="admin-editor-card" style="margin-bottom:24px;">
+          <h3>&#127991; Homepage Skill Tags</h3>
+          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:16px;">Edit the skill tags shown on the homepage. These appear below the "Skills You'll Build" heading.</p>
+          <div id="siteTagsContainer"></div>
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <input type="text" id="newTagInput" placeholder="Add new tag..." style="flex:1;">
+            <button class="btn btn-outline" id="addTagBtn" style="padding:8px 18px; font-size:0.82rem;">+ Add Tag</button>
+          </div>
+          <button class="btn btn-primary" id="saveTagsBtn" style="margin-top:16px; padding:10px 24px; font-size:0.85rem;">&#128190; Save Tags</button>
+        </div>
+
+        <div class="admin-editor-card" style="margin-bottom:24px;">
+          <h3>&#128218; Month Category Names</h3>
+          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:16px;">Edit both the prefix label (e.g. "Month", "Phase", "Level") and the category name. Tip: Click the blue label to change the prefix!</p>
+          <div class="form-group">
+            <label for="monthName1"><span class="month-prefix-label" contenteditable="true" data-month="1" title="Click to edit label">Month 1</span></label>
+            <input type="text" id="monthName1" placeholder="Creatives">
+          </div>
+          <div class="form-group">
+            <label for="monthName2"><span class="month-prefix-label" contenteditable="true" data-month="2" title="Click to edit label">Month 2</span></label>
+            <input type="text" id="monthName2" placeholder="Creatives+">
+          </div>
+          <div class="form-group">
+            <label for="monthName3"><span class="month-prefix-label" contenteditable="true" data-month="3" title="Click to edit label">Month 3</span></label>
+            <input type="text" id="monthName3" placeholder="Tools & Platforms">
+          </div>
+          <div class="form-group">
+            <label for="monthName4"><span class="month-prefix-label" contenteditable="true" data-month="4" title="Click to edit label">Month 4</span></label>
+            <input type="text" id="monthName4" placeholder="Ads Manager">
+          </div>
+          <button class="btn btn-primary" id="saveMonthNamesBtn" style="margin-top:8px; padding:10px 24px; font-size:0.85rem;">&#128190; Save Month Names &amp; Labels</button>
+        </div>
+
+        <div class="admin-editor-card">
+          <h3>&#127912; Homepage Section Title</h3>
+          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:16px;">Edit the main title of the skills section on the homepage.</p>
+          <div class="form-group">
+            <label for="siteSectionTitle">Section Title</label>
+            <input type="text" id="siteSectionTitle" placeholder="Skills You'll Build in This Course">
+          </div>
+          <button class="btn btn-primary" id="saveSiteTitleBtn" style="margin-top:8px; padding:10px 24px; font-size:0.85rem;">&#128190; Save Title</button>
+        </div>
+      </div>
+
+      <!-- Lessons Editor Tab -->
+      <div class="admin-tab-panel active" id="adminTab-lessons">
+
+      <!-- Admin Layout -->
+      <div class="admin-layout">
+
+        <!-- Sidebar: Lesson List -->
+        <aside class="admin-sidebar">
+          <div class="admin-sidebar-header">
+            <h3>Curriculum</h3>
+            <p>16 Weekly Lessons</p>
+            <button class="btn btn-outline" id="bulkPublishBtn" style="width:100%; margin-top:10px; padding:8px; font-size:0.78rem;">Publish All Lessons</button>
+          </div>
+          <div class="admin-lesson-list" id="adminLessonList">
+            <!-- Populated by JS -->
+          </div>
+        </aside>
+
+        <!-- Main: Lesson Editor -->
+        <main class="admin-editor">
+          <div class="admin-editor-topbar">
+            <span class="admin-editor-week" id="editorWeekLabel">Week 1 — Month 1</span>
+            <div class="admin-editor-actions">
+              <button class="btn btn-outline" id="adminPreviewBtn">&#128065; Preview</button>
+              <button class="btn btn-primary" id="adminSaveBtn">&#128190; Save Lesson</button>
+            </div>
+          </div>
+
+          <div class="admin-editor-body">
+
+            <!-- Title & Meta -->
+            <div class="admin-editor-card">
+              <h3>Lesson Details</h3>
+              <div class="form-group">
+                <label for="editorTitle">Lesson Title</label>
+                <input type="text" id="editorTitle" placeholder="e.g. Intro to Marketing & Image Creatives">
+              </div>
+              <div class="profile-form-grid">
+                <div class="form-group">
+                  <label for="editorCategory">Category</label>
+                  <select id="editorCategory">
+                    <!-- Populated by JS from saved month names -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="editorDifficulty">Difficulty</label>
+                  <select id="editorDifficulty">
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+              <div class="profile-toggle-row" style="border:none; padding-top:12px;">
+                <div>
+                  <strong>Published</strong>
+                  <p>Students can view this lesson when published.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="editorPublished">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Video -->
+            <div class="admin-editor-card">
+              <h3>&#127916; Video</h3>
+              <div class="profile-form-grid">
+                <div class="form-group">
+                  <label for="editorVideoUrl">Video URL</label>
+                  <input type="url" id="editorVideoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+                <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                  <div>
+                    <label for="editorVideoType">Type</label>
+                    <select id="editorVideoType">
+                      <option value="youtube">YouTube</option>
+                      <option value="vimeo">Vimeo</option>
+                      <option value="direct">Direct MP4</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="editorDuration">Duration</label>
+                    <input type="text" id="editorDuration" placeholder="45:00">
+                  </div>
+                </div>
+              </div>
+              <div class="admin-video-preview" id="videoPreview">
+                <div class="admin-video-empty">&#127916; Paste a video URL above to preview</div>
+              </div>
+            </div>
+
+            <!-- Content Sections -->
+            <div class="admin-editor-card">
+              <div class="admin-card-header-row">
+                <h3>&#128221; Lesson Content</h3>
+                <button type="button" class="btn btn-outline" id="addSectionBtn" style="padding:8px 16px; font-size:0.82rem;">+ Add Section</button>
+              </div>
+              <div id="sectionsContainer">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <!-- Key Takeaways -->
+            <div class="admin-editor-card">
+              <div class="admin-card-header-row">
+                <h3>&#127919; Key Takeaways</h3>
+                <button type="button" class="btn btn-outline" id="addTakeawayBtn" style="padding:8px 16px; font-size:0.82rem;">+ Add Point</button>
+              </div>
+              <div id="takeawaysContainer">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <!-- Pro Tip -->
+            <div class="admin-editor-card">
+              <h3>&#128161; Pro Tip</h3>
+              <div class="form-group" style="margin-bottom:0;">
+                <textarea id="editorProTip" rows="3" placeholder="Add a pro tip for this lesson (shown in a highlighted box)..."></textarea>
+              </div>
+            </div>
+
+            <!-- Assignment -->
+            <div class="admin-editor-card">
+              <div class="admin-card-header-row">
+                <h3>&#128203; Weekly Assignment</h3>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="editorAssignmentEnabled">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div id="assignmentEditorFields">
+                <div class="form-group">
+                  <label for="editorAssignmentTitle">Assignment Title</label>
+                  <input type="text" id="editorAssignmentTitle" placeholder="e.g. Create a Product Post &amp; Story Graphic">
+                </div>
+                <div class="form-group">
+                  <label for="editorAssignmentDesc">Assignment Description</label>
+                  <textarea id="editorAssignmentDesc" rows="3" placeholder="Describe what students need to submit (deliverables, format, requirements)..."></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Accepted File Types</label>
+                  <div style="display:flex; gap:16px; margin-top:6px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;">
+                      <input type="checkbox" id="editorAssignmentImage" checked> &#127912; Images
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;">
+                      <input type="checkbox" id="editorAssignmentVideo"> &#127909; Videos
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;">
+                      <input type="checkbox" id="editorAssignmentPdf"> &#128196; PDFs
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Weekly Assessment / Quiz -->
+            <div class="admin-editor-card">
+              <div class="admin-card-header-row">
+                <h3>&#128221; Weekly Assessment</h3>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="editorQuizEnabled">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div id="quizEditorFields">
+                <div class="form-group">
+                  <label>Passing Score (%)</label>
+                  <input type="number" id="editorQuizPassScore" min="1" max="100" value="70" style="max-width:120px;">
+                </div>
+                <div class="admin-card-header-row" style="margin-top:16px;">
+                  <h4 style="font-size:0.9rem;">Questions</h4>
+                  <button type="button" class="btn btn-outline" id="addQuizQuestionBtn" style="padding:8px 16px; font-size:0.82rem;">+ Add Question</button>
+                </div>
+                <div id="quizQuestionsContainer">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </main>
+      </div>
+
+      </div><!-- end admin-tab-panel lessons -->
+    </div>
+  </section>
+
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">&#8593;</button>
+
+  
+  <!-- Search Overlay -->
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-box">
+      <div class="search-input-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="searchInput" placeholder="Search lessons..." autofocus>
+        <button class="search-close" id="searchClose">&#10005;</button>
+      </div>
+      <div class="search-results" id="searchResults">
+        <div class="search-empty">Type to search across all 16 lessons</div>
+      </div>
+    </div>
+  </div>
+  <!-- Notification Dropdown -->
+  <div class="notif-dropdown" id="notifDropdown">
+    <div class="notif-header">Notifications</div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+
+  <!-- Unsaved Changes Warning -->
+  <div class="unsaved-banner" id="unsavedBanner">
+    &#9888; You have unsaved changes
+    <button class="btn btn-primary" id="unsavedSaveBtn">Save Now</button>
+    <button class="btn btn-outline" id="unsavedDismiss">Dismiss</button>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
