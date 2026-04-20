@@ -1,133 +1,160 @@
-# Firebase Setup Guide — Google & Facebook Login
+# Firebase Setup Guide
 
-Follow these steps to enable real Google and Facebook login on your Sphere Academy site.
+Complete setup: **Google Auth + Firestore (shared data sync across students)**.
 
-**Total time: ~10–15 minutes. Free tier is more than enough.**
-
----
-
-## Part 1: Create Firebase Project (3 minutes)
-
-1. Go to **https://console.firebase.google.com/**
-2. Click **"Add project"** (or "Create a project")
-3. Enter project name: `sphere-academy` (or whatever you want)
-4. Skip Google Analytics (not needed) → click **Continue** → **Create project**
-5. Once created, click **Continue**
+**Total time: ~15 minutes. All free on Firebase Spark plan.**
 
 ---
 
-## Part 2: Register Your Web App (2 minutes)
+## ✅ What you already have
+- Firebase project created: `marketing-intern-54252`
+- Web app registered
+- `firebase-config.js` populated with your config
+- `FIREBASE_ENABLED = true`
 
-1. On the Firebase project dashboard, click the **web icon `</>`** (next to iOS/Android)
-2. App nickname: `Sphere Academy Web`
-3. **Skip** "Also set up Firebase Hosting"
-4. Click **Register app**
-5. You'll see a code snippet with `firebaseConfig = { apiKey: "...", authDomain: "...", ... }`
-6. **COPY THIS OBJECT** — you'll paste it in Step 5 below
-7. Click **Continue to console**
+## 🎯 What we're adding now
+- **Google Sign-In** (OAuth)
+- **Firestore Database** (admin content syncs to all students)
 
 ---
 
-## Part 3: Enable Google Sign-In (2 minutes)
+## Part 1: Enable Google Sign-In (2 min)
 
-1. In Firebase Console, go to **Authentication** (left sidebar) → **Get started**
-2. Go to the **Sign-in method** tab
+**👉 Direct link:**
+```
+https://console.firebase.google.com/project/marketing-intern-54252/authentication
+```
+
+1. Click **"Get started"** (if not already done)
+2. Go to the **"Sign-in method"** tab
 3. Click **Google** from the list
 4. Toggle **Enable**
-5. Select a **Project support email** (use your own email)
+5. Select a **Project support email** (your email)
 6. Click **Save**
 
 ✅ Google sign-in is now live.
 
 ---
 
-## Part 4: Enable Facebook Sign-In (5 minutes, optional)
+## Part 2: Enable Firestore Database (3 min)
 
-Facebook requires you to create a Facebook App first:
+This is what makes admin changes sync to all students.
 
-1. Go to **https://developers.facebook.com/apps/**
-2. Click **Create App** → choose **"Consumer"** → Next
-3. App name: `Sphere Academy` → fill in email → **Create app**
-4. On the app dashboard, find **Facebook Login** → click **Set up**
-5. Go to **Facebook Login → Settings** (left sidebar)
-6. Under **Valid OAuth Redirect URIs**, paste:
-   ```
-   https://YOUR_PROJECT.firebaseapp.com/__/auth/handler
-   ```
-   (Replace `YOUR_PROJECT` with your actual Firebase project ID)
-7. Go to **Settings → Basic** (left sidebar)
-8. Copy the **App ID** and click **Show** next to **App Secret** to get the secret
-9. **Back in Firebase Console** → Authentication → Sign-in method → click **Facebook**
-10. Toggle **Enable**, paste the **App ID** and **App Secret**
-11. Copy the **OAuth redirect URI** Firebase shows and make sure it matches what you put in Facebook
-12. Click **Save**
-13. Back in Facebook Developer Console → toggle your app to **Live** (top-right switch)
-
----
-
-## Part 5: Add Your Config to the Site (1 minute)
-
-Open `firebase-config.js` in your project folder and replace the placeholder values:
-
-```js
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSy...",                    // from Step 2
-  authDomain: "sphere-academy.firebaseapp.com",
-  projectId: "sphere-academy",
-  storageBucket: "sphere-academy.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abc123"
-};
-
-const FIREBASE_ENABLED = true;  // ← IMPORTANT: change from false to true
+**👉 Direct link:**
+```
+https://console.firebase.google.com/project/marketing-intern-54252/firestore
 ```
 
----
-
-## Part 6: Authorize Your Domain (1 minute)
-
-1. In Firebase Console → Authentication → **Settings** tab → **Authorized domains**
-2. Add the domain where your site is hosted:
-   - For local testing: `localhost` is already there
-   - For GitHub Pages: add `stratosadvertiser-coder.github.io`
-   - For custom domain: add your domain
+1. Click **"Create database"** button
+2. **Start in production mode** → click Next
+3. **Select location**: choose `asia-southeast1 (Singapore)` (closest to PH)
+   - If unavailable, pick `asia-east1 (Taiwan)` or any nearby
+4. Click **"Enable"**
+5. Wait ~30 seconds for Firestore to provision
 
 ---
 
-## Part 7: Test It
+## Part 3: Configure Firestore Security Rules (2 min)
 
-1. Open `login.html` in your browser (or hosted URL)
-2. Click **Google** — a popup will open, let you choose your Google account, and log you in
-3. Click **Facebook** — same flow with Facebook login
-4. You'll be auto-redirected to `course.html` as a student account
+By default, Firestore blocks ALL reads/writes. We need to allow:
+- **Everyone** can read lesson/site data
+- **Authenticated users** can write (your admin logins are authenticated via Google)
 
----
+1. In Firestore, go to the **"Rules"** tab
+2. Replace the existing rules with:
 
-## Troubleshooting
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow public read of shared content (lessons, settings, card images, emojis)
+    // Allow any authenticated user to write (admin will be the one editing)
+    match /sphere_lms/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
 
-**"Firebase is not configured yet"**
-→ You forgot to set `FIREBASE_ENABLED = true` in `firebase-config.js`
-
-**"This domain is not authorized"**
-→ Add your domain in Firebase Console → Authentication → Settings → Authorized domains
-
-**"auth/popup-blocked"**
-→ Your browser is blocking popups. Allow popups for your site.
-
-**Facebook login doesn't work on localhost**
-→ Facebook requires HTTPS. Use `ngrok` to expose your local server, or test on your live hosted URL.
-
-**Google/FB user shows up as "student" — how do I make them admin?**
-→ Log in as admin first, then manually update their role in `localStorage` under `auth_users`, or add a role field to your Firebase user data later.
-
----
-
-## Security Notes
-
-- The Firebase `apiKey` is **safe to expose publicly** — it only identifies your project, not authenticates you.
-- Security is enforced by **Authorized Domains** (Part 6) and **Firebase Security Rules**.
-- For production, consider adding Firebase Security Rules and moving user data from `localStorage` to Firestore.
+3. Click **"Publish"**
 
 ---
 
-Done! Your Google/Facebook login buttons now work with real OAuth. 🎉
+## Part 4: Authorized Domains (1 min)
+
+Make sure your app's domain is authorized for OAuth:
+
+**👉 Direct link:**
+```
+https://console.firebase.google.com/project/marketing-intern-54252/authentication/settings
+```
+
+1. Scroll to **"Authorized domains"**
+2. Make sure `localhost` is in the list (for local testing)
+3. Add your hosting domain:
+   - For GitHub Pages: `stratosadvertiser-coder.github.io`
+   - For custom domain: your domain
+
+---
+
+## ✅ Test It
+
+1. Serve your site via `http://localhost:8080/` (not `file://`):
+   ```bash
+   cd "C:/Users/ADMIN/Documents/marketing intern new"
+   python -m http.server 8080
+   ```
+2. Open `http://localhost:8080/login.html`
+3. Log in as admin (`admin / admin123`)
+4. Go to **Admin Panel** → make some changes (rename months, upload images, etc.)
+5. Log out → log in with your Google account (as a student)
+6. **You should see all the admin's customizations!** 🎉
+
+---
+
+## 🔒 How it works
+
+- **Shared data** (lessons, month names, tags, card images, emojis) → stored in Firestore → same for everyone
+- **Personal data** (progress, assignments, quiz results, bookmarks, streak, Q&A) → stored in localStorage per user
+- On page load, the site fetches latest from Firestore and caches in localStorage
+- Admin saves write to both Firestore AND localStorage
+- Students see admin's changes on next page load
+
+---
+
+## 🐛 Troubleshooting
+
+**Content not syncing?**
+- Open browser DevTools → Console → look for Firestore errors
+- Check that `FIREBASE_ENABLED = true` in `firebase-config.js`
+- Check that Firestore rules allow read/write
+
+**"Missing or insufficient permissions"?**
+- Firestore rules aren't set up. Go back to Part 3.
+
+**Students still see old data after admin change?**
+- Data syncs on page load. Ask them to refresh (Ctrl+F5)
+
+**Card images not syncing?**
+- Images are compressed to under 1MB base64. Very large original images may fail.
+- Check Firestore console → `sphere_lms/card_images` doc to see if data arrived
+
+---
+
+## 📊 Viewing data in Firestore Console
+
+You can see all admin-synced data here:
+```
+https://console.firebase.google.com/project/marketing-intern-54252/firestore/data
+```
+
+Collection: `sphere_lms`
+- `lessons` → all 16 lessons
+- `settings` → month_names, month_prefixes, skill_tags, section_title
+- `card_images` → month_1 to month_4 (base64 images + positions)
+- `card_emojis` → month_1 to month_4 emoji chars
+
+---
+
+Done! Your LMS now syncs admin changes across all students in real-time. 🎉

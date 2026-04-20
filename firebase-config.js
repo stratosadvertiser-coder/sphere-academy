@@ -1,21 +1,18 @@
 // ============================================================
 // FIREBASE CONFIGURATION
 // ============================================================
-// Replace the values below with YOUR Firebase project config.
-// Get these from: https://console.firebase.google.com/
-// Project Settings → General → Your apps → Web app → Config
-// See FIREBASE_SETUP.md for step-by-step instructions.
+// Project: marketing-intern-54252
 // ============================================================
 
 const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDZKbezONIg0yR5PnAmOYO_DgH1dwjvC-c",
+  authDomain: "marketing-intern-54252.firebaseapp.com",
+  projectId: "marketing-intern-54252",
+  storageBucket: "marketing-intern-54252.firebasestorage.app",
+  messagingSenderId: "448141336869",
+  appId: "1:448141336869:web:b4370461f1f0e069cbfacc",
+  measurementId: "G-06WF7B5PRW"
 };
 
-// Set to `true` once you've filled in the config above.
-// Until then, Google/FB buttons will show a setup message.
-const FIREBASE_ENABLED = false;
+// Firebase is now enabled!
+const FIREBASE_ENABLED = true;

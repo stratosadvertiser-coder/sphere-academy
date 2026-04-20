@@ -2843,7 +2843,7 @@ img {
 .course-card-link {
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--bg-alt);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -2851,6 +2851,13 @@ img {
   text-decoration: none;
   color: inherit;
   position: relative;
+  box-shadow: var(--shadow);
+}
+
+.course-card-link:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  border-color: var(--primary-light);
 }
 
 .course-card-link:hover {
@@ -2902,25 +2909,6 @@ img {
   background: linear-gradient(135deg, #1e293b 0%, #6d28d9 100%);
 }
 
-.course-card-img::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.12) 0%, transparent 60%);
-  pointer-events: none;
-}
-
-.course-card-img::after {
-  content: '';
-  position: absolute;
-  bottom: -30px;
-  right: -30px;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.06);
-  pointer-events: none;
-}
 
 .course-card-icon {
   position: absolute;

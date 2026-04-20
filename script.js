@@ -67,6 +67,184 @@ const PROGRESS = {
   }
 };
 
+// ============================================================
+// DATA_SYNC — Firestore cloud sync for shared admin content
+// ============================================================
+// Keeps admin-edited content (lessons, month names, tags, etc.)
+// in sync across all devices/students via Firebase Firestore.
+// Falls back gracefully to localStorage-only if Firestore
+// is not configured.
+// ============================================================
+const DATA_SYNC = {
+  db: null,
+  COLLECTION: 'sphere_lms',
+  loaded: false,
+
+  isEnabled() {
+    return typeof FIREBASE_ENABLED !== 'undefined'
+      && FIREBASE_ENABLED
+      && typeof firebase !== 'undefined'
+      && firebase.firestore;
+  },
+
+  init() {
+    if (!this.isEnabled()) return;
+    try {
+      if (!firebase.apps.length && typeof FIREBASE_CONFIG !== 'undefined') {
+        firebase.initializeApp(FIREBASE_CONFIG);
+      }
+      this.db = firebase.firestore();
+    } catch (e) {
+      console.error('Firestore init failed:', e);
+    }
+  },
+
+  // Fetch all shared content from Firestore and cache in localStorage
+  async loadAll() {
+    if (!this.db) return false;
+    try {
+      const [lessonsSnap, settingsSnap, cardImgsSnap, emojisSnap] = await Promise.all([
+        this.db.collection(this.COLLECTION).doc('lessons').get(),
+        this.db.collection(this.COLLECTION).doc('settings').get(),
+        this.db.collection(this.COLLECTION).doc('card_images').get(),
+        this.db.collection(this.COLLECTION).doc('card_emojis').get()
+      ]);
+
+      // Lessons
+      if (lessonsSnap.exists) {
+        const lessonsData = lessonsSnap.data();
+        if (lessonsData && lessonsData.data) {
+          safeSetItem('lessons_data', JSON.stringify(lessonsData.data));
+        }
+      }
+
+      // Settings (month names, prefixes, skill tags, title)
+      if (settingsSnap.exists) {
+        const s = settingsSnap.data();
+        if (s.month_names) safeSetItem('site_month_names', JSON.stringify(s.month_names));
+        if (s.month_prefixes) safeSetItem('site_month_prefixes', JSON.stringify(s.month_prefixes));
+        if (s.skill_tags) safeSetItem('site_skill_tags', JSON.stringify(s.skill_tags));
+        if (s.section_title) safeSetItem('site_section_title', s.section_title);
+      }
+
+      // Card images
+      if (cardImgsSnap.exists) {
+        const imgs = cardImgsSnap.data();
+        for (let m = 1; m <= 4; m++) {
+          const img = imgs['month_' + m];
+          if (img) safeSetItem('card_image_' + m, img);
+          const pos = imgs['month_' + m + '_pos'];
+          if (pos !== undefined) safeSetItem('card_image_pos_' + m, pos);
+        }
+      }
+
+      // Card emojis
+      if (emojisSnap.exists) {
+        const emojis = emojisSnap.data();
+        if (emojis && emojis.data) {
+          safeSetItem('site_card_emojis', JSON.stringify(emojis.data));
+        }
+      }
+
+      this.loaded = true;
+      return true;
+    } catch (e) {
+      console.error('Firestore load failed:', e);
+      return false;
+    }
+  },
+
+  // Save lessons array to Firestore
+  async saveLessons(lessons) {
+    if (!this.db) return;
+    try {
+      await this.db.collection(this.COLLECTION).doc('lessons').set({
+        data: lessons,
+        updated: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (e) { console.error('Save lessons failed:', e); }
+  },
+
+  // Save site settings (partial update)
+  async saveSettings(partial) {
+    if (!this.db) return;
+    try {
+      await this.db.collection(this.COLLECTION).doc('settings').set({
+        ...partial,
+        updated: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } catch (e) { console.error('Save settings failed:', e); }
+  },
+
+  // Save one card image
+  async saveCardImage(month, dataUrl, position) {
+    if (!this.db) return;
+    try {
+      const update = { ['month_' + month]: dataUrl };
+      if (position !== undefined) update['month_' + month + '_pos'] = position;
+      await this.db.collection(this.COLLECTION).doc('card_images').set(update, { merge: true });
+    } catch (e) { console.error('Save card image failed:', e); }
+  },
+
+  async removeCardImage(month) {
+    if (!this.db) return;
+    try {
+      const update = {};
+      update['month_' + month] = firebase.firestore.FieldValue.delete();
+      update['month_' + month + '_pos'] = firebase.firestore.FieldValue.delete();
+      await this.db.collection(this.COLLECTION).doc('card_images').set(update, { merge: true });
+    } catch (e) { console.error('Remove card image failed:', e); }
+  },
+
+  async saveCardEmojis(emojis) {
+    if (!this.db) return;
+    try {
+      await this.db.collection(this.COLLECTION).doc('card_emojis').set({
+        data: emojis,
+        updated: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (e) { console.error('Save emojis failed:', e); }
+  }
+};
+
+// Initialize Firestore immediately
+DATA_SYNC.init();
+
+// Snapshot of localStorage BEFORE Firestore load — used to detect if data changed
+function _snapshotSyncedKeys() {
+  const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes',
+                'site_skill_tags', 'site_section_title', 'site_card_emojis',
+                'card_image_1', 'card_image_2', 'card_image_3', 'card_image_4'];
+  const snap = {};
+  keys.forEach(k => { snap[k] = safeGetItem(k) || ''; });
+  return snap;
+}
+
+function _hasDataChanged(beforeSnap) {
+  const keys = Object.keys(beforeSnap);
+  for (const k of keys) {
+    if (beforeSnap[k] !== (safeGetItem(k) || '')) return true;
+  }
+  return false;
+}
+
+// Load data from Firestore, then refresh page if data is newer than cached
+const DATA_SYNC_READY = (async () => {
+  if (!DATA_SYNC.isEnabled()) return;
+  try {
+    const before = _snapshotSyncedKeys();
+    await DATA_SYNC.loadAll();
+    // If localStorage changed and we haven't already refreshed this session, reload
+    const alreadyRefreshed = sessionStorage.getItem('sync_refreshed_' + window.location.pathname);
+    if (_hasDataChanged(before) && !alreadyRefreshed) {
+      sessionStorage.setItem('sync_refreshed_' + window.location.pathname, '1');
+      window.location.reload();
+    }
+  } catch (e) {
+    console.warn('Firestore sync failed, using local cache:', e);
+  }
+})();
+
 // ===== ASSIGNMENTS STORAGE =====
 const ASSIGNMENTS = {
   STORAGE_KEY: 'assignment_submissions',
@@ -387,6 +565,8 @@ const LESSONS = {
       all[idx] = { ...all[idx], ...lesson };
     }
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    // Sync to Firestore (non-blocking)
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveLessons(all);
   },
 
   defaultMonthNames: { 1: 'Creatives', 2: 'Creatives+', 3: 'Tools & Platforms', 4: 'Ads Manager' },
@@ -403,6 +583,7 @@ const LESSONS = {
 
   saveMonthNames(names) {
     safeSetItem('site_month_names', JSON.stringify(names));
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ month_names: names });
   },
 
   getMonthPrefixes() {
@@ -416,6 +597,7 @@ const LESSONS = {
 
   saveMonthPrefixes(prefixes) {
     safeSetItem('site_month_prefixes', JSON.stringify(prefixes));
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ month_prefixes: prefixes });
   },
 
   // Full label: "Month 1: Creatives" or custom "Phase 1: Creatives"
@@ -1889,6 +2071,7 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           safeSetItem('card_image_' + month, dataUrl);
+          if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveCardImage(month, dataUrl);
           const imgEl = document.getElementById('cardImg' + month);
           if (imgEl) { imgEl.src = dataUrl; imgEl.style.display = 'block'; }
           const removeBtn = document.getElementById('cardRemove' + month);
@@ -1911,6 +2094,8 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
     if (!btn) return;
     btn.addEventListener('click', () => {
       localStorage.removeItem('card_image_' + month);
+      localStorage.removeItem('card_image_pos_' + month);
+      if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.removeCardImage(month);
       const imgEl = document.getElementById('cardImg' + month);
       if (imgEl) { imgEl.src = ''; imgEl.style.display = 'none'; }
       btn.style.display = 'none';
@@ -1972,7 +2157,14 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       if (!isDragging) return;
       isDragging = false;
       imgEl.classList.remove('dragging');
-      safeSetItem(posKey, parseInt(imgEl.style.top || '0'));
+      const pos = parseInt(imgEl.style.top || '0');
+      safeSetItem(posKey, pos);
+      // Sync position to Firestore
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(DATA_SYNC.COLLECTION).doc('card_images').set({
+          ['month_' + month + '_pos']: pos
+        }, { merge: true }).catch(e => console.error('Pos sync failed:', e));
+      }
     });
 
     // Touch support for mobile
@@ -2024,6 +2216,7 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
         const emojis = safeGetJSON('site_card_emojis', defaultEmojis);
         emojis[m] = iconEl.textContent.trim();
         safeSetItem('site_card_emojis', JSON.stringify(emojis));
+        if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveCardEmojis(emojis);
       });
       // Prevent line breaks
       iconEl.addEventListener('keydown', (e) => {
@@ -2968,7 +3161,7 @@ if (currentPage === 'course.html') {
     }
   });
 
-  // Update course card titles (Overview tab)
+  // Update course card titles + tag labels (Overview tab)
   courseCardLinks.forEach((card, i) => {
     const monthNum = i + 1;
     const name = savedMonthNames[monthNum] || savedMonthNames[String(monthNum)];
@@ -2976,6 +3169,9 @@ if (currentPage === 'course.html') {
       const h3 = card.querySelector('.course-card-body h3');
       if (h3) h3.textContent = name;
     }
+    // Also update the "MONTH X" tag label with the custom prefix
+    const tag = card.querySelector('.course-card-tag');
+    if (tag) tag.textContent = LESSONS.getMonthPrefix(monthNum);
   });
 
   // Update module headers (Modules tab)
@@ -3050,9 +3246,15 @@ const SITE_SETTINGS = {
   defaultTitle: "Skills You'll Build in This Course",
 
   getTags() { return safeGetJSON(this.TAGS_KEY, this.defaultTags); },
-  saveTags(tags) { safeSetItem(this.TAGS_KEY, JSON.stringify(tags)); },
+  saveTags(tags) {
+    safeSetItem(this.TAGS_KEY, JSON.stringify(tags));
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ skill_tags: tags });
+  },
   getTitle() { return safeGetItem(this.TITLE_KEY) || this.defaultTitle; },
-  saveTitle(title) { safeSetItem(this.TITLE_KEY, title); }
+  saveTitle(title) {
+    safeSetItem(this.TITLE_KEY, title);
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ section_title: title });
+  }
 };
 
 // Render tags on homepage
