@@ -592,8 +592,8 @@ const LESSONS = {
     if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveLessons(all);
   },
 
-  defaultMonthNames: { 1: 'Creatives', 2: 'Creatives+', 3: 'Tools & Platforms', 4: 'Ads Manager' },
-  defaultMonthPrefixes: { 1: 'Month 1', 2: 'Month 2', 3: 'Month 3', 4: 'Month 4' },
+  defaultMonthNames: { 1: 'Basic Fundamentals', 2: 'Creatives + AI', 3: 'Tools & Platforms', 4: 'Ads Manager' },
+  defaultMonthPrefixes: { 1: 'Phase 1', 2: 'Phase 2', 3: 'Phase 3', 4: 'Phase 4' },
 
   getMonthNames() {
     return safeGetJSON('site_month_names', this.defaultMonthNames);
