@@ -156,13 +156,24 @@ const DATA_SYNC = {
 
   // Save lessons array to Firestore
   async saveLessons(lessons) {
-    if (!this.db) return;
+    if (!this.db) {
+      console.warn('[SYNC] Firestore not initialized — admin changes will NOT sync to students.');
+      return;
+    }
     try {
       await this.db.collection(this.COLLECTION).doc('lessons').set({
         data: lessons,
         updated: firebase.firestore.FieldValue.serverTimestamp()
       });
-    } catch (e) { console.error('Save lessons failed:', e); }
+      console.log('[SYNC] ✓ Lessons saved to Firestore');
+    } catch (e) {
+      console.error('[SYNC] ✗ Save lessons FAILED:', e.code || '', e.message || e);
+      if (e.code === 'permission-denied') {
+        alert('Firestore Permission Denied!\n\nYour Firestore rules are blocking writes.\n\nFix at: https://console.firebase.google.com/project/marketing-intern-54252/firestore/rules\n\nSee FIREBASE_SETUP.md Part 3.');
+      } else if (e.code === 'unavailable' || e.code === 'failed-precondition') {
+        alert('Firestore is not enabled!\n\nEnable at: https://console.firebase.google.com/project/marketing-intern-54252/firestore\n\nClick "Create database", choose Production mode, pick a location, enable.');
+      }
+    }
   },
 
   // Save site settings (partial update)
