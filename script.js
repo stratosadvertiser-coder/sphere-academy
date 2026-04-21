@@ -1153,7 +1153,7 @@ if (currentPage === 'lesson.html') {
           html += '<h2>' + (i < 9 ? '0' : '') + (i + 1) + ' &mdash; ' + sec.heading + '</h2>';
         }
         if (sec.content) {
-          html += '<p>' + sec.content + '</p>';
+          html += '<p style="white-space:pre-line;">' + sec.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
         }
       });
       if (lesson.proTip) {
@@ -1323,7 +1323,7 @@ if (currentPage === 'lesson.html') {
       let asgnHtml = '<div class="assignment-section">';
       asgnHtml += '<div class="assignment-header">';
       asgnHtml += '<h2>&#128203; ' + (asgn.title || 'Weekly Assignment') + '</h2>';
-      if (asgn.description) asgnHtml += '<p>' + asgn.description + '</p>';
+      if (asgn.description) asgnHtml += '<p style="white-space:pre-line;">' + asgn.description.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
       asgnHtml += '</div>';
 
       if (isSubmitted) {
