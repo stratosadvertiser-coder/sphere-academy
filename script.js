@@ -94,6 +94,18 @@ const DATA_SYNC = {
         firebase.initializeApp(FIREBASE_CONFIG);
       }
       this.db = firebase.firestore();
+
+      // Sign in anonymously so Firestore writes work (required for rule "request.auth != null")
+      // Only if no user is already signed in (e.g. via Google OAuth)
+      if (firebase.auth) {
+        firebase.auth().onAuthStateChanged(user => {
+          if (!user) {
+            firebase.auth().signInAnonymously()
+              .then(() => console.log('[SYNC] Firebase anonymous auth ready'))
+              .catch(e => console.warn('[SYNC] Anonymous auth failed (writes may fail):', e.message));
+          }
+        });
+      }
     } catch (e) {
       console.error('Firestore init failed:', e);
     }
