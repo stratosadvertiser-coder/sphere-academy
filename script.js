@@ -674,9 +674,34 @@ if (signupForm) {
     e.preventDefault();
     const fullName = document.getElementById('fullname').value.trim();
     const email = document.getElementById('email').value.trim();
+    const usernameInput = document.getElementById('signupUsername') || document.getElementById('username');
+    const username = usernameInput ? usernameInput.value.trim().toLowerCase() : '';
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirm-password').value;
     const signupError = document.getElementById('signupError');
+
+    // Validate username
+    if (!username || username.length < 3) {
+      if (signupError) {
+        signupError.textContent = 'Username must be at least 3 characters.';
+        signupError.style.display = 'block';
+      }
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(username)) {
+      if (signupError) {
+        signupError.textContent = 'Username can only contain letters, numbers, and underscores.';
+        signupError.style.display = 'block';
+      }
+      return;
+    }
+    if (username === 'admin') {
+      if (signupError) {
+        signupError.textContent = 'That username is reserved. Please choose another.';
+        signupError.style.display = 'block';
+      }
+      return;
+    }
 
     if (password !== confirmPassword) {
       if (signupError) {
@@ -693,9 +718,6 @@ if (signupForm) {
       }
       return;
     }
-
-    // Generate username from email (part before @)
-    const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
 
     const result = AUTH.register(fullName, email, username, password);
     if (result.success) {
@@ -715,11 +737,19 @@ if (currentPage === 'login.html' && window.location.search.includes('registered=
   const params = new URLSearchParams(window.location.search);
   const newUsername = params.get('registered');
   if (loginError && newUsername) {
-    loginError.textContent = 'Account created! Log in with username: ' + newUsername;
+    loginError.innerHTML = '&#10003; Account created! Your username: <strong>' + newUsername + '</strong>';
     loginError.style.display = 'block';
     loginError.style.background = '#d1fae5';
     loginError.style.color = '#065f46';
     loginError.style.borderColor = '#10b981';
+  }
+  // Pre-fill username field
+  const usernameField = document.getElementById('username') || document.getElementById('email');
+  if (usernameField && newUsername) {
+    usernameField.value = newUsername;
+    // Focus password field for convenience
+    const passwordField = document.getElementById('password');
+    if (passwordField) passwordField.focus();
   }
 }
 

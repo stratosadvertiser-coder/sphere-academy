@@ -57,6 +57,11 @@
           <input type="email" id="email" placeholder="you@example.com" required>
         </div>
         <div class="form-group">
+          <label for="signupUsername">Username <span style="color:var(--text-light); font-weight:400; font-size:0.8rem;">(you'll use this to log in)</span></label>
+          <input type="text" id="signupUsername" placeholder="Choose a username" required minlength="3" pattern="[a-zA-Z0-9_]+" title="Letters, numbers, and underscores only" autocomplete="username">
+          <small style="color:var(--text-light); font-size:0.78rem;">3+ characters, letters/numbers/underscores only</small>
+        </div>
+        <div class="form-group">
           <label for="password">Password</label>
           <input type="password" id="password" placeholder="Create a password" required minlength="8" aria-describedby="passwordHelp">
           <small id="passwordHelp" style="color:var(--text-light); font-size:0.78rem;">Minimum 8 characters</small>
