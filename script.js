@@ -3481,11 +3481,11 @@ if (currentPage === 'index.html') {
     if (name) h4.textContent = name;
   });
 
-  // Update curriculum module headers
+  // Update curriculum module headers (no prefix — just the name)
   document.querySelectorAll('.curriculum .module-info h3').forEach((h3, i) => {
     const monthNum = i + 1;
     const name = homepageMonthNames[monthNum] || homepageMonthNames[String(monthNum)];
-    if (name) h3.textContent = LESSONS.getMonthPrefix(monthNum) + ': ' + name;
+    if (name) h3.textContent = name;
   });
 }
 
