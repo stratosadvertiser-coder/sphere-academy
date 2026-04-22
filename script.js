@@ -3472,13 +3472,13 @@ if (currentPage === 'index.html') {
     ).join('');
   }
 
-  // Update hero card month names
+  // Update hero card module names (no prefix — just the name)
   const heroModules = document.querySelectorAll('.hero-module-text h4');
   const homepageMonthNames = LESSONS.getMonthNames();
   heroModules.forEach((h4, i) => {
     const monthNum = i + 1;
     const name = homepageMonthNames[monthNum] || homepageMonthNames[String(monthNum)];
-    if (name) h4.textContent = LESSONS.getMonthPrefix(monthNum) + ': ' + name;
+    if (name) h4.textContent = name;
   });
 
   // Update curriculum module headers
