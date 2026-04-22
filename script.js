@@ -135,6 +135,7 @@ const DATA_SYNC = {
         const s = settingsSnap.data();
         if (s.month_names) safeSetItem('site_month_names', JSON.stringify(s.month_names));
         if (s.month_prefixes) safeSetItem('site_month_prefixes', JSON.stringify(s.month_prefixes));
+        if (s.month_descriptions) safeSetItem('site_month_descriptions', JSON.stringify(s.month_descriptions));
         if (s.skill_tags) safeSetItem('site_skill_tags', JSON.stringify(s.skill_tags));
         if (s.section_title) safeSetItem('site_section_title', s.section_title);
       }
@@ -235,7 +236,7 @@ DATA_SYNC.init();
 
 // Snapshot of localStorage BEFORE Firestore load — used to detect if data changed
 function _snapshotSyncedKeys() {
-  const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes',
+  const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes', 'site_month_descriptions',
                 'site_skill_tags', 'site_section_title', 'site_card_emojis',
                 'card_image_1', 'card_image_2', 'card_image_3', 'card_image_4'];
   const snap = {};
@@ -594,6 +595,12 @@ const LESSONS = {
 
   defaultMonthNames: { 1: 'Basic Fundamentals', 2: 'Creatives + AI', 3: 'Tools & Platforms', 4: 'Ads Manager' },
   defaultMonthPrefixes: { 1: 'Phase 1', 2: 'Phase 2', 3: 'Phase 3', 4: 'Phase 4' },
+  defaultMonthDescriptions: {
+    1: 'Build your creative foundation — from still image design to compelling short-form video content with hooks, CTAs, and brand consistency.',
+    2: 'Repeat, refine, and master. Revisit fundamentals, critique past work, and produce improved creatives with stronger customer angles.',
+    3: 'Master Google Sheets, Botcake, Chatfuel, POS & Pancake — the operational tools that power e-commerce marketing at scale.',
+    4: 'From theory to execution — run real paid campaigns on Meta Ads, master targeting, budgets, and optimize for measurable results.'
+  },
 
   getMonthNames() {
     return safeGetJSON('site_month_names', this.defaultMonthNames);
@@ -621,6 +628,20 @@ const LESSONS = {
   saveMonthPrefixes(prefixes) {
     safeSetItem('site_month_prefixes', JSON.stringify(prefixes));
     if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ month_prefixes: prefixes });
+  },
+
+  getMonthDescriptions() {
+    return safeGetJSON('site_month_descriptions', this.defaultMonthDescriptions);
+  },
+
+  getMonthDescription(month) {
+    const descs = this.getMonthDescriptions();
+    return descs[month] || descs[String(month)] || this.defaultMonthDescriptions[month] || '';
+  },
+
+  saveMonthDescriptions(descs) {
+    safeSetItem('site_month_descriptions', JSON.stringify(descs));
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ month_descriptions: descs });
   },
 
   // Full label: "Month 1: Creatives" or custom "Phase 1: Creatives"
@@ -3225,6 +3246,11 @@ if (currentPage === 'course.html') {
     // Also update the "MONTH X" tag label with the custom prefix
     const tag = card.querySelector('.course-card-tag');
     if (tag) tag.textContent = LESSONS.getMonthPrefix(monthNum);
+
+    // Update description from saved data
+    const descP = card.querySelector('.course-card-body p');
+    const savedDesc = LESSONS.getMonthDescription(monthNum);
+    if (descP && savedDesc) descP.textContent = savedDesc;
   });
 
   // Update module headers (Modules tab)
@@ -3467,6 +3493,31 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       const toast = document.getElementById('adminToast');
       if (toast) {
         toast.innerHTML = '<span>&#10003;</span> Month labels saved!';
+        toast.style.display = 'flex';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      }
+    });
+  }
+
+  // ===== LOAD & SAVE MONTH DESCRIPTIONS =====
+  const currentDescs = LESSONS.getMonthDescriptions();
+  for (let m = 1; m <= 4; m++) {
+    const input = document.getElementById('monthDesc' + m);
+    if (input) input.value = currentDescs[m] || currentDescs[String(m)] || '';
+  }
+
+  const saveMonthDescBtn = document.getElementById('saveMonthDescBtn');
+  if (saveMonthDescBtn) {
+    saveMonthDescBtn.addEventListener('click', () => {
+      const descs = {};
+      for (let m = 1; m <= 4; m++) {
+        const input = document.getElementById('monthDesc' + m);
+        descs[m] = input ? input.value.trim() : '';
+      }
+      LESSONS.saveMonthDescriptions(descs);
+      const toast = document.getElementById('adminToast');
+      if (toast) {
+        toast.innerHTML = '<span>&#10003;</span> Descriptions saved!';
         toast.style.display = 'flex';
         setTimeout(() => { toast.style.display = 'none'; }, 3000);
       }
