@@ -604,10 +604,10 @@ const LESSONS = {
   STORAGE_KEY: 'lessons_data',
 
   defaultLessons: [
-    { id:'w1', month:1, week:1, title:'Intro to Marketing & Image Creatives', category:'Creatives', difficulty:'Beginner', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false, assignment:{ enabled:false, title:'', description:'', fileTypes:{ image:true, video:false, pdf:false } } },
-    { id:'w2', month:1, week:2, title:'How to Create Video Creatives', category:'Creatives', difficulty:'Beginner', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
-    { id:'w3', month:1, week:3, title:'Customer Angle Frameworks', category:'Creatives', difficulty:'Beginner', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
-    { id:'w4', month:1, week:4, title:'Image & Video Combined Project', category:'Creatives', difficulty:'Intermediate', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
+    { id:'w1', month:1, week:1, title:'Digital Marketing & Ecommerce', category:'Creatives', difficulty:'Beginner', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false, assignment:{ enabled:false, title:'', description:'', fileTypes:{ image:true, video:false, pdf:false } } },
+    { id:'w2', month:1, week:2, title:'How to Create Image Creatives', category:'Creatives', difficulty:'Beginner', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
+    { id:'w3', month:1, week:3, title:'How to Create Video Creatives', category:'Creatives', difficulty:'Beginner', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
+    { id:'w4', month:1, week:4, title:'Video Tutorial Project', category:'Creatives', difficulty:'Intermediate', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
     { id:'w5', month:2, week:5, title:'Image Creatives Review & Improvement', category:'Creatives+', difficulty:'Intermediate', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
     { id:'w6', month:2, week:6, title:'Video Creatives Practice', category:'Creatives+', difficulty:'Intermediate', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
     { id:'w7', month:2, week:7, title:'Customer Angle Deep Dive', category:'Creatives+', difficulty:'Intermediate', videoUrl:'', videoType:'youtube', duration:'45:00', sections:[], keyTakeaways:[], proTip:'', published:false },
@@ -625,7 +625,39 @@ const LESSONS = {
   init() {
     if (!safeGetItem(this.STORAGE_KEY)) {
       safeSetItem(this.STORAGE_KEY, JSON.stringify(this.defaultLessons));
+      return;
     }
+    // One-time title migration: replace old W1-W4 default titles with the new ones,
+    // but only if the admin hasn't customized them (no sections, no proTip, etc.).
+    try {
+      const stored = safeGetJSON(this.STORAGE_KEY, null);
+      if (!Array.isArray(stored)) return;
+      const OLD_TO_NEW = {
+        'Intro to Marketing & Image Creatives': 'Digital Marketing & Ecommerce',
+        'How to Create Video Creatives': 'How to Create Image Creatives', // w2 repurposed
+        'Customer Angle Frameworks': 'How to Create Video Creatives',
+        'Image & Video Combined Project': 'Video Tutorial Project'
+      };
+      let changed = false;
+      stored.forEach(l => {
+        if (l && OLD_TO_NEW[l.title]) {
+          // Only w1-w4 — ignore other weeks that might coincidentally share names
+          if (['w1','w2','w3','w4'].includes(l.id)) {
+            // Only rename if admin hasn't added content (sections/proTip/videoUrl)
+            const untouched = (!l.sections || l.sections.length === 0)
+              && (!l.proTip || l.proTip.trim() === '')
+              && (!l.videoUrl || l.videoUrl.trim() === '');
+            if (untouched) {
+              l.title = OLD_TO_NEW[l.title];
+              changed = true;
+            }
+          }
+        }
+      });
+      if (changed) {
+        safeSetItem(this.STORAGE_KEY, JSON.stringify(stored));
+      }
+    } catch (e) { /* non-fatal */ }
   },
 
   getAll() {
