@@ -1267,12 +1267,11 @@ if (currentPage === 'lesson.html') {
         videoPlayer.innerHTML = thumbHtml;
         videoPlayer.style.background = '#000';
 
-        // Click-to-play: open YouTube video
+        // Click-to-play: replace thumbnail with an embedded iframe (plays inline)
         const thumbPlayer = videoPlayer.querySelector('.yt-thumb-player');
         if (thumbPlayer) {
           thumbPlayer.addEventListener('click', () => {
-            const vid = thumbPlayer.dataset.vid;
-            window.open('https://www.youtube.com/watch?v=' + vid, '_blank');
+            videoPlayer.innerHTML = LESSONS.getVideoEmbed(lesson, true);
           });
         }
       }
@@ -1899,12 +1898,11 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
     }
     preview.innerHTML = thumbHtml;
 
-    // Click thumbnail to play in admin preview
+    // Click thumbnail to play inline (embed instead of opening new tab)
     const thumbPlayer = preview.querySelector('.yt-thumb-player');
     if (thumbPlayer) {
       thumbPlayer.addEventListener('click', () => {
-        const vid = thumbPlayer.dataset.vid;
-        window.open('https://www.youtube.com/watch?v=' + vid, '_blank');
+        preview.innerHTML = LESSONS.getVideoEmbed(tempLesson, true);
       });
     }
   }
