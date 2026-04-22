@@ -138,6 +138,7 @@ const DATA_SYNC = {
         if (s.month_descriptions) safeSetItem('site_month_descriptions', JSON.stringify(s.month_descriptions));
         if (s.skill_tags) safeSetItem('site_skill_tags', JSON.stringify(s.skill_tags));
         if (s.section_title) safeSetItem('site_section_title', s.section_title);
+        if (s.feature_cards) safeSetItem('site_feature_cards', JSON.stringify(s.feature_cards));
       }
 
       // Card images
@@ -237,7 +238,7 @@ DATA_SYNC.init();
 // Snapshot of localStorage BEFORE Firestore load — used to detect if data changed
 function _snapshotSyncedKeys() {
   const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes', 'site_month_descriptions',
-                'site_skill_tags', 'site_section_title', 'site_card_emojis',
+                'site_skill_tags', 'site_section_title', 'site_card_emojis', 'site_feature_cards',
                 'card_image_1', 'card_image_2', 'card_image_3', 'card_image_4'];
   const snap = {};
   keys.forEach(k => { snap[k] = safeGetItem(k) || ''; });
@@ -3385,8 +3386,41 @@ if (currentPage === 'lesson.html') {
 const SITE_SETTINGS = {
   TAGS_KEY: 'site_skill_tags',
   TITLE_KEY: 'site_section_title',
+  FEATURES_KEY: 'site_feature_cards',
   defaultTags: ['Digital Marketing', 'Leadership', 'Run Meta Ads', 'Creatives', 'Digital Tools & AI'],
   defaultTitle: "Skills You'll Build in This Course",
+
+  // Preset SVG icon library for feature cards (stroke-based, currentColor)
+  ICONS: {
+    star:       '<path d="M12 2l2 4 4 .5-3 3 .7 4.2L12 12l-3.7 1.7.7-4.2-3-3L10 6z"/>',
+    video:      '<rect x="2" y="7" width="15" height="10" rx="2"/><path d="m17 10 5-3v10l-5-3z"/>',
+    target:     '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+    bot:        '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v6M8 14h.01M16 14h.01M9 18h6"/>',
+    'bar-chart':'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+    dollar:     '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    send:       '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+    trending:   '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+    edit:       '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+    users:      '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    zap:        '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    heart:      '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+    lightbulb:  '<line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>',
+    award:      '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
+    camera:     '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+    briefcase:  '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+    graduation: '<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>',
+    search:     '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'
+  },
+  COLORS: ['blue', 'amber', 'green', 'purple', 'pink', 'red', 'teal', 'orange'],
+
+  defaultFeatures: [
+    { icon: 'star',       color: 'blue',   title: 'Image Creatives',    desc: 'Create product posts, promotional banners, and story graphics using Canva, Adobe Express, or Photoshop.' },
+    { icon: 'video',      color: 'amber',  title: 'Video Creatives',    desc: 'Produce 15–30 second product videos with hooks, benefits, and CTAs using CapCut and Canva Video.' },
+    { icon: 'target',     color: 'green',  title: 'Customer Angles',    desc: 'Master angle frameworks: Problem → Solution, Before & After, Social Proof, and FOMO messaging.' },
+    { icon: 'bot',        color: 'purple', title: 'Chatbot Marketing',  desc: 'Build automated bot flows for product inquiries, order status, promos, and lead generation with Botcake & Chatfuel.' },
+    { icon: 'bar-chart',  color: 'pink',   title: 'Tools & Analytics',  desc: 'Build campaign trackers, performance dashboards, and marketing reports in Google Sheets with pivot tables.' },
+    { icon: 'dollar',     color: 'red',    title: 'Meta Ads Manager',   desc: 'Run, optimize, and report on paid Meta ad campaigns with full control over targeting, budgets, and ROAS.' }
+  ],
 
   getTags() { return safeGetJSON(this.TAGS_KEY, this.defaultTags); },
   saveTags(tags) {
@@ -3397,6 +3431,19 @@ const SITE_SETTINGS = {
   saveTitle(title) {
     safeSetItem(this.TITLE_KEY, title);
     if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ section_title: title });
+  },
+  getFeatures() {
+    const stored = safeGetJSON(this.FEATURES_KEY, null);
+    if (stored && Array.isArray(stored) && stored.length > 0) return stored;
+    return this.defaultFeatures.map(f => ({ ...f }));
+  },
+  saveFeatures(features) {
+    safeSetItem(this.FEATURES_KEY, JSON.stringify(features));
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ feature_cards: features });
+  },
+  renderIcon(name) {
+    const path = this.ICONS[name] || this.ICONS.star;
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
   }
 };
 
@@ -3411,6 +3458,19 @@ if (featureTagsEl) {
 if (currentPage === 'index.html') {
   const sectionTitleEl = document.querySelector('.features-header .section-title');
   if (sectionTitleEl) sectionTitleEl.textContent = SITE_SETTINGS.getTitle();
+
+  // Render feature cards from admin settings
+  const featuresGridEl = document.getElementById('featuresGrid');
+  if (featuresGridEl) {
+    const features = SITE_SETTINGS.getFeatures();
+    featuresGridEl.innerHTML = features.map(f =>
+      '<div class="feature-card">'
+      + '<div class="feature-icon ' + (f.color || 'blue') + '">' + SITE_SETTINGS.renderIcon(f.icon) + '</div>'
+      + '<h3>' + (f.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</h3>'
+      + '<p>' + (f.desc || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>'
+      + '</div>'
+    ).join('');
+  }
 
   // Update hero card month names
   const heroModules = document.querySelectorAll('.hero-module-text h4');
@@ -3599,5 +3659,95 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
         setTimeout(() => { toast.style.display = 'none'; }, 3000);
       }
     });
+  }
+
+  // Feature cards editor
+  const featureCardsEditor = document.getElementById('featureCardsEditor');
+  const saveFeatureCardsBtn = document.getElementById('saveFeatureCardsBtn');
+  const resetFeatureCardsBtn = document.getElementById('resetFeatureCardsBtn');
+
+  function renderFeatureCardsEditor() {
+    if (!featureCardsEditor) return;
+    const features = SITE_SETTINGS.getFeatures();
+    const iconOptions = Object.keys(SITE_SETTINGS.ICONS);
+    const colorOptions = SITE_SETTINGS.COLORS;
+
+    featureCardsEditor.innerHTML = features.map((f, i) => {
+      const iconOpts = iconOptions.map(key =>
+        '<option value="' + key + '"' + (f.icon === key ? ' selected' : '') + '>' + key + '</option>'
+      ).join('');
+      const colorOpts = colorOptions.map(c =>
+        '<option value="' + c + '"' + (f.color === c ? ' selected' : '') + '>' + c + '</option>'
+      ).join('');
+
+      return '<div class="feature-card-row" data-idx="' + i + '" style="display:grid;grid-template-columns:auto 1fr;gap:12px;padding:16px;border:2px solid var(--border);border-radius:12px;margin-bottom:12px;background:var(--bg);">'
+        + '<div class="feature-card-preview feature-icon ' + (f.color || 'blue') + '" style="width:48px;height:48px;align-self:start;">' + SITE_SETTINGS.renderIcon(f.icon) + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:8px;">'
+        +   '<div style="display:flex;gap:8px;align-items:center;font-size:0.78rem;color:var(--text-light);font-weight:600;">Card ' + (i + 1) + '</div>'
+        +   '<input type="text" class="fc-title" placeholder="Card title" value="' + (f.title || '').replace(/"/g, '&quot;') + '" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;background:var(--surface);color:var(--text);">'
+        +   '<textarea class="fc-desc" rows="2" placeholder="Card description" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--surface);color:var(--text);resize:vertical;">' + (f.desc || '').replace(/</g, '&lt;') + '</textarea>'
+        +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +     '<label style="font-size:0.78rem;color:var(--text-light);display:flex;flex-direction:column;gap:4px;">Icon'
+        +       '<select class="fc-icon" style="padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--surface);color:var(--text);">' + iconOpts + '</select>'
+        +     '</label>'
+        +     '<label style="font-size:0.78rem;color:var(--text-light);display:flex;flex-direction:column;gap:4px;">Color'
+        +       '<select class="fc-color" style="padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--surface);color:var(--text);">' + colorOpts + '</select>'
+        +     '</label>'
+        +   '</div>'
+        + '</div>'
+      + '</div>';
+    }).join('');
+
+    // Live-update preview icon/color when dropdowns change
+    featureCardsEditor.querySelectorAll('.feature-card-row').forEach(row => {
+      const idx = parseInt(row.dataset.idx);
+      const iconSel = row.querySelector('.fc-icon');
+      const colorSel = row.querySelector('.fc-color');
+      const preview = row.querySelector('.feature-card-preview');
+      function refreshPreview() {
+        preview.innerHTML = SITE_SETTINGS.renderIcon(iconSel.value);
+        SITE_SETTINGS.COLORS.forEach(c => preview.classList.remove(c));
+        preview.classList.add(colorSel.value);
+      }
+      iconSel.addEventListener('change', refreshPreview);
+      colorSel.addEventListener('change', refreshPreview);
+    });
+  }
+
+  if (featureCardsEditor) {
+    renderFeatureCardsEditor();
+
+    if (saveFeatureCardsBtn) {
+      saveFeatureCardsBtn.addEventListener('click', () => {
+        const rows = featureCardsEditor.querySelectorAll('.feature-card-row');
+        const features = Array.from(rows).map(row => ({
+          icon: row.querySelector('.fc-icon').value,
+          color: row.querySelector('.fc-color').value,
+          title: row.querySelector('.fc-title').value.trim(),
+          desc: row.querySelector('.fc-desc').value.trim()
+        }));
+        SITE_SETTINGS.saveFeatures(features);
+        const toast = document.getElementById('adminToast');
+        if (toast) {
+          toast.innerHTML = '<span>&#10003;</span> Feature cards saved!';
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+      });
+    }
+
+    if (resetFeatureCardsBtn) {
+      resetFeatureCardsBtn.addEventListener('click', () => {
+        if (!confirm('Reset all 6 feature cards to their default titles, descriptions, icons, and colors?')) return;
+        SITE_SETTINGS.saveFeatures(SITE_SETTINGS.defaultFeatures.map(f => ({ ...f })));
+        renderFeatureCardsEditor();
+        const toast = document.getElementById('adminToast');
+        if (toast) {
+          toast.innerHTML = '<span>&#10003;</span> Feature cards reset to defaults';
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+      });
+    }
   }
 }
