@@ -1055,7 +1055,7 @@ if (playBtn) {
     player.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;gap:16px;">
         <div style="width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;">
-          <div style="font-size:2rem;">&#127916;</div>
+          <div style="font-size:2rem;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg></div>
         </div>
         <p style="font-size:1.05rem;font-weight:600;opacity:0.9;">Video player would load here</p>
         <p style="font-size:0.8rem;opacity:0.5;">Connect your video hosting (YouTube, Vimeo, etc.)</p>
@@ -1172,9 +1172,9 @@ if (currentPage === 'lesson.html') {
     // Update meta
     const metaEl = document.querySelector('.lesson-meta');
     if (metaEl) {
-      metaEl.innerHTML = '<span>&#128197; ' + LESSONS.getMonthPrefix(lesson.month) + ', Week ' + lesson.week + '</span>'
-        + '<span>&#127912; ' + lesson.category + '</span>'
-        + '<span>&#127891; ' + lesson.difficulty + '</span>';
+      metaEl.innerHTML = '<span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ' + LESSONS.getMonthPrefix(lesson.month) + ', Week ' + lesson.week + '</span>'
+        + '<span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M12 2l2 4 4 .5-3 3 .7 4.2L12 12l-3.7 1.7.7-4.2-3-3L10 6z"/></svg> ' + lesson.category + '</span>'
+        + '<span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> ' + lesson.difficulty + '</span>';
     }
 
     // Admin draft banner
@@ -1249,7 +1249,7 @@ if (currentPage === 'lesson.html') {
       const alreadyPassed = existingResult && existingResult.passed;
 
       let qHtml = '<div class="quiz-section">';
-      qHtml += '<h3>&#128221; Weekly Assessment</h3>';
+      qHtml += '<h3><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Weekly Assessment</h3>';
 
       if (alreadyPassed) {
         // Show passed state
@@ -1353,7 +1353,7 @@ if (currentPage === 'lesson.html') {
                 cb.innerHTML = '&#10003; Week ' + lesson.week + ' Completed';
               }
             }
-            NOTIFS.add('You passed the Week ' + lesson.week + ' assessment with ' + percentage + '%!', '&#127942;');
+            NOTIFS.add('You passed the Week ' + lesson.week + ' assessment with ' + percentage + '%!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>');
           } else {
             resultDiv.innerHTML = '&#10007; Score: ' + percentage + '% — Need ' + quiz.passScore + '% to pass. <a href="javascript:location.reload()" style="color:inherit;font-weight:700;text-decoration:underline;">Try Again</a>';
           }
@@ -1396,7 +1396,7 @@ if (currentPage === 'lesson.html') {
 
       let asgnHtml = '<div class="assignment-section">';
       asgnHtml += '<div class="assignment-header">';
-      asgnHtml += '<h2>&#128203; ' + (asgn.title || 'Weekly Assignment') + '</h2>';
+      asgnHtml += '<h2><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> ' + (asgn.title || 'Weekly Assignment') + '</h2>';
       if (asgn.description) asgnHtml += '<p style="white-space:pre-line;">' + asgn.description.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
       asgnHtml += '</div>';
 
@@ -1405,7 +1405,7 @@ if (currentPage === 'lesson.html') {
         const date = new Date(submission.submittedAt);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         asgnHtml += '<div class="assignment-submitted">';
-        asgnHtml += '<div class="assignment-submitted-icon">&#9989;</div>';
+        asgnHtml += '<div class="assignment-submitted-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><polyline points="20 6 9 17 4 12"/></svg></div>';
         asgnHtml += '<div class="assignment-submitted-text">';
         asgnHtml += '<strong>Assignment Submitted</strong>';
         asgnHtml += '<span>Submitted on ' + dateStr + ' &bull; ' + submission.files.length + ' file(s)</span>';
@@ -1416,7 +1416,7 @@ if (currentPage === 'lesson.html') {
         // Show submitted files
         asgnHtml += '<div class="assignment-files" id="asgnFileList">';
         submission.files.forEach(f => {
-          const icon = f.type.startsWith('image') ? '&#127912;' : f.type.startsWith('video') ? '&#127909;' : '&#128196;';
+          const icon = f.type.startsWith('image') ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M12 2l2 4 4 .5-3 3 .7 4.2L12 12l-3.7 1.7.7-4.2-3-3L10 6z"/></svg>' : f.type.startsWith('video') ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="2" y="7" width="15" height="10" rx="2"/><path d="m17 10 5-3v10l-5-3z"/></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
           const cls = f.type.startsWith('image') ? 'image' : f.type.startsWith('video') ? 'video' : 'pdf';
           asgnHtml += '<div class="assignment-file">';
           asgnHtml += '<div class="assignment-file-icon ' + cls + '">' + icon + '</div>';
@@ -1430,13 +1430,13 @@ if (currentPage === 'lesson.html') {
         // Show upload form
         asgnHtml += '<div class="assignment-dropzone" id="asgnDropzone">';
         asgnHtml += '<input type="file" id="asgnFileInput" accept="' + acceptStr + '" multiple>';
-        asgnHtml += '<span class="assignment-dropzone-icon">&#128228;</span>';
+        asgnHtml += '<span class="assignment-dropzone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>';
         asgnHtml += '<div class="assignment-dropzone-text">Drag & drop files or <strong>browse</strong></div>';
         asgnHtml += '<div class="assignment-dropzone-hint">Accepted: ' + typeLabels.join(', ') + ' &bull; Max 10MB per file &bull; Up to 5 files</div>';
         asgnHtml += '</div>';
         asgnHtml += '<div class="assignment-files" id="asgnFileList"></div>';
         asgnHtml += '<div class="assignment-submit" id="asgnSubmitArea" style="display:none;">';
-        asgnHtml += '<button class="btn btn-primary" id="asgnSubmitBtn">&#128228; Submit Assignment</button>';
+        asgnHtml += '<button class="btn btn-primary" id="asgnSubmitBtn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Submit Assignment</button>';
         asgnHtml += '<span style="font-size:0.82rem; color:var(--text-light);">This will auto-complete the lesson</span>';
         asgnHtml += '</div>';
       }
@@ -1455,7 +1455,7 @@ if (currentPage === 'lesson.html') {
         function renderPendingFiles() {
           fileList.innerHTML = '';
           pendingFiles.forEach((f, i) => {
-            const icon = f.type.startsWith('image') ? '&#127912;' : f.type.startsWith('video') ? '&#127909;' : '&#128196;';
+            const icon = f.type.startsWith('image') ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M12 2l2 4 4 .5-3 3 .7 4.2L12 12l-3.7 1.7.7-4.2-3-3L10 6z"/></svg>' : f.type.startsWith('video') ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="2" y="7" width="15" height="10" rx="2"/><path d="m17 10 5-3v10l-5-3z"/></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
             const cls = f.type.startsWith('image') ? 'image' : f.type.startsWith('video') ? 'video' : 'pdf';
             const sizeStr = f.size < 1024 * 1024
               ? (f.size / 1024).toFixed(1) + ' KB'
@@ -1671,10 +1671,10 @@ if (currentPage === 'lesson.html') {
     if (PROGRESS.getCompletedCount() >= 16) {
       certSection.style.display = 'block';
       certSection.innerHTML = '<div class="lesson-cert-banner">'
-        + '<span class="cert-emoji">&#127942;</span>'
+        + '<span class="cert-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span>'
         + '<h2>Congratulations! You Completed the Program!</h2>'
         + '<p>You\'ve finished all 16 weeks of the Marketing Intern Training Program. Your certificate is ready to download.</p>'
-        + '<button class="btn" id="lessonCertDownload">&#128229; Download Your Certificate</button>'
+        + '<button class="btn" id="lessonCertDownload"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Your Certificate</button>'
         + '</div>';
 
       document.getElementById('lessonCertDownload').addEventListener('click', () => {
@@ -1825,7 +1825,7 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
     const type = document.getElementById('editorVideoType').value;
     if (!preview) return;
     if (!url) {
-      preview.innerHTML = '<div class="admin-video-empty">&#127916; Paste a video URL above to preview</div>';
+      preview.innerHTML = '<div class="admin-video-empty"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg> Paste a video URL above to preview</div>';
       return;
     }
     const tempLesson = { videoUrl: url, videoType: type };
@@ -2682,8 +2682,8 @@ const NOTIFS = {
 
 // Seed default notifications if empty
 if (NOTIFS.getAll().length === 0) {
-  NOTIFS.add('Welcome to Sphere Academy! Start with Week 1.', '&#128075;');
-  NOTIFS.add('Complete lessons weekly to build your streak!', '&#128293;');
+  NOTIFS.add('Welcome to Sphere Academy! Start with Week 1.', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>');
+  NOTIFS.add('Complete lessons weekly to build your streak!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>');
 }
 
 const notifBtn = document.getElementById('notifBtn');
@@ -3107,7 +3107,7 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       if (typeof renderAdminSidebar === 'function') renderAdminSidebar();
       if (typeof updateAdminStats === 'function') updateAdminStats();
       if (typeof loadLessonEditor === 'function') loadLessonEditor(document.querySelector('.admin-sidebar-lesson.active')?.dataset?.id || 'w1');
-      NOTIFS.add('All 16 lessons have been published!', '&#128227;');
+      NOTIFS.add('All 16 lessons have been published!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>');
       const toast = document.getElementById('adminToast');
       if (toast) {
         toast.innerHTML = '<span>&#10003;</span> All 16 lessons published!';
@@ -3303,12 +3303,12 @@ if (currentPage === 'lesson.html') {
   if (lessonTitle) {
     const bmBtn = document.createElement('button');
     bmBtn.className = 'bookmark-btn' + (BOOKMARKS.isBookmarked(weekId3) ? ' active' : '');
-    bmBtn.innerHTML = BOOKMARKS.isBookmarked(weekId3) ? '&#11088;' : '&#9734;';
+    bmBtn.innerHTML = BOOKMARKS.isBookmarked(weekId3) ? '&#9733;' : '&#9734;';
     bmBtn.title = 'Bookmark this lesson';
     bmBtn.addEventListener('click', () => {
       const isNow = BOOKMARKS.toggle(weekId3);
       bmBtn.classList.toggle('active', isNow);
-      bmBtn.innerHTML = isNow ? '&#11088;' : '&#9734;';
+      bmBtn.innerHTML = isNow ? '&#9733;' : '&#9734;';
     });
     lessonTitle.style.display = 'flex';
     lessonTitle.style.alignItems = 'center';
