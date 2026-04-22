@@ -448,6 +448,34 @@ const AUTH = {
     const navCta = document.querySelector('.nav-cta');
     if (!navCta) return;
 
+    // Landing page stays clean — hide search/notif, no avatar/logout.
+    // Just change "Log In" button to "Go to Course" when signed in.
+    const pathname = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    if (pathname === 'index.html' || pathname === '') {
+      const searchBtn = navCta.querySelector('#searchBtn');
+      const notifBtn = navCta.querySelector('#notifBtn');
+      if (searchBtn) searchBtn.style.display = 'none';
+      if (notifBtn) notifBtn.style.display = 'none';
+      if (this.isLoggedIn()) {
+        const loginBtn = navCta.querySelector('a[href="login.html"]');
+        if (loginBtn) {
+          loginBtn.href = 'course.html';
+          loginBtn.textContent = 'Go to Course \u2192';
+          loginBtn.classList.remove('btn-outline');
+          loginBtn.classList.add('btn-primary');
+        }
+        // Also update mobile CTA
+        const mobileLoginLinks = document.querySelectorAll('.nav-mobile-cta a[href="login.html"]');
+        mobileLoginLinks.forEach(a => {
+          a.href = 'course.html';
+          a.textContent = 'Go to Course';
+          a.classList.remove('btn-outline');
+          a.classList.add('btn-primary');
+        });
+      }
+      return;
+    }
+
     if (this.isLoggedIn()) {
       const loginBtn = navCta.querySelector('a[href="login.html"]');
       const enrollBtn = navCta.querySelector('a[href="signup.html"]');
