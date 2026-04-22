@@ -3487,6 +3487,30 @@ if (currentPage === 'index.html') {
     const name = homepageMonthNames[monthNum] || homepageMonthNames[String(monthNum)];
     if (name) h3.textContent = name;
   });
+
+  // Sync curriculum weekly lesson titles from the latest admin data
+  document.querySelectorAll('.curriculum .lesson-item').forEach(link => {
+    const href = link.getAttribute('href') || '';
+    const match = href.match(/week=(\w+)/);
+    if (!match) return;
+    const weekId = match[1];
+    const lesson = LESSONS.get(weekId);
+    if (!lesson || !lesson.title) return;
+
+    const globalWeek = parseInt(weekId.replace(/\D/g, ''), 10);
+    const intraWeek = ((globalWeek - 1) % 4) + 1;
+
+    const icon = link.querySelector('.icon');
+    const duration = link.querySelector('.duration');
+    // Rebuild: icon + "W{intraWeek}: {title}" + duration badge
+    link.innerHTML = '';
+    if (icon) link.appendChild(icon);
+    link.appendChild(document.createTextNode(' W' + intraWeek + ': ' + lesson.title + ' '));
+    if (duration) {
+      duration.textContent = 'Week ' + (lesson.week || globalWeek);
+      link.appendChild(duration);
+    }
+  });
 }
 
 // Admin: Site Settings tab
