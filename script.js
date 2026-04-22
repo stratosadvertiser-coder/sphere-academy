@@ -733,14 +733,17 @@ const LESSONS = {
     if (lesson.videoType === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
       const vid = this.extractYouTubeId(url);
       if (!vid) return '';
-      // Use click-to-play thumbnail to avoid file:// embed errors
+      // Clean click-to-play preview (no ugly YouTube watermark fallback).
+      // Thumbnail shown as subtle background with dark overlay + custom play button.
       if (!autoplay) {
-        return '<div class="yt-thumb-player" data-vid="' + vid + '" style="width:100%;height:100%;position:relative;cursor:pointer;border-radius:12px;overflow:hidden;">'
-          + '<img src="https://img.youtube.com/vi/' + vid + '/hqdefault.jpg" alt="Video thumbnail" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">'
-          + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);">'
-          + '<div style="width:68px;height:48px;background:rgba(255,0,0,0.9);border-radius:12px;display:flex;align-items:center;justify-content:center;">'
-          + '<div style="width:0;height:0;border-left:18px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px;"></div>'
-          + '</div></div></div>';
+        return '<div class="yt-thumb-player" data-vid="' + vid + '">'
+          + '<img class="yt-thumb-img" src="https://img.youtube.com/vi/' + vid + '/maxresdefault.jpg" alt="" onerror="this.onerror=null;this.src=\'https://img.youtube.com/vi/' + vid + '/hqdefault.jpg\';this.classList.add(\'yt-thumb-fallback\')">'
+          + '<div class="yt-thumb-overlay"></div>'
+          + '<div class="yt-thumb-play" aria-label="Play video">'
+          +   '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20"/></svg>'
+          + '</div>'
+          + '<div class="yt-thumb-hint">Click to play</div>'
+          + '</div>';
       }
       return '<iframe src="https://www.youtube.com/embed/' + vid + '?autoplay=' + ap + '&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;border-radius:12px;"></iframe>';
     }

@@ -2159,6 +2159,79 @@ img {
   z-index: 1;
 }
 
+/* Clean YouTube thumbnail preview (replaces the ugly YouTube watermark fallback) */
+.yt-thumb-player {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.yt-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* If we fell back to hqdefault (which is 480x360, YouTube-watermarked for unlisted/missing videos),
+   hide the image and rely on the gradient background for a clean look */
+.yt-thumb-img.yt-thumb-fallback {
+  display: none;
+}
+.yt-thumb-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
+  transition: background var(--transition);
+}
+.yt-thumb-player:hover .yt-thumb-overlay {
+  background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%);
+}
+.yt-thumb-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: all var(--transition);
+  z-index: 2;
+}
+.yt-thumb-play svg {
+  margin-left: 4px; /* optically center the triangle */
+}
+.yt-thumb-player:hover .yt-thumb-play {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.yt-thumb-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
 .lesson-content h1 {
   font-size: 1.9rem;
   font-weight: 700;
