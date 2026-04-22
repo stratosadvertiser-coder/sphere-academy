@@ -1649,6 +1649,46 @@ img {
   font-size: 0.85rem;
 }
 
+/* Password show/hide toggle */
+.password-wrap {
+  position: relative;
+  display: block;
+}
+.password-wrap input {
+  width: 100%;
+  padding-right: 46px;
+  box-sizing: border-box;
+}
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color var(--transition), background var(--transition);
+}
+.password-toggle:hover {
+  color: var(--primary);
+  background: var(--primary-glow);
+}
+.password-toggle:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 .form-row label {
   display: flex;
   align-items: center;
