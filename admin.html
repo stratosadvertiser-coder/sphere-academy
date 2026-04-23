@@ -209,10 +209,29 @@
         </div>
 
         <div class="admin-editor-card">
-          <h3><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Program Outcome Carousel</h3>
-          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:16px;">Upload images to rotate in the Program Outcome box on the homepage. Auto-plays every 5 seconds. Max 10 images, 3MB each.</p>
-          <div class="outcome-admin-grid" id="outcomeAdminGrid"></div>
+          <h3><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Program Outcome</h3>
+          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:16px;">Edit the title, subtitle, and description that appear next to the image carousel on the homepage.</p>
+          <div class="form-group">
+            <label for="outcomeTitle">Title</label>
+            <input type="text" id="outcomeTitle" placeholder="You're Ready to Make an Impact!">
+          </div>
+          <div class="form-group" style="margin-top:12px;">
+            <label for="outcomeSubtitle">Subtitle</label>
+            <input type="text" id="outcomeSubtitle" placeholder="Welcome to the Marketing Team">
+          </div>
+          <div class="form-group" style="margin-top:12px;">
+            <label for="outcomeDesc">Description</label>
+            <textarea id="outcomeDesc" rows="4" placeholder="Complete this 4-month program and you will be equipped to..."></textarea>
+          </div>
+          <button class="btn btn-primary" id="saveOutcomeTextBtn" style="margin-top:12px; padding:10px 24px; font-size:0.85rem;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Text</button>
+
+          <hr style="margin:24px 0; border:none; border-top:1px solid var(--border);">
+
+          <h3 style="margin-bottom:12px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Carousel Images</h3>
+          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:12px;">Upload images to rotate in the box. Auto-plays every 5 seconds. Max 10 images, 3MB each.</p>
+          <button type="button" class="btn btn-outline" id="outcomeUploadBtn" style="padding:10px 24px; font-size:0.85rem;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Image(s)</button>
           <input type="file" id="outcomeUpload" accept="image/*" multiple hidden>
+          <div class="outcome-admin-grid" id="outcomeAdminGrid" style="margin-top:16px;"></div>
           <p style="color:var(--text-light); font-size:0.78rem; margin-top:10px;">Tip: Use 300x300px or square images for best fit. Images save instantly on upload.</p>
         </div>
 

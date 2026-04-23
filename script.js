@@ -140,6 +140,7 @@ const DATA_SYNC = {
         if (s.section_title) safeSetItem('site_section_title', s.section_title);
         if (s.feature_cards) safeSetItem('site_feature_cards', JSON.stringify(s.feature_cards));
         if (s.outcome_images) safeSetItem('outcome_images', JSON.stringify(s.outcome_images));
+        if (s.outcome_text) safeSetItem('outcome_text', JSON.stringify(s.outcome_text));
       }
 
       // Card images
@@ -251,7 +252,7 @@ DATA_SYNC.init();
 function _snapshotSyncedKeys() {
   const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes', 'site_month_descriptions',
                 'site_skill_tags', 'site_section_title', 'site_card_emojis', 'site_feature_cards',
-                'outcome_images',
+                'outcome_images', 'outcome_text',
                 'card_image_1', 'card_image_2', 'card_image_3', 'card_image_4'];
   const snap = {};
   keys.forEach(k => { snap[k] = safeGetItem(k) || ''; });
@@ -3428,12 +3429,19 @@ if (currentPage === 'lesson.html') {
 }
 
 // ===== EDITABLE SITE SETTINGS (Tags & Title) =====
-// ===== Program Outcome Carousel =====
+// ===== Program Outcome Carousel + Text =====
 const OUTCOME_CAROUSEL = {
   KEY: 'outcome_images',
+  TEXT_KEY: 'outcome_text',
   MAX_SIZE: 3 * 1024 * 1024, // 3MB per image
   MAX_COUNT: 10,
   AUTOPLAY_MS: 5000,
+
+  defaultText: {
+    title: "You're Ready to Make an Impact!",
+    subtitle: 'Welcome to the Marketing Team',
+    desc: 'Complete this 4-month program and you will be equipped to create high-converting image & video creatives, manage bots, CRM, and order tools confidently, and run, optimize, and report on paid ad campaigns.'
+  },
 
   getAll() { return safeGetJSON(this.KEY, []); },
   save(images) {
@@ -3450,6 +3458,22 @@ const OUTCOME_CAROUSEL = {
   remove(id) {
     const all = this.getAll().filter(x => x.id !== id);
     this.save(all);
+  },
+
+  getText() {
+    const stored = safeGetJSON(this.TEXT_KEY, null);
+    if (stored && typeof stored === 'object') {
+      return {
+        title: stored.title || this.defaultText.title,
+        subtitle: stored.subtitle || this.defaultText.subtitle,
+        desc: stored.desc || this.defaultText.desc
+      };
+    }
+    return { ...this.defaultText };
+  },
+  saveText(text) {
+    safeSetItem(this.TEXT_KEY, JSON.stringify(text));
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ outcome_text: text });
   }
 };
 
@@ -3541,6 +3565,18 @@ if (currentPage === 'index.html') {
       + '</div>'
     ).join('');
   }
+
+  // Render Program Outcome title / subtitle / description from admin settings
+  (function renderOutcomeText() {
+    const titleEl = document.getElementById('outcomeTitleEl');
+    const subtitleEl = document.getElementById('outcomeSubtitleEl');
+    const descEl = document.getElementById('outcomeDescEl');
+    if (!titleEl && !subtitleEl && !descEl) return;
+    const t = OUTCOME_CAROUSEL.getText();
+    if (titleEl) titleEl.textContent = t.title;
+    if (subtitleEl) subtitleEl.textContent = t.subtitle;
+    if (descEl) descEl.textContent = t.desc;
+  })();
 
   // Render Program Outcome carousel
   (function renderOutcomeCarousel() {
@@ -3829,26 +3865,57 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
     });
   }
 
-  // Outcome carousel editor
+  // Outcome editor (text + carousel)
   const outcomeAdminGrid = document.getElementById('outcomeAdminGrid');
   const outcomeUploadInput = document.getElementById('outcomeUpload');
+  const outcomeUploadBtn = document.getElementById('outcomeUploadBtn');
+  const outcomeTitleInput = document.getElementById('outcomeTitle');
+  const outcomeSubtitleInput = document.getElementById('outcomeSubtitle');
+  const outcomeDescInput = document.getElementById('outcomeDesc');
+  const saveOutcomeTextBtn = document.getElementById('saveOutcomeTextBtn');
+
+  // Prefill text fields from storage
+  if (outcomeTitleInput || outcomeSubtitleInput || outcomeDescInput) {
+    const t = OUTCOME_CAROUSEL.getText();
+    if (outcomeTitleInput) outcomeTitleInput.value = t.title;
+    if (outcomeSubtitleInput) outcomeSubtitleInput.value = t.subtitle;
+    if (outcomeDescInput) outcomeDescInput.value = t.desc;
+  }
+
+  if (saveOutcomeTextBtn) {
+    saveOutcomeTextBtn.addEventListener('click', () => {
+      OUTCOME_CAROUSEL.saveText({
+        title: (outcomeTitleInput && outcomeTitleInput.value.trim()) || OUTCOME_CAROUSEL.defaultText.title,
+        subtitle: (outcomeSubtitleInput && outcomeSubtitleInput.value.trim()) || OUTCOME_CAROUSEL.defaultText.subtitle,
+        desc: (outcomeDescInput && outcomeDescInput.value.trim()) || OUTCOME_CAROUSEL.defaultText.desc
+      });
+      const toast = document.getElementById('adminToast');
+      if (toast) {
+        toast.innerHTML = '<span>&#10003;</span> Program Outcome text saved!';
+        toast.style.display = 'flex';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      }
+    });
+  }
+
+  // Wire the static upload button to the hidden file input
+  if (outcomeUploadBtn && outcomeUploadInput) {
+    outcomeUploadBtn.addEventListener('click', () => outcomeUploadInput.click());
+  }
 
   function renderOutcomeAdmin() {
     if (!outcomeAdminGrid) return;
     const images = OUTCOME_CAROUSEL.getAll();
-    let html = images.map(img =>
+    if (images.length === 0) {
+      outcomeAdminGrid.innerHTML = '<p style="grid-column:1/-1;color:var(--text-light);font-size:0.85rem;margin:0;padding:20px 0;text-align:center;">No images yet. Click the button above to upload.</p>';
+      return;
+    }
+    outcomeAdminGrid.innerHTML = images.map(img =>
       '<div class="outcome-admin-tile" data-id="' + img.id + '">'
       + '<img src="' + img.src + '" alt="">'
       + '<button class="outcome-admin-tile-remove" data-id="' + img.id + '" title="Remove">&#10005;</button>'
       + '</div>'
     ).join('');
-    if (images.length < OUTCOME_CAROUSEL.MAX_COUNT) {
-      html += '<button class="outcome-admin-upload" id="outcomeUploadBtn">'
-        + '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>'
-        + '<span>Upload Image</span>'
-        + '</button>';
-    }
-    outcomeAdminGrid.innerHTML = html;
 
     // Remove handlers
     outcomeAdminGrid.querySelectorAll('.outcome-admin-tile-remove').forEach(btn => {
@@ -3864,11 +3931,6 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
         }
       });
     });
-
-    const uploadBtn = document.getElementById('outcomeUploadBtn');
-    if (uploadBtn && outcomeUploadInput) {
-      uploadBtn.addEventListener('click', () => outcomeUploadInput.click());
-    }
   }
 
   if (outcomeAdminGrid) {
