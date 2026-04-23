@@ -141,6 +141,7 @@ const DATA_SYNC = {
         if (s.feature_cards) safeSetItem('site_feature_cards', JSON.stringify(s.feature_cards));
         if (s.outcome_images) safeSetItem('outcome_images', JSON.stringify(s.outcome_images));
         if (s.outcome_text) safeSetItem('outcome_text', JSON.stringify(s.outcome_text));
+        if (s.testimonials) safeSetItem('intern_testimonials', JSON.stringify(s.testimonials));
       }
 
       // Card images
@@ -252,7 +253,7 @@ DATA_SYNC.init();
 function _snapshotSyncedKeys() {
   const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes', 'site_month_descriptions',
                 'site_skill_tags', 'site_section_title', 'site_card_emojis', 'site_feature_cards',
-                'outcome_images', 'outcome_text',
+                'outcome_images', 'outcome_text', 'intern_testimonials',
                 'card_image_1', 'card_image_2', 'card_image_3', 'card_image_4'];
   const snap = {};
   keys.forEach(k => { snap[k] = safeGetItem(k) || ''; });
@@ -3429,6 +3430,36 @@ if (currentPage === 'lesson.html') {
 }
 
 // ===== EDITABLE SITE SETTINGS (Tags & Title) =====
+// ===== Intern Testimonials =====
+const TESTIMONIALS = {
+  KEY: 'intern_testimonials',
+
+  defaultItems: [
+    { id: 't1', rating: 5, quote: 'The creatives months gave me so much confidence. I went from never opening Canva to producing ad-ready content that actually performed.', name: 'Ana Torres',  role: 'Former Marketing Intern' },
+    { id: 't2', rating: 5, quote: 'The Ads Manager month was intense but amazing. By week 16, I launched a real campaign and knew how to read every metric on the dashboard.',           name: 'Marco Reyes', role: 'Junior Media Buyer' },
+    { id: 't3', rating: 5, quote: 'Learning Botcake and Chatfuel was a game-changer. I set up automated funnels that saved the team hours every week on customer inquiries.',               name: 'Jamie Lee',   role: 'E-commerce Marketing Associate' }
+  ],
+
+  getAll() {
+    const stored = safeGetJSON(this.KEY, null);
+    if (stored && Array.isArray(stored) && stored.length > 0) return stored;
+    return this.defaultItems.map(t => ({ ...t }));
+  },
+  save(items) {
+    const ok = safeSetItem(this.KEY, JSON.stringify(items));
+    if (ok && typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ testimonials: items });
+    return ok;
+  },
+  getInitials(name) {
+    if (!name) return '';
+    return name.trim().split(/\s+/).map(p => p[0] || '').join('').slice(0, 2).toUpperCase();
+  },
+  renderStars(n) {
+    const r = Math.max(0, Math.min(5, parseInt(n) || 0));
+    return '&#9733;'.repeat(r) + '&#9734;'.repeat(5 - r);
+  }
+};
+
 // ===== Program Outcome Carousel + Text =====
 const OUTCOME_CAROUSEL = {
   KEY: 'outcome_images',
@@ -3602,6 +3633,28 @@ if (currentPage === 'index.html') {
       + '</div>'
     ).join('');
   }
+
+  // Render Intern Testimonials from admin settings
+  (function renderTestimonials() {
+    const grid = document.getElementById('testimonialsGrid');
+    if (!grid) return;
+    const items = TESTIMONIALS.getAll();
+    if (!items.length) return;
+    const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    grid.innerHTML = items.map(t =>
+      '<div class="testimonial-card">'
+      + '<div class="testimonial-stars">' + TESTIMONIALS.renderStars(t.rating) + '</div>'
+      + '<blockquote>&ldquo;' + escapeHtml(t.quote) + '&rdquo;</blockquote>'
+      + '<div class="testimonial-author">'
+      +   '<div class="testimonial-avatar">' + escapeHtml(TESTIMONIALS.getInitials(t.name)) + '</div>'
+      +   '<div class="testimonial-name">'
+      +     '<strong>' + escapeHtml(t.name) + '</strong>'
+      +     '<span>' + escapeHtml(t.role) + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '</div>'
+    ).join('');
+  })();
 
   // Render Program Outcome title / subtitle / description from admin settings
   (function renderOutcomeText() {
@@ -3900,6 +3953,90 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
         setTimeout(() => { toast.style.display = 'none'; }, 3000);
       }
     });
+  }
+
+  // Testimonials editor
+  const testimonialsEditor = document.getElementById('testimonialsEditor');
+  const addTestimonialBtn = document.getElementById('addTestimonialBtn');
+  const saveTestimonialsBtn = document.getElementById('saveTestimonialsBtn');
+
+  function renderTestimonialsEditor() {
+    if (!testimonialsEditor) return;
+    const items = TESTIMONIALS.getAll();
+    const esc = (s) => String(s || '').replace(/"/g, '&quot;');
+    testimonialsEditor.innerHTML = items.map((t, i) => {
+      const ratingOpts = [5,4,3,2,1].map(r => '<option value="' + r + '"' + (parseInt(t.rating) === r ? ' selected' : '') + '>' + r + ' star' + (r > 1 ? 's' : '') + '</option>').join('');
+      return '<div class="testimonial-row" data-idx="' + i + '" style="display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:start;padding:16px;border:2px solid var(--border);border-radius:12px;margin-bottom:12px;background:var(--bg);">'
+        + '<div style="width:48px;height:48px;border-radius:50%;background:var(--primary-glow);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.95rem;">' + TESTIMONIALS.getInitials(t.name) + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:8px;min-width:0;">'
+        +   '<div style="display:grid;grid-template-columns:1fr 1fr 140px;gap:8px;">'
+        +     '<input type="text" class="t-name" placeholder="Full name" value="' + esc(t.name) + '" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;background:var(--surface);color:var(--text);">'
+        +     '<input type="text" class="t-role" placeholder="Role / Title" value="' + esc(t.role) + '" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;background:var(--surface);color:var(--text);">'
+        +     '<select class="t-rating" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;background:var(--surface);color:var(--text);">' + ratingOpts + '</select>'
+        +   '</div>'
+        +   '<textarea class="t-quote" rows="3" placeholder="Testimonial quote" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;background:var(--surface);color:var(--text);resize:vertical;">' + String(t.quote || '').replace(/</g, '&lt;') + '</textarea>'
+        + '</div>'
+        + '<button type="button" class="t-remove" data-idx="' + i + '" title="Remove" style="width:32px;height:32px;border-radius:50%;background:transparent;border:2px solid var(--border);color:var(--text-light);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;">&#10005;</button>'
+      + '</div>';
+    }).join('');
+
+    // Live-update avatar initials as name changes
+    testimonialsEditor.querySelectorAll('.testimonial-row').forEach(row => {
+      const nameInput = row.querySelector('.t-name');
+      const avatar = row.querySelector('div[style*="border-radius:50%"]');
+      if (nameInput && avatar) {
+        nameInput.addEventListener('input', () => {
+          avatar.textContent = TESTIMONIALS.getInitials(nameInput.value);
+        });
+      }
+    });
+
+    testimonialsEditor.querySelectorAll('.t-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        const current = collectTestimonialsFromDOM();
+        current.splice(idx, 1);
+        TESTIMONIALS.save(current);
+        renderTestimonialsEditor();
+      });
+    });
+  }
+
+  function collectTestimonialsFromDOM() {
+    if (!testimonialsEditor) return [];
+    return Array.from(testimonialsEditor.querySelectorAll('.testimonial-row')).map((row, i) => ({
+      id: 't_' + i + '_' + Date.now().toString(36),
+      name: row.querySelector('.t-name').value.trim(),
+      role: row.querySelector('.t-role').value.trim(),
+      rating: parseInt(row.querySelector('.t-rating').value) || 5,
+      quote: row.querySelector('.t-quote').value.trim()
+    }));
+  }
+
+  if (testimonialsEditor) {
+    renderTestimonialsEditor();
+
+    if (addTestimonialBtn) {
+      addTestimonialBtn.addEventListener('click', () => {
+        const current = collectTestimonialsFromDOM();
+        current.push({ id: 't_new_' + Date.now(), rating: 5, quote: '', name: '', role: '' });
+        TESTIMONIALS.save(current);
+        renderTestimonialsEditor();
+      });
+    }
+
+    if (saveTestimonialsBtn) {
+      saveTestimonialsBtn.addEventListener('click', () => {
+        const collected = collectTestimonialsFromDOM().filter(t => t.name || t.quote);
+        TESTIMONIALS.save(collected);
+        const toast = document.getElementById('adminToast');
+        if (toast) {
+          toast.innerHTML = '<span>&#10003;</span> Testimonials saved!';
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+      });
+    }
   }
 
   // Outcome editor (text + carousel)
