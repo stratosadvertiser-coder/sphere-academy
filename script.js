@@ -3433,7 +3433,9 @@ if (currentPage === 'lesson.html') {
 const OUTCOME_CAROUSEL = {
   KEY: 'outcome_images',
   TEXT_KEY: 'outcome_text',
-  MAX_SIZE: 3 * 1024 * 1024, // 3MB per image
+  MAX_SIZE: 10 * 1024 * 1024, // 10MB source; we compress to <200KB before storing
+  MAX_DIM: 800,               // resize target (maintains aspect)
+  JPEG_QUALITY: 0.85,
   MAX_COUNT: 10,
   AUTOPLAY_MS: 5000,
 
@@ -3443,17 +3445,52 @@ const OUTCOME_CAROUSEL = {
     desc: 'Complete this 4-month program and you will be equipped to create high-converting image & video creatives, manage bots, CRM, and order tools confidently, and run, optimize, and report on paid ad campaigns.'
   },
 
+  // Compress + resize a File to a data URL <200KB. Resolves to a JPEG dataURL.
+  compressFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const maxDim = this.MAX_DIM;
+            let { width, height } = img;
+            if (width > maxDim || height > maxDim) {
+              const ratio = Math.min(maxDim / width, maxDim / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            // White background so transparent PNGs become opaque JPEGs
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', this.JPEG_QUALITY));
+          } catch (e) { reject(e); }
+        };
+        img.onerror = () => reject(new Error('Not a valid image'));
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
   getAll() { return safeGetJSON(this.KEY, []); },
   save(images) {
-    safeSetItem(this.KEY, JSON.stringify(images));
-    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveOutcomeImages(images);
+    const ok = safeSetItem(this.KEY, JSON.stringify(images));
+    if (ok && typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveOutcomeImages(images);
+    return ok;
   },
   add(dataUrl) {
     const all = this.getAll();
-    if (all.length >= this.MAX_COUNT) return false;
+    if (all.length >= this.MAX_COUNT) return { ok: false, reason: 'max' };
     all.push({ id: 'oi_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), src: dataUrl });
-    this.save(all);
-    return true;
+    const ok = this.save(all);
+    return { ok, reason: ok ? null : 'storage' };
   },
   remove(id) {
     const all = this.getAll().filter(x => x.id !== id);
@@ -3936,35 +3973,54 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
   if (outcomeAdminGrid) {
     renderOutcomeAdmin();
     if (outcomeUploadInput) {
-      outcomeUploadInput.addEventListener('change', (e) => {
+      outcomeUploadInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
         const toast = document.getElementById('adminToast');
-        let remaining = files.length;
-        files.forEach(file => {
+
+        // Show loading state on the upload button
+        const btn = outcomeUploadBtn;
+        const originalBtnHTML = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Processing…'; }
+
+        let added = 0;
+        let failed = 0;
+        for (const file of files) {
+          if (!file.type || !file.type.startsWith('image/')) { failed++; continue; }
           if (file.size > OUTCOME_CAROUSEL.MAX_SIZE) {
-            alert('"' + file.name + '" is larger than 3MB. Please use a smaller image.');
-            remaining--;
-            if (remaining === 0) { outcomeUploadInput.value = ''; renderOutcomeAdmin(); }
-            return;
+            alert('"' + file.name + '" is too large (over 10MB). Please use a smaller image.');
+            failed++;
+            continue;
           }
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            const added = OUTCOME_CAROUSEL.add(ev.target.result);
-            if (!added) alert('Reached max ' + OUTCOME_CAROUSEL.MAX_COUNT + ' images. Remove one first.');
-            remaining--;
-            if (remaining === 0) {
-              outcomeUploadInput.value = '';
-              renderOutcomeAdmin();
-              if (toast) {
-                toast.innerHTML = '<span>&#10003;</span> Carousel image' + (files.length > 1 ? 's' : '') + ' added!';
-                toast.style.display = 'flex';
-                setTimeout(() => { toast.style.display = 'none'; }, 2500);
+          try {
+            const compressedDataUrl = await OUTCOME_CAROUSEL.compressFile(file);
+            const result = OUTCOME_CAROUSEL.add(compressedDataUrl);
+            if (!result.ok) {
+              if (result.reason === 'max') {
+                alert('Reached max ' + OUTCOME_CAROUSEL.MAX_COUNT + ' images. Remove one first.');
+              } else if (result.reason === 'storage') {
+                alert('Browser storage is full. Remove some images first.');
               }
+              failed++;
+              break;
             }
-          };
-          reader.readAsDataURL(file);
-        });
+            added++;
+          } catch (err) {
+            console.error('Upload failed for', file.name, err);
+            alert('Could not process "' + file.name + '". Try a different image.');
+            failed++;
+          }
+        }
+
+        outcomeUploadInput.value = '';
+        renderOutcomeAdmin();
+        if (btn) { btn.disabled = false; btn.innerHTML = originalBtnHTML; }
+
+        if (toast && added > 0) {
+          toast.innerHTML = '<span>&#10003;</span> ' + added + ' image' + (added > 1 ? 's' : '') + ' added' + (failed > 0 ? ' (' + failed + ' skipped)' : '') + '!';
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
       });
     }
   }
