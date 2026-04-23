@@ -3541,9 +3541,13 @@ const TESTIMONIALS = {
         img.style.transform = 'translate(calc(-50% + ' + offsetX + 'px), calc(-50% + ' + offsetY + 'px))';
       }
 
-      img.addEventListener('load', () => {
+      function initImage() {
         imgNaturalW = img.naturalWidth;
         imgNaturalH = img.naturalHeight;
+        if (!imgNaturalW || !imgNaturalH) {
+          // Fallback if image somehow has 0 dimensions
+          imgNaturalW = imgNaturalH = VIEWPORT_SIZE;
+        }
         // "cover" base scale: fill the viewport
         baseScale = Math.max(VIEWPORT_SIZE / imgNaturalW, VIEWPORT_SIZE / imgNaturalH);
         scale = 1;
@@ -3551,37 +3555,55 @@ const TESTIMONIALS = {
         offsetY = 0;
         zoomInput.value = '100';
         paint();
-      }, { once: true });
-
-      // Drag to pan (mouse + touch)
-      let dragging = false;
-      let startX = 0, startY = 0, startOffX = 0, startOffY = 0;
-      function getPoint(e) {
-        if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        return { x: e.clientX, y: e.clientY };
       }
+      // Handle both: image already loaded (cached) and still loading
+      if (img.complete && img.naturalWidth > 0) {
+        initImage();
+      } else {
+        img.addEventListener('load', initImage, { once: true });
+      }
+
+      // Drag to pan using Pointer Events (works for mouse, touch, pen)
+      let dragging = false;
+      let activePointerId = null;
+      let startX = 0, startY = 0, startOffX = 0, startOffY = 0;
+
       function onDown(e) {
         e.preventDefault();
         dragging = true;
-        const p = getPoint(e);
-        startX = p.x; startY = p.y;
+        activePointerId = e.pointerId;
+        startX = e.clientX; startY = e.clientY;
         startOffX = offsetX; startOffY = offsetY;
+        try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
       }
       function onMove(e) {
-        if (!dragging) return;
-        const p = getPoint(e);
-        offsetX = startOffX + (p.x - startX);
-        offsetY = startOffY + (p.y - startY);
+        if (!dragging || (activePointerId !== null && e.pointerId !== activePointerId)) return;
+        e.preventDefault();
+        offsetX = startOffX + (e.clientX - startX);
+        offsetY = startOffY + (e.clientY - startY);
         paint();
       }
-      function onUp() { dragging = false; }
+      function onUp(e) {
+        if (activePointerId !== null && e.pointerId !== activePointerId) return;
+        dragging = false;
+        activePointerId = null;
+        try { viewport.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
 
-      viewport.addEventListener('mousedown', onDown);
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-      viewport.addEventListener('touchstart', onDown, { passive: false });
-      window.addEventListener('touchmove', onMove, { passive: false });
-      window.addEventListener('touchend', onUp);
+      viewport.addEventListener('pointerdown', onDown);
+      viewport.addEventListener('pointermove', onMove);
+      viewport.addEventListener('pointerup', onUp);
+      viewport.addEventListener('pointercancel', onUp);
+      viewport.addEventListener('pointerleave', onUp);
+
+      // Mouse wheel zoom
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -10 : 10;
+        const newZoom = Math.max(100, Math.min(400, parseInt(zoomInput.value) + delta));
+        zoomInput.value = String(newZoom);
+        zoomInput.dispatchEvent(new Event('input'));
+      }, { passive: false });
 
       // Zoom slider (100 = 1x cover, 400 = 4x)
       zoomInput.addEventListener('input', () => {
@@ -4157,13 +4179,15 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       const avatarInner = t.avatar
         ? '<img src="' + t.avatar + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">'
         : '<span class="t-initials" style="font-weight:700;font-size:0.95rem;color:var(--primary);">' + initials + '</span>';
+      const hasPhoto = !!t.avatar;
       return '<div class="testimonial-row" data-idx="' + i + '" data-avatar="' + (t.avatar || '') + '" style="display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:start;padding:16px;border:2px solid var(--border);border-radius:12px;margin-bottom:12px;background:var(--bg);">'
         + '<div class="t-avatar-wrap" style="position:relative;width:64px;">'
-        +   '<div class="t-avatar-circle" style="width:64px;height:64px;border-radius:50%;background:var(--primary-glow);overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Click to upload photo">' + avatarInner + '</div>'
-        +   '<button type="button" class="t-avatar-upload" data-idx="' + i + '" title="Upload photo" style="position:absolute;bottom:-4px;right:-4px;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;border:2px solid var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">'
+        +   '<div class="t-avatar-circle" style="width:64px;height:64px;border-radius:50%;background:var(--primary-glow);overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="' + (hasPhoto ? 'Click to adjust photo' : 'Click to upload photo') + '">' + avatarInner + '</div>'
+        +   '<button type="button" class="t-avatar-upload" data-idx="' + i + '" title="' + (hasPhoto ? 'Replace photo' : 'Upload photo') + '" style="position:absolute;bottom:-4px;right:-4px;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;border:2px solid var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">'
         +     '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'
         +   '</button>'
-        +   (t.avatar ? '<button type="button" class="t-avatar-clear" data-idx="' + i + '" title="Remove photo" style="position:absolute;top:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;border:2px solid var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:0.7rem;">&#10005;</button>' : '')
+        +   (hasPhoto ? '<button type="button" class="t-avatar-adjust" data-idx="' + i + '" title="Adjust photo" style="position:absolute;bottom:-4px;left:-4px;width:26px;height:26px;border-radius:50%;background:#64748b;color:#fff;border:2px solid var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14M9 5l-4 4 4 4M15 15l4 4-4 4M19 15H5"/></svg></button>' : '')
+        +   (hasPhoto ? '<button type="button" class="t-avatar-clear" data-idx="' + i + '" title="Remove photo" style="position:absolute;top:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;border:2px solid var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:0.7rem;">&#10005;</button>' : '')
         + '</div>'
         + '<div style="display:flex;flex-direction:column;gap:8px;min-width:0;">'
         +   '<div style="display:grid;grid-template-columns:1fr 1fr 140px;gap:8px;">'
@@ -4215,8 +4239,47 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
         input.click();
         setTimeout(() => input.remove(), 0);
       };
-      if (avatarCircle) avatarCircle.addEventListener('click', () => triggerUpload(parseInt(row.dataset.idx)));
+      const adjustExisting = async (idx) => {
+        const current = collectTestimonialsFromDOM();
+        const existing = current[idx] && current[idx].avatar;
+        if (!existing) { triggerUpload(idx); return; }
+        try {
+          const adjusted = await TESTIMONIALS.openAdjuster(existing);
+          if (!adjusted) return;
+          if (current[idx]) current[idx].avatar = adjusted;
+          TESTIMONIALS.save(current);
+          renderTestimonialsEditor();
+        } catch (err) {
+          console.error('Adjust failed:', err);
+        }
+      };
+
+      // Clicking the circle: adjust if photo exists, else open file picker
+      if (avatarCircle) avatarCircle.addEventListener('click', () => {
+        const idx = parseInt(row.dataset.idx);
+        if (row.dataset.avatar) adjustExisting(idx);
+        else triggerUpload(idx);
+      });
+      // Camera button always opens file picker (replace photo)
       if (uploadBtn) uploadBtn.addEventListener('click', (e) => { e.stopPropagation(); triggerUpload(parseInt(uploadBtn.dataset.idx)); });
+    });
+
+    // Adjust existing photo button
+    testimonialsEditor.querySelectorAll('.t-avatar-adjust').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.idx);
+        const current = collectTestimonialsFromDOM();
+        const existing = current[idx] && current[idx].avatar;
+        if (!existing) return;
+        try {
+          const adjusted = await TESTIMONIALS.openAdjuster(existing);
+          if (!adjusted) return;
+          if (current[idx]) current[idx].avatar = adjusted;
+          TESTIMONIALS.save(current);
+          renderTestimonialsEditor();
+        } catch (err) { console.error('Adjust failed:', err); }
+      });
     });
 
     // Remove avatar photo (revert to initials)
