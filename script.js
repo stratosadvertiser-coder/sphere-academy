@@ -3959,10 +3959,19 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
   const testimonialsEditor = document.getElementById('testimonialsEditor');
   const addTestimonialBtn = document.getElementById('addTestimonialBtn');
   const saveTestimonialsBtn = document.getElementById('saveTestimonialsBtn');
+  const resetTestimonialsBtn = document.getElementById('resetTestimonialsBtn');
 
   function renderTestimonialsEditor() {
     if (!testimonialsEditor) return;
-    const items = TESTIMONIALS.getAll();
+    if (typeof TESTIMONIALS === 'undefined') {
+      testimonialsEditor.innerHTML = '<p style="color:var(--text-light);padding:20px;text-align:center;">Loading editor… If this persists, hard-refresh the page (Ctrl+Shift+R).</p>';
+      return;
+    }
+    let items = [];
+    try { items = TESTIMONIALS.getAll(); } catch (e) { console.error('Testimonials getAll failed:', e); }
+    if (!Array.isArray(items) || items.length === 0) {
+      items = (TESTIMONIALS.defaultItems || []).map(t => ({ ...t }));
+    }
     const esc = (s) => String(s || '').replace(/"/g, '&quot;');
     testimonialsEditor.innerHTML = items.map((t, i) => {
       const ratingOpts = [5,4,3,2,1].map(r => '<option value="' + r + '"' + (parseInt(t.rating) === r ? ' selected' : '') + '>' + r + ' star' + (r > 1 ? 's' : '') + '</option>').join('');
@@ -4020,18 +4029,36 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       addTestimonialBtn.addEventListener('click', () => {
         const current = collectTestimonialsFromDOM();
         current.push({ id: 't_new_' + Date.now(), rating: 5, quote: '', name: '', role: '' });
-        TESTIMONIALS.save(current);
+        if (typeof TESTIMONIALS !== 'undefined') TESTIMONIALS.save(current);
         renderTestimonialsEditor();
       });
     }
 
     if (saveTestimonialsBtn) {
       saveTestimonialsBtn.addEventListener('click', () => {
+        if (typeof TESTIMONIALS === 'undefined') { alert('Editor not loaded yet. Hard-refresh (Ctrl+Shift+R) and try again.'); return; }
         const collected = collectTestimonialsFromDOM().filter(t => t.name || t.quote);
         TESTIMONIALS.save(collected);
         const toast = document.getElementById('adminToast');
         if (toast) {
           toast.innerHTML = '<span>&#10003;</span> Testimonials saved!';
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+      });
+    }
+
+    if (resetTestimonialsBtn) {
+      resetTestimonialsBtn.addEventListener('click', () => {
+        if (!confirm('Reset all testimonials to the default 3 cards? This will overwrite any edits.')) return;
+        if (typeof TESTIMONIALS === 'undefined') { alert('Editor not loaded yet. Hard-refresh (Ctrl+Shift+R).'); return; }
+        // Clear stored so getAll falls back to defaults, then re-save defaults
+        safeSetItem(TESTIMONIALS.KEY, JSON.stringify(TESTIMONIALS.defaultItems));
+        if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ testimonials: TESTIMONIALS.defaultItems });
+        renderTestimonialsEditor();
+        const toast = document.getElementById('adminToast');
+        if (toast) {
+          toast.innerHTML = '<span>&#10003;</span> Testimonials reset to defaults';
           toast.style.display = 'flex';
           setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
