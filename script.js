@@ -64,25 +64,6 @@ const PROGRESS = {
 
   getPercentage() {
     return Math.round((this.getCompletedCount() / 16) * 100);
-  },
-
-  // Track last accessed lesson for Dashboard "Continue" button
-  LAST_KEY: 'last_accessed_lesson',
-  setLastAccessed(weekId) {
-    if (!weekId) return;
-    safeSetItem(this.LAST_KEY, weekId);
-  },
-  getLastAccessed() {
-    return safeGetItem(this.LAST_KEY) || '';
-  },
-
-  // Return the next not-completed weekId (for Continue button) or last accessed
-  getNextIncomplete() {
-    if (typeof LESSONS === 'undefined') return '';
-    const list = LESSONS.getAll();
-    const done = this.getAll();
-    const next = list.find(l => !done[l.id]);
-    return next ? next.id : (list.length ? list[list.length - 1].id : '');
   }
 };
 
@@ -161,7 +142,6 @@ const DATA_SYNC = {
         if (s.outcome_images) safeSetItem('outcome_images', JSON.stringify(s.outcome_images));
         if (s.outcome_text) safeSetItem('outcome_text', JSON.stringify(s.outcome_text));
         if (s.testimonials) safeSetItem('intern_testimonials', JSON.stringify(s.testimonials));
-        if (s.announcements) safeSetItem('site_announcements', JSON.stringify(s.announcements));
       }
 
       // Card images
@@ -273,7 +253,7 @@ DATA_SYNC.init();
 function _snapshotSyncedKeys() {
   const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes', 'site_month_descriptions',
                 'site_skill_tags', 'site_section_title', 'site_card_emojis', 'site_feature_cards',
-                'outcome_images', 'outcome_text', 'intern_testimonials', 'site_announcements',
+                'outcome_images', 'outcome_text', 'intern_testimonials',
                 'card_image_1', 'card_image_2', 'card_image_3', 'card_image_4'];
   const snap = {};
   keys.forEach(k => { snap[k] = safeGetItem(k) || ''; });
@@ -324,23 +304,16 @@ const ASSIGNMENTS = {
 
   submit(weekId, files) {
     const all = this.getAll();
-    const wasAlreadySubmitted = all[weekId] && all[weekId].submitted;
     all[weekId] = {
       files: files,
       submitted: true,
       submittedAt: new Date().toISOString()
     };
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
-    // Award XP on first submit only
-    if (!wasAlreadySubmitted && typeof XP !== 'undefined') {
-      XP.award('assignment_submit', 75, { weekId });
-    }
     // Auto-complete lesson
     if (!PROGRESS.isCompleted(weekId)) {
       PROGRESS.toggle(weekId);
-      if (typeof XP !== 'undefined') XP.award('lesson_complete', 50, { weekId });
     }
-    if (typeof BADGES !== 'undefined') BADGES.check();
     return true;
   },
 
@@ -363,195 +336,8 @@ const QUIZ_RESULTS = {
   isPassed(weekId) { const r = this.get(weekId); return r && r.passed === true; },
   save(weekId, score, total, passed) {
     const all = this.getAll();
-    const prev = all[weekId];
-    const attempts = (prev && prev.attempts ? prev.attempts : 0) + 1;
-    all[weekId] = { score, total, passed, percentage: Math.round((score/total)*100), attempts, date: new Date().toISOString() };
+    all[weekId] = { score, total, passed, percentage: Math.round((score/total)*100), date: new Date().toISOString() };
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
-  }
-};
-
-// ===== XP SYSTEM =====
-const XP = {
-  STORAGE_KEY: 'xp_data',
-  XP_PER_LEVEL: 500,
-  getAll() { return safeGetJSON(this.STORAGE_KEY, { total: 0, history: [] }); },
-  total() { return this.getAll().total || 0; },
-  getLevel() { return Math.floor(this.total() / this.XP_PER_LEVEL) + 1; },
-  getLevelProgress() {
-    const t = this.total();
-    const level = this.getLevel();
-    const base = (level - 1) * this.XP_PER_LEVEL;
-    return {
-      level,
-      current: t - base,
-      needed: this.XP_PER_LEVEL,
-      percent: Math.min(100, Math.round(((t - base) / this.XP_PER_LEVEL) * 100)),
-      totalXP: t
-    };
-  },
-  award(type, amount, meta) {
-    const data = this.getAll();
-    data.total = (data.total || 0) + amount;
-    data.history = data.history || [];
-    data.history.unshift({ type, amount, date: new Date().toISOString(), meta: meta || null });
-    if (data.history.length > 50) data.history = data.history.slice(0, 50);
-    safeSetItem(this.STORAGE_KEY, JSON.stringify(data));
-    if (typeof TOAST !== 'undefined') TOAST.xp(amount, this.labelFor(type));
-    return data.total;
-  },
-  labelFor(type) {
-    return ({
-      lesson_complete: 'Lesson completed',
-      quiz_pass: 'Quiz passed',
-      quiz_first_try: 'Quiz aced first try!',
-      assignment_submit: 'Assignment submitted',
-      daily_login: 'Daily streak bonus'
-    })[type] || 'XP earned';
-  }
-};
-
-// ===== STREAK SYSTEM =====
-const STREAK = {
-  STORAGE_KEY: 'streak_data',
-  todayYMD() {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  },
-  yesterdayYMD() {
-    const d = new Date(); d.setDate(d.getDate() - 1);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  },
-  get() { return safeGetJSON(this.STORAGE_KEY, { current: 0, longest: 0, lastDate: '' }); },
-  // Returns true if streak was incremented today (for awarding XP)
-  checkIn() {
-    const today = this.todayYMD();
-    const data = this.get();
-    if (data.lastDate === today) return false; // already counted today
-    if (data.lastDate === this.yesterdayYMD()) {
-      data.current = (data.current || 0) + 1;
-    } else {
-      data.current = 1;
-    }
-    data.lastDate = today;
-    if (data.current > (data.longest || 0)) data.longest = data.current;
-    safeSetItem(this.STORAGE_KEY, JSON.stringify(data));
-    return true;
-  }
-};
-
-// ===== BADGES SYSTEM =====
-const BADGES = {
-  STORAGE_KEY: 'badges_earned',
-  CATALOG: [
-    { id: 'first_step',      name: 'First Step',         desc: 'Complete your first lesson',       icon: 'star',       color: 'blue'   },
-    { id: 'week_warrior',    name: 'Week Warrior',       desc: 'Finish all 4 weeks in a phase',    icon: 'award',      color: 'amber'  },
-    { id: 'quiz_master',     name: 'Quiz Master',        desc: 'Score 100% on any quiz',           icon: 'target',     color: 'green'  },
-    { id: 'streak_7',        name: '7-Day Streak',       desc: 'Study 7 days in a row',            icon: 'zap',        color: 'orange' },
-    { id: 'streak_30',       name: '30-Day Streak',      desc: 'Study 30 days in a row',           icon: 'zap',        color: 'red'    },
-    { id: 'assignment_hero', name: 'Assignment Hero',    desc: 'Submit 5 assignments',             icon: 'send',       color: 'purple' },
-    { id: 'graduation',      name: 'Graduate',           desc: 'Complete all 16 weeks',            icon: 'graduation', color: 'pink'   }
-  ],
-  earned() { return safeGetJSON(this.STORAGE_KEY, []); },
-  has(id) { return this.earned().indexOf(id) !== -1; },
-  unlock(id) {
-    if (this.has(id)) return false;
-    const e = this.earned();
-    e.push(id);
-    safeSetItem(this.STORAGE_KEY, JSON.stringify(e));
-    const badge = this.CATALOG.find(b => b.id === id);
-    if (badge && typeof TOAST !== 'undefined') TOAST.badge(badge);
-    return true;
-  },
-  check() {
-    // Called after any progress event
-    const completed = (typeof PROGRESS !== 'undefined') ? PROGRESS.getCompletedCount() : 0;
-    const streak = STREAK.get().current || 0;
-    const quizResults = (typeof QUIZ_RESULTS !== 'undefined') ? QUIZ_RESULTS.getAll() : {};
-    const assignments = (typeof ASSIGNMENTS !== 'undefined') ? ASSIGNMENTS.getAll() : {};
-    const assignmentCount = Object.values(assignments).filter(a => a && a.submitted).length;
-
-    if (completed >= 1) this.unlock('first_step');
-    if (completed >= 16) this.unlock('graduation');
-
-    // Week Warrior — 4 lessons complete in any month
-    if (typeof PROGRESS !== 'undefined' && typeof LESSONS !== 'undefined') {
-      const lessonsList = LESSONS.getAll();
-      const monthCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
-      lessonsList.forEach(l => {
-        if (PROGRESS.isComplete(l.id)) monthCounts[l.month] = (monthCounts[l.month] || 0) + 1;
-      });
-      if (Object.values(monthCounts).some(c => c >= 4)) this.unlock('week_warrior');
-    }
-
-    // Quiz master — any 100%
-    if (Object.values(quizResults).some(r => r && r.percentage === 100)) this.unlock('quiz_master');
-
-    if (streak >= 7) this.unlock('streak_7');
-    if (streak >= 30) this.unlock('streak_30');
-    if (assignmentCount >= 5) this.unlock('assignment_hero');
-  },
-  renderIconSVG(icon) {
-    // Reuse SITE_SETTINGS.ICONS if available, fallback to a star
-    if (typeof SITE_SETTINGS !== 'undefined' && SITE_SETTINGS.ICONS && SITE_SETTINGS.ICONS[icon]) {
-      return '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + SITE_SETTINGS.ICONS[icon] + '</svg>';
-    }
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2 4 4 .5-3 3 .7 4.2L12 12l-3.7 1.7.7-4.2-3-3L10 6z"/></svg>';
-  }
-};
-
-// ===== ANNOUNCEMENTS =====
-const ANNOUNCEMENTS = {
-  KEY: 'site_announcements',
-  getAll() {
-    const stored = safeGetJSON(this.KEY, null);
-    if (Array.isArray(stored)) return stored;
-    return [];
-  },
-  save(list) {
-    const ok = safeSetItem(this.KEY, JSON.stringify(list));
-    if (ok && typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ announcements: list });
-    return ok;
-  },
-  // Sorted: pinned first, then newest date first
-  getSorted() {
-    return this.getAll().slice().sort((a, b) => {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      return (b.date || '').localeCompare(a.date || '');
-    });
-  }
-};
-
-// ===== TOAST SYSTEM (for XP and badges) =====
-const TOAST = {
-  ensureMount() {
-    if (document.getElementById('globalToast')) return document.getElementById('globalToast');
-    const el = document.createElement('div');
-    el.id = 'globalToast';
-    el.className = 'global-toast';
-    document.body.appendChild(el);
-    return el;
-  },
-  show(html, duration) {
-    const el = this.ensureMount();
-    el.innerHTML = html;
-    el.classList.add('visible');
-    clearTimeout(this._t);
-    this._t = setTimeout(() => el.classList.remove('visible'), duration || 3000);
-  },
-  xp(amount, label) {
-    this.show(
-      '<div class="toast-xp">'
-      + '<div class="toast-xp-badge">+' + amount + ' XP</div>'
-      + '<div class="toast-xp-label">' + (label || 'Nice work!') + '</div>'
-      + '</div>', 3000);
-  },
-  badge(badge) {
-    this.show(
-      '<div class="toast-badge">'
-      + '<div class="toast-badge-icon ' + (badge.color || 'blue') + '">' + BADGES.renderIconSVG(badge.icon) + '</div>'
-      + '<div class="toast-badge-text"><strong>Badge unlocked!</strong><span>' + badge.name + '</span></div>'
-      + '</div>', 4000);
   }
 };
 
@@ -689,16 +475,16 @@ const AUTH = {
       if (this.isLoggedIn()) {
         const loginBtn = navCta.querySelector('a[href="login.html"]');
         if (loginBtn) {
-          loginBtn.href = 'dashboard.html';
-          loginBtn.textContent = 'Go to Dashboard \u2192';
+          loginBtn.href = 'course.html';
+          loginBtn.textContent = 'Go to Course \u2192';
           loginBtn.classList.remove('btn-outline');
           loginBtn.classList.add('btn-primary');
         }
         // Also update mobile CTA
         const mobileLoginLinks = document.querySelectorAll('.nav-mobile-cta a[href="login.html"]');
         mobileLoginLinks.forEach(a => {
-          a.href = 'dashboard.html';
-          a.textContent = 'Dashboard';
+          a.href = 'course.html';
+          a.textContent = 'Go to Course';
           a.classList.remove('btn-outline');
           a.classList.add('btn-primary');
         });
@@ -781,16 +567,6 @@ const AUTH = {
 // Update nav on every page
 AUTH.updateNav();
 
-// Daily login streak + XP (runs on every page load when logged in)
-(function dailyCheckIn() {
-  if (!AUTH.isLoggedIn() || typeof STREAK === 'undefined') return;
-  const streaked = STREAK.checkIn();
-  if (streaked && typeof XP !== 'undefined') {
-    XP.award('daily_login', 10, { streak: STREAK.get().current });
-  }
-  if (typeof BADGES !== 'undefined') BADGES.check();
-})();
-
 // Password show/hide toggle — auto-wrap every <input type="password">
 (function initPasswordToggles() {
   const EYE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -827,7 +603,7 @@ AUTH.updateNav();
 })();
 
 // Protect pages
-const protectedPages = ['course.html', 'lesson.html', 'profile.html', 'admin.html', 'dashboard.html'];
+const protectedPages = ['course.html', 'lesson.html', 'profile.html', 'admin.html'];
 const currentPage = window.location.pathname.split('/').pop();
 if (protectedPages.includes(currentPage)) {
   AUTH.requireAuth();
@@ -1039,7 +815,7 @@ if (loginForm) {
     const password = document.getElementById('password').value;
 
     if (AUTH.login(username, password)) {
-      window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
+      window.location.href = 'course.html';
     } else {
       if (loginError) {
         loginError.textContent = 'Invalid username or password.';
@@ -1477,9 +1253,6 @@ if (currentPage === 'lesson.html') {
   const isAdmin = AUTH.isAdmin();
   const isPublished = lesson && lesson.published === true;
 
-  // Track last accessed for Dashboard "Continue" button
-  if (lesson && (isAdmin || isPublished)) PROGRESS.setLastAccessed(weekId);
-
   // Show error if lesson not found
   if (!lesson) {
     const main = document.querySelector('.lesson-main');
@@ -1683,16 +1456,9 @@ if (currentPage === 'lesson.html') {
           resultDiv.className = 'quiz-result ' + (passed ? 'pass' : 'fail');
           if (passed) {
             resultDiv.innerHTML = '&#10003; You passed! ' + percentage + '% (' + correct + '/' + total + ' correct)';
-            // Award quiz XP (bonus if aced on first try)
-            const savedResult = QUIZ_RESULTS.get(weekId);
-            const firstTry = savedResult && savedResult.attempts === 1;
-            if (typeof XP !== 'undefined') {
-              XP.award(firstTry ? 'quiz_first_try' : 'quiz_pass', firstTry ? 150 : 100, { weekId, percentage });
-            }
             // Auto-complete lesson if passed
             if (!PROGRESS.isCompleted(weekId)) {
               PROGRESS.toggle(weekId);
-              if (typeof XP !== 'undefined') XP.award('lesson_complete', 50, { weekId });
               // Update complete button
               const cb = document.getElementById('completeBtn');
               if (cb) {
@@ -1700,7 +1466,6 @@ if (currentPage === 'lesson.html') {
                 cb.innerHTML = '&#10003; Week ' + lesson.week + ' Completed';
               }
             }
-            if (typeof BADGES !== 'undefined') BADGES.check();
             NOTIFS.add('You passed the Week ' + lesson.week + ' assessment with ' + percentage + '%!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>');
           } else {
             resultDiv.innerHTML = '&#10007; Score: ' + percentage + '% — Need ' + quiz.passScore + '% to pass. <a href="javascript:location.reload()" style="color:inherit;font-weight:700;text-decoration:underline;">Try Again</a>';
@@ -1904,12 +1669,7 @@ if (currentPage === 'lesson.html') {
         : '&#9744; Mark Week ' + lesson.week + ' as Complete';
 
       completeBtn.addEventListener('click', function() {
-        const wasComplete = PROGRESS.isCompleted(weekId);
         const nowComplete = PROGRESS.toggle(weekId);
-        if (!wasComplete && nowComplete && typeof XP !== 'undefined') {
-          XP.award('lesson_complete', 50, { weekId });
-          if (typeof BADGES !== 'undefined') BADGES.check();
-        }
         this.classList.toggle('completed', nowComplete);
         this.innerHTML = nowComplete
           ? '&#10003; Week ' + lesson.week + ' Completed'
@@ -3409,7 +3169,7 @@ if (currentPage === 'login.html') {
       safeSetItem('auth_avatar', user.photoURL);
     }
 
-    window.location.href = 'dashboard.html';
+    window.location.href = 'course.html';
   }
 
   async function signInWith(providerName) {
@@ -4053,134 +3813,6 @@ if (featureTagsEl) {
   featureTagsEl.innerHTML = tags.map(t => '<span class="feature-tag">' + t + '</span>').join('');
 }
 
-// ===== STUDENT DASHBOARD =====
-if (currentPage === 'dashboard.html') {
-  // Greeting
-  const name = AUTH.getDisplayName() || 'Student';
-  const firstName = (name.split(/\s+/)[0] || name);
-  const greetingEl = document.getElementById('dashGreeting');
-  if (greetingEl) {
-    const hour = new Date().getHours();
-    const salute = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-    greetingEl.textContent = salute + ', ' + firstName + '!';
-  }
-
-  // Progress ring
-  const completed = PROGRESS.getCompletedCount();
-  const pct = PROGRESS.getPercentage();
-  const pctEl = document.getElementById('dashProgressPct');
-  const fracEl = document.getElementById('dashProgressFrac');
-  const ring = document.querySelector('.progress-ring-fg');
-  if (pctEl) pctEl.textContent = pct + '%';
-  if (fracEl) fracEl.textContent = completed + ' / 16 weeks';
-  if (ring) {
-    const r = 52;
-    const c = 2 * Math.PI * r;
-    ring.setAttribute('stroke-dasharray', c);
-    ring.setAttribute('stroke-dashoffset', c - (c * pct / 100));
-  }
-
-  // Streak
-  const streakData = STREAK.get();
-  const streakCount = document.getElementById('dashStreakCount');
-  const streakLabel = document.getElementById('dashStreakLabel');
-  const streakSub = document.getElementById('dashStreakSub');
-  if (streakCount) streakCount.textContent = streakData.current || 0;
-  if (streakLabel) streakLabel.textContent = (streakData.current === 1) ? 'day' : 'days';
-  if (streakSub) {
-    if (streakData.current >= 7) streakSub.textContent = 'Incredible streak! Longest: ' + streakData.longest + ' days.';
-    else if (streakData.current >= 2) streakSub.textContent = 'Keep it going — log in tomorrow to extend.';
-    else streakSub.textContent = 'Log in daily to build your streak!';
-  }
-
-  // XP + Level
-  const lvl = XP.getLevelProgress();
-  const levelChip = document.getElementById('dashLevelChip');
-  const xpBarFill = document.getElementById('dashXpBarFill');
-  const xpCurrent = document.getElementById('dashXpCurrent');
-  const xpNeeded = document.getElementById('dashXpNeeded');
-  const xpTotal = document.getElementById('dashXpTotal');
-  if (levelChip) levelChip.textContent = 'Lv ' + lvl.level;
-  if (xpBarFill) xpBarFill.style.width = lvl.percent + '%';
-  if (xpCurrent) xpCurrent.textContent = lvl.current;
-  if (xpNeeded) xpNeeded.textContent = lvl.needed;
-  if (xpTotal) xpTotal.textContent = lvl.totalXP;
-
-  // Continue Learning button
-  const continueBtn = document.getElementById('dashContinueBtn');
-  if (continueBtn) {
-    const lastId = PROGRESS.getLastAccessed() || PROGRESS.getNextIncomplete() || 'w1';
-    continueBtn.href = 'lesson.html?week=' + lastId;
-    const lastLesson = LESSONS.get(lastId);
-    if (lastLesson) {
-      const btnSpan = continueBtn.querySelector('span');
-      if (btnSpan) btnSpan.textContent = 'Continue: W' + lastLesson.week + ' — ' + lastLesson.title;
-    }
-  }
-
-  // Next-up assignment card
-  const asgnTitle = document.getElementById('dashAssignmentTitle');
-  const asgnDesc = document.getElementById('dashAssignmentDesc');
-  const allLessons = LESSONS.getAll();
-  const nextIncomplete = allLessons.find(l => !PROGRESS.isCompleted(l.id) && l.published);
-  if (nextIncomplete && asgnTitle) {
-    asgnTitle.textContent = 'Week ' + nextIncomplete.week + ': ' + nextIncomplete.title;
-    if (asgnDesc) {
-      if (nextIncomplete.assignment && nextIncomplete.assignment.enabled) {
-        asgnDesc.textContent = 'Assignment: ' + (nextIncomplete.assignment.title || 'Weekly submission due');
-      } else if (nextIncomplete.quiz && nextIncomplete.quiz.enabled) {
-        asgnDesc.textContent = 'Quiz required to pass this week.';
-      } else {
-        asgnDesc.textContent = 'Watch the lesson and mark as complete.';
-      }
-    }
-  } else if (completed >= 16 && asgnTitle) {
-    asgnTitle.textContent = 'Program complete!';
-    if (asgnDesc) asgnDesc.textContent = 'Download your certificate from the Profile page.';
-  }
-
-  // Badges shelf
-  const shelf = document.getElementById('dashBadgeShelf');
-  const badgesEarnedCount = document.getElementById('dashBadgesEarnedCount');
-  if (shelf) {
-    const earned = BADGES.earned();
-    if (badgesEarnedCount) badgesEarnedCount.textContent = earned.length + ' / ' + BADGES.CATALOG.length;
-    shelf.innerHTML = BADGES.CATALOG.map(b => {
-      const isEarned = earned.indexOf(b.id) !== -1;
-      return '<div class="badge-item ' + (isEarned ? 'earned' : 'locked') + '" title="' + b.desc + '">'
-        + '<div class="badge-icon-circle ' + (b.color || 'blue') + '">' + BADGES.renderIconSVG(b.icon) + '</div>'
-        + '<strong>' + b.name + '</strong>'
-        + '<span>' + b.desc + '</span>'
-        + '</div>';
-    }).join('');
-  }
-
-  // Announcements
-  const annEl = document.getElementById('dashAnnouncements');
-  if (annEl) {
-    const list = ANNOUNCEMENTS.getSorted().slice(0, 3);
-    if (list.length === 0) {
-      annEl.innerHTML = '<div class="announcement-empty">No announcements yet. Check back later!</div>';
-    } else {
-      const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      annEl.innerHTML = list.map(a => {
-        const dateStr = a.date ? new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-        return '<div class="announcement-card ' + (a.pinned ? 'pinned' : '') + '">'
-          + (a.pinned ? '<span class="announcement-pin">&#128204; Pinned</span>' : '')
-          + '<div class="announcement-header">'
-          +   '<h3>' + escapeHtml(a.title) + '</h3>'
-          +   '<span class="announcement-date">' + dateStr + '</span>'
-          + '</div>'
-          + '<p>' + escapeHtml(a.body).replace(/\n/g, '<br>') + '</p>'
-          + '</div>';
-      }).join('');
-    }
-  }
-
-  // BADGES.check on dashboard load (in case data changed elsewhere)
-  BADGES.check();
-}
-
 // Render section title + dynamic month names on homepage
 if (currentPage === 'index.html') {
   const sectionTitleEl = document.querySelector('.features-header .section-title');
@@ -4726,140 +4358,6 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
           setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
       });
-    }
-  }
-
-  // ===== ANNOUNCEMENTS EDITOR =====
-  const announcementsEditor = document.getElementById('announcementsEditor');
-  const addAnnouncementBtn = document.getElementById('addAnnouncementBtn');
-  const saveAnnouncementsBtn = document.getElementById('saveAnnouncementsBtn');
-
-  function renderAnnouncementsEditor() {
-    if (!announcementsEditor) return;
-    const list = ANNOUNCEMENTS.getSorted();
-    if (list.length === 0) {
-      announcementsEditor.innerHTML = '<p style="color:var(--text-light);padding:20px;text-align:center;background:var(--bg);border:2px dashed var(--border);border-radius:12px;">No announcements yet. Click "+ New Announcement" to create one.</p>';
-      return;
-    }
-    const esc = (s) => String(s || '').replace(/"/g, '&quot;');
-    announcementsEditor.innerHTML = list.map((a, i) => {
-      return '<div class="announcement-row" data-id="' + esc(a.id) + '" style="padding:16px;border:2px solid var(--border);border-radius:12px;margin-bottom:12px;background:var(--bg);">'
-        + '<div style="display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center;margin-bottom:10px;">'
-        +   '<input type="text" class="a-title" placeholder="Title" value="' + esc(a.title) + '" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.95rem;font-weight:600;background:var(--surface);color:var(--text);">'
-        +   '<input type="date" class="a-date" value="' + esc((a.date || '').slice(0, 10)) + '" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.88rem;background:var(--surface);color:var(--text);">'
-        +   '<label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text-light);"><input type="checkbox" class="a-pinned"' + (a.pinned ? ' checked' : '') + '> Pin</label>'
-        + '</div>'
-        + '<textarea class="a-body" rows="3" placeholder="Announcement details..." style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;background:var(--surface);color:var(--text);resize:vertical;box-sizing:border-box;">' + String(a.body || '').replace(/</g, '&lt;') + '</textarea>'
-        + '<button type="button" class="a-remove" data-id="' + esc(a.id) + '" style="margin-top:10px;padding:6px 12px;border:1px solid #fca5a5;background:transparent;color:#dc2626;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600;">Remove</button>'
-      + '</div>';
-    }).join('');
-
-    announcementsEditor.querySelectorAll('.a-remove').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (!confirm('Remove this announcement?')) return;
-        const id = btn.dataset.id;
-        const current = collectAnnouncementsFromDOM();
-        const filtered = current.filter(a => a.id !== id);
-        ANNOUNCEMENTS.save(filtered);
-        renderAnnouncementsEditor();
-      });
-    });
-  }
-
-  function collectAnnouncementsFromDOM() {
-    if (!announcementsEditor) return [];
-    return Array.from(announcementsEditor.querySelectorAll('.announcement-row')).map(row => ({
-      id: row.dataset.id,
-      title: row.querySelector('.a-title').value.trim(),
-      body: row.querySelector('.a-body').value.trim(),
-      date: row.querySelector('.a-date').value || new Date().toISOString().slice(0, 10),
-      pinned: row.querySelector('.a-pinned').checked
-    }));
-  }
-
-  if (announcementsEditor) {
-    renderAnnouncementsEditor();
-
-    if (addAnnouncementBtn) {
-      addAnnouncementBtn.addEventListener('click', () => {
-        const current = collectAnnouncementsFromDOM();
-        current.push({
-          id: 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-          title: '',
-          body: '',
-          date: new Date().toISOString().slice(0, 10),
-          pinned: false
-        });
-        ANNOUNCEMENTS.save(current);
-        renderAnnouncementsEditor();
-      });
-    }
-
-    if (saveAnnouncementsBtn) {
-      saveAnnouncementsBtn.addEventListener('click', () => {
-        const collected = collectAnnouncementsFromDOM().filter(a => a.title || a.body);
-        ANNOUNCEMENTS.save(collected);
-        const toast = document.getElementById('adminToast');
-        if (toast) {
-          toast.innerHTML = '<span>&#10003;</span> Announcements saved!';
-          toast.style.display = 'flex';
-          setTimeout(() => { toast.style.display = 'none'; }, 3000);
-        }
-      });
-    }
-  }
-
-  // ===== ANALYTICS PANEL =====
-  const analyticsGrid = document.getElementById('adminAnalyticsGrid');
-  const xpHistoryEl = document.getElementById('adminXpHistory');
-
-  if (analyticsGrid) {
-    const lessonsList = LESSONS.getAll();
-    const publishedCount = lessonsList.filter(l => l.published).length;
-    const withQuizzes = lessonsList.filter(l => l.quiz && l.quiz.enabled && l.quiz.questions && l.quiz.questions.length).length;
-    const withAssignments = lessonsList.filter(l => l.assignment && l.assignment.enabled).length;
-    const announcementsCount = ANNOUNCEMENTS.getAll().length;
-    const totalXP = XP.total();
-    const streakDays = STREAK.get().current || 0;
-    const badgesEarned = BADGES.earned().length;
-    const myCompleted = PROGRESS.getCompletedCount();
-
-    const stats = [
-      { label: 'Lessons Published',  value: publishedCount + ' / 16', hint: (publishedCount === 16 ? 'All lessons live' : (16 - publishedCount) + ' draft') },
-      { label: 'Lessons with Quiz',  value: withQuizzes,               hint: 'Students must pass to progress' },
-      { label: 'With Assignment',    value: withAssignments,           hint: 'File-upload submissions' },
-      { label: 'Announcements',      value: announcementsCount,        hint: 'Visible on student dashboards' },
-      { label: 'Feature Cards',      value: (typeof SITE_SETTINGS !== 'undefined' ? SITE_SETTINGS.getFeatures().length : 6), hint: 'Skill categories on homepage' },
-      { label: 'Testimonials',       value: (typeof TESTIMONIALS !== 'undefined' ? TESTIMONIALS.getAll().length : 0), hint: 'Intern reviews shown' },
-      { label: 'My XP (this device)', value: totalXP, hint: 'Level ' + XP.getLevel() },
-      { label: 'My Streak',           value: streakDays + (streakDays === 1 ? ' day' : ' days'), hint: 'Longest: ' + (STREAK.get().longest || 0) + ' days' },
-      { label: 'My Badges',           value: badgesEarned + ' / ' + BADGES.CATALOG.length, hint: 'Earned on this device' },
-      { label: 'My Progress',         value: myCompleted + ' / 16', hint: PROGRESS.getPercentage() + '% complete' }
-    ];
-
-    analyticsGrid.innerHTML = stats.map(s =>
-      '<div class="admin-analytics-card">'
-      + '<div class="label">' + s.label + '</div>'
-      + '<div class="value">' + s.value + '</div>'
-      + '<div class="hint">' + s.hint + '</div>'
-      + '</div>'
-    ).join('');
-  }
-
-  if (xpHistoryEl) {
-    const history = XP.getAll().history || [];
-    if (history.length === 0) {
-      xpHistoryEl.innerHTML = '<p style="color:var(--text-light);padding:20px;text-align:center;background:var(--bg);border:2px dashed var(--border);border-radius:12px;">No XP events yet. Complete a lesson to start earning.</p>';
-    } else {
-      xpHistoryEl.innerHTML = '<ul style="list-style:none;padding:0;margin:0;">'
-        + history.slice(0, 10).map(h => {
-          const when = h.date ? new Date(h.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-          return '<li style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:0.88rem;">'
-            + '<span>' + XP.labelFor(h.type) + (h.meta && h.meta.weekId ? ' — ' + h.meta.weekId.toUpperCase() : '') + '</span>'
-            + '<span style="display:flex;align-items:center;gap:10px;"><span style="color:var(--text-light);font-size:0.78rem;">' + when + '</span><strong style="color:var(--primary);">+' + h.amount + ' XP</strong></span>'
-            + '</li>';
-        }).join('')
-        + '</ul>';
     }
   }
 
