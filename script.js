@@ -3462,36 +3462,175 @@ const TESTIMONIALS = {
     return '&#9733;'.repeat(r) + '&#9734;'.repeat(5 - r);
   },
 
-  // Compress+resize image file to square JPEG dataURL (cropped cover, 400x400)
-  compressFile(file) {
+  // Read file to a raw data URL (no compression yet — adjuster handles it)
+  readFileAsDataURL(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('Could not read file'));
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const D = this.MAX_DIM;
-            const canvas = document.createElement('canvas');
-            canvas.width = D;
-            canvas.height = D;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, D, D);
-            // Cover crop: center the image and fill the square
-            const ratio = Math.max(D / img.width, D / img.height);
-            const w = img.width * ratio;
-            const h = img.height * ratio;
-            const dx = (D - w) / 2;
-            const dy = (D - h) / 2;
-            ctx.drawImage(img, dx, dy, w, h);
-            resolve(canvas.toDataURL('image/jpeg', this.JPEG_QUALITY));
-          } catch (e) { reject(e); }
-        };
-        img.onerror = () => reject(new Error('Not a valid image'));
-        img.src = ev.target.result;
-      };
+      reader.onload = (ev) => resolve(ev.target.result);
       reader.readAsDataURL(file);
+    });
+  },
+
+  // Open an interactive adjuster modal to pan/zoom before saving.
+  // Returns a Promise<string|null> resolving to the cropped JPEG dataURL,
+  // or null if cancelled.
+  openAdjuster(sourceDataUrl) {
+    return new Promise((resolve) => {
+      const D = this.MAX_DIM;           // output size (400)
+      const quality = this.JPEG_QUALITY;
+
+      // Build modal
+      const overlay = document.createElement('div');
+      overlay.className = 'avatar-adjuster-overlay';
+      overlay.innerHTML = ''
+        + '<div class="avatar-adjuster">'
+        +   '<div class="avatar-adjuster-header">'
+        +     '<strong>Adjust photo</strong>'
+        +     '<button class="avatar-adjuster-close" aria-label="Close">&#10005;</button>'
+        +   '</div>'
+        +   '<div class="avatar-adjuster-stage">'
+        +     '<div class="avatar-adjuster-viewport">'
+        +       '<img class="avatar-adjuster-img" src="' + sourceDataUrl + '" alt="" draggable="false">'
+        +     '</div>'
+        +     '<div class="avatar-adjuster-mask"></div>'
+        +   '</div>'
+        +   '<div class="avatar-adjuster-controls">'
+        +     '<label style="display:flex;align-items:center;gap:10px;width:100%;font-size:0.82rem;color:var(--text-light);">Zoom'
+        +       '<input type="range" class="avatar-adjuster-zoom" min="100" max="400" value="100" step="1" style="flex:1;">'
+        +     '</label>'
+        +     '<p style="margin:8px 0 0;color:var(--text-light);font-size:0.78rem;text-align:center;">Drag the image to reposition it inside the circle.</p>'
+        +   '</div>'
+        +   '<div class="avatar-adjuster-actions">'
+        +     '<button class="btn btn-outline avatar-adjuster-cancel">Cancel</button>'
+        +     '<button class="btn btn-primary avatar-adjuster-apply">Apply</button>'
+        +   '</div>'
+        + '</div>';
+      document.body.appendChild(overlay);
+
+      const img = overlay.querySelector('.avatar-adjuster-img');
+      const viewport = overlay.querySelector('.avatar-adjuster-viewport');
+      const zoomInput = overlay.querySelector('.avatar-adjuster-zoom');
+
+      const VIEWPORT_SIZE = 280; // visual size in px
+      let offsetX = 0;           // translation offsets (relative to center)
+      let offsetY = 0;
+      let scale = 1;             // 1 = "cover" (image fills viewport at its natural ratio)
+
+      let imgNaturalW = 0, imgNaturalH = 0;
+      let baseScale = 1;  // scale factor so the image "covers" the viewport at scale=1
+
+      function clampOffsets() {
+        // Keep the image within the viewport edges so no white/gap shows
+        const drawnW = imgNaturalW * baseScale * scale;
+        const drawnH = imgNaturalH * baseScale * scale;
+        const maxX = Math.max(0, (drawnW - VIEWPORT_SIZE) / 2);
+        const maxY = Math.max(0, (drawnH - VIEWPORT_SIZE) / 2);
+        if (offsetX > maxX) offsetX = maxX;
+        if (offsetX < -maxX) offsetX = -maxX;
+        if (offsetY > maxY) offsetY = maxY;
+        if (offsetY < -maxY) offsetY = -maxY;
+      }
+
+      function paint() {
+        clampOffsets();
+        const drawnW = imgNaturalW * baseScale * scale;
+        const drawnH = imgNaturalH * baseScale * scale;
+        img.style.width = drawnW + 'px';
+        img.style.height = drawnH + 'px';
+        img.style.transform = 'translate(calc(-50% + ' + offsetX + 'px), calc(-50% + ' + offsetY + 'px))';
+      }
+
+      img.addEventListener('load', () => {
+        imgNaturalW = img.naturalWidth;
+        imgNaturalH = img.naturalHeight;
+        // "cover" base scale: fill the viewport
+        baseScale = Math.max(VIEWPORT_SIZE / imgNaturalW, VIEWPORT_SIZE / imgNaturalH);
+        scale = 1;
+        offsetX = 0;
+        offsetY = 0;
+        zoomInput.value = '100';
+        paint();
+      }, { once: true });
+
+      // Drag to pan (mouse + touch)
+      let dragging = false;
+      let startX = 0, startY = 0, startOffX = 0, startOffY = 0;
+      function getPoint(e) {
+        if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+      }
+      function onDown(e) {
+        e.preventDefault();
+        dragging = true;
+        const p = getPoint(e);
+        startX = p.x; startY = p.y;
+        startOffX = offsetX; startOffY = offsetY;
+      }
+      function onMove(e) {
+        if (!dragging) return;
+        const p = getPoint(e);
+        offsetX = startOffX + (p.x - startX);
+        offsetY = startOffY + (p.y - startY);
+        paint();
+      }
+      function onUp() { dragging = false; }
+
+      viewport.addEventListener('mousedown', onDown);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      viewport.addEventListener('touchstart', onDown, { passive: false });
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onUp);
+
+      // Zoom slider (100 = 1x cover, 400 = 4x)
+      zoomInput.addEventListener('input', () => {
+        const old = scale;
+        scale = parseInt(zoomInput.value) / 100;
+        // Scale offsets proportionally to keep the focal point stable
+        if (old > 0) {
+          offsetX *= (scale / old);
+          offsetY *= (scale / old);
+        }
+        paint();
+      });
+
+      // Buttons
+      function cleanup() {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        window.removeEventListener('touchmove', onMove);
+        window.removeEventListener('touchend', onUp);
+        overlay.remove();
+      }
+      overlay.querySelector('.avatar-adjuster-cancel').addEventListener('click', () => { cleanup(); resolve(null); });
+      overlay.querySelector('.avatar-adjuster-close').addEventListener('click', () => { cleanup(); resolve(null); });
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) { cleanup(); resolve(null); } });
+      overlay.querySelector('.avatar-adjuster-apply').addEventListener('click', () => {
+        try {
+          // Render final crop to a canvas at MAX_DIM
+          const canvas = document.createElement('canvas');
+          canvas.width = D;
+          canvas.height = D;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, D, D);
+          // Map viewport-space (VIEWPORT_SIZE) to canvas-space (D)
+          const scaleToOutput = D / VIEWPORT_SIZE;
+          const drawnW = imgNaturalW * baseScale * scale * scaleToOutput;
+          const drawnH = imgNaturalH * baseScale * scale * scaleToOutput;
+          const dx = (D - drawnW) / 2 + offsetX * scaleToOutput;
+          const dy = (D - drawnH) / 2 + offsetY * scaleToOutput;
+          ctx.drawImage(img, dx, dy, drawnW, drawnH);
+          const out = canvas.toDataURL('image/jpeg', quality);
+          cleanup();
+          resolve(out);
+        } catch (e) {
+          console.error('Adjuster apply failed:', e);
+          cleanup();
+          resolve(null);
+        }
+      });
     });
   }
 };
@@ -4060,9 +4199,11 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
           if (!file) return;
           if (file.size > TESTIMONIALS.MAX_SIZE) { alert('Image must be under 10MB.'); return; }
           try {
-            const compressed = await TESTIMONIALS.compressFile(file);
+            const rawDataUrl = await TESTIMONIALS.readFileAsDataURL(file);
+            const adjusted = await TESTIMONIALS.openAdjuster(rawDataUrl);
+            if (!adjusted) return; // user cancelled
             const current = collectTestimonialsFromDOM();
-            if (current[idx]) current[idx].avatar = compressed;
+            if (current[idx]) current[idx].avatar = adjusted;
             TESTIMONIALS.save(current);
             renderTestimonialsEditor();
           } catch (err) {
