@@ -209,6 +209,14 @@
         </div>
 
         <div class="admin-editor-card">
+          <h3><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Program Outcome Carousel</h3>
+          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:16px;">Upload images to rotate in the Program Outcome box on the homepage. Auto-plays every 5 seconds. Max 10 images, 3MB each.</p>
+          <div class="outcome-admin-grid" id="outcomeAdminGrid"></div>
+          <input type="file" id="outcomeUpload" accept="image/*" multiple hidden>
+          <p style="color:var(--text-light); font-size:0.78rem; margin-top:10px;">Tip: Use 300x300px or square images for best fit. Images save instantly on upload.</p>
+        </div>
+
+        <div class="admin-editor-card">
           <h3><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> Skill Feature Cards</h3>
           <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:16px;">Edit the 6 skill cards shown on the homepage under the Skills section. Change icon, color, title, and description for each.</p>
           <div id="featureCardsEditor"></div>

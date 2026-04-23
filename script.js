@@ -139,6 +139,7 @@ const DATA_SYNC = {
         if (s.skill_tags) safeSetItem('site_skill_tags', JSON.stringify(s.skill_tags));
         if (s.section_title) safeSetItem('site_section_title', s.section_title);
         if (s.feature_cards) safeSetItem('site_feature_cards', JSON.stringify(s.feature_cards));
+        if (s.outcome_images) safeSetItem('outcome_images', JSON.stringify(s.outcome_images));
       }
 
       // Card images
@@ -221,6 +222,17 @@ const DATA_SYNC = {
     } catch (e) { console.error('Remove card image failed:', e); }
   },
 
+  // Save program-outcome carousel images array
+  async saveOutcomeImages(images) {
+    if (!this.db) return;
+    try {
+      await this.db.collection(this.COLLECTION).doc('settings').set({
+        outcome_images: images,
+        updated: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } catch (e) { console.error('Save outcome images failed:', e); }
+  },
+
   async saveCardEmojis(emojis) {
     if (!this.db) return;
     try {
@@ -239,6 +251,7 @@ DATA_SYNC.init();
 function _snapshotSyncedKeys() {
   const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes', 'site_month_descriptions',
                 'site_skill_tags', 'site_section_title', 'site_card_emojis', 'site_feature_cards',
+                'outcome_images',
                 'card_image_1', 'card_image_2', 'card_image_3', 'card_image_4'];
   const snap = {};
   keys.forEach(k => { snap[k] = safeGetItem(k) || ''; });
@@ -3415,6 +3428,31 @@ if (currentPage === 'lesson.html') {
 }
 
 // ===== EDITABLE SITE SETTINGS (Tags & Title) =====
+// ===== Program Outcome Carousel =====
+const OUTCOME_CAROUSEL = {
+  KEY: 'outcome_images',
+  MAX_SIZE: 3 * 1024 * 1024, // 3MB per image
+  MAX_COUNT: 10,
+  AUTOPLAY_MS: 5000,
+
+  getAll() { return safeGetJSON(this.KEY, []); },
+  save(images) {
+    safeSetItem(this.KEY, JSON.stringify(images));
+    if (typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveOutcomeImages(images);
+  },
+  add(dataUrl) {
+    const all = this.getAll();
+    if (all.length >= this.MAX_COUNT) return false;
+    all.push({ id: 'oi_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), src: dataUrl });
+    this.save(all);
+    return true;
+  },
+  remove(id) {
+    const all = this.getAll().filter(x => x.id !== id);
+    this.save(all);
+  }
+};
+
 const SITE_SETTINGS = {
   TAGS_KEY: 'site_skill_tags',
   TITLE_KEY: 'site_section_title',
@@ -3503,6 +3541,80 @@ if (currentPage === 'index.html') {
       + '</div>'
     ).join('');
   }
+
+  // Render Program Outcome carousel
+  (function renderOutcomeCarousel() {
+    const slidesEl = document.getElementById('outcomeSlides');
+    const dotsEl = document.getElementById('outcomeDots');
+    const prevBtn = document.getElementById('outcomePrev');
+    const nextBtn = document.getElementById('outcomeNext');
+    if (!slidesEl) return;
+
+    const images = OUTCOME_CAROUSEL.getAll();
+    let currentIdx = 0;
+    let autoplayTimer = null;
+
+    function render() {
+      if (images.length === 0) {
+        // Keep the placeholder SVG (already in HTML)
+        if (dotsEl) dotsEl.innerHTML = '';
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        return;
+      }
+      slidesEl.innerHTML = images.map((img, i) =>
+        '<div class="outcome-slide ' + (i === currentIdx ? 'active' : '') + '" data-idx="' + i + '">'
+        + '<img src="' + img.src + '" alt="Program outcome ' + (i + 1) + '">'
+        + '</div>'
+      ).join('');
+      if (dotsEl) {
+        dotsEl.innerHTML = images.map((_, i) =>
+          '<button class="outcome-dot ' + (i === currentIdx ? 'active' : '') + '" data-idx="' + i + '" aria-label="Go to image ' + (i + 1) + '"></button>'
+        ).join('');
+        dotsEl.querySelectorAll('.outcome-dot').forEach(dot => {
+          dot.addEventListener('click', () => {
+            currentIdx = parseInt(dot.dataset.idx);
+            render();
+            restartAutoplay();
+          });
+        });
+      }
+      if (prevBtn) prevBtn.style.display = images.length > 1 ? 'flex' : 'none';
+      if (nextBtn) nextBtn.style.display = images.length > 1 ? 'flex' : 'none';
+    }
+
+    function goNext() {
+      if (images.length < 2) return;
+      currentIdx = (currentIdx + 1) % images.length;
+      render();
+    }
+    function goPrev() {
+      if (images.length < 2) return;
+      currentIdx = (currentIdx - 1 + images.length) % images.length;
+      render();
+    }
+    function startAutoplay() {
+      if (images.length < 2) return;
+      autoplayTimer = setInterval(goNext, OUTCOME_CAROUSEL.AUTOPLAY_MS);
+    }
+    function restartAutoplay() {
+      if (autoplayTimer) clearInterval(autoplayTimer);
+      startAutoplay();
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', () => { goPrev(); restartAutoplay(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { goNext(); restartAutoplay(); });
+
+    // Pause on hover
+    const carousel = document.getElementById('outcomeCarousel');
+    if (carousel) {
+      carousel.addEventListener('mouseenter', () => { if (autoplayTimer) clearInterval(autoplayTimer); });
+      carousel.addEventListener('mouseleave', startAutoplay);
+    }
+
+    render();
+    startAutoplay();
+  })();
 
   // Update hero card module names (no prefix — just the name)
   const heroModules = document.querySelectorAll('.hero-module-text h4');
@@ -3715,6 +3827,84 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
         setTimeout(() => { toast.style.display = 'none'; }, 3000);
       }
     });
+  }
+
+  // Outcome carousel editor
+  const outcomeAdminGrid = document.getElementById('outcomeAdminGrid');
+  const outcomeUploadInput = document.getElementById('outcomeUpload');
+
+  function renderOutcomeAdmin() {
+    if (!outcomeAdminGrid) return;
+    const images = OUTCOME_CAROUSEL.getAll();
+    let html = images.map(img =>
+      '<div class="outcome-admin-tile" data-id="' + img.id + '">'
+      + '<img src="' + img.src + '" alt="">'
+      + '<button class="outcome-admin-tile-remove" data-id="' + img.id + '" title="Remove">&#10005;</button>'
+      + '</div>'
+    ).join('');
+    if (images.length < OUTCOME_CAROUSEL.MAX_COUNT) {
+      html += '<button class="outcome-admin-upload" id="outcomeUploadBtn">'
+        + '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>'
+        + '<span>Upload Image</span>'
+        + '</button>';
+    }
+    outcomeAdminGrid.innerHTML = html;
+
+    // Remove handlers
+    outcomeAdminGrid.querySelectorAll('.outcome-admin-tile-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('Remove this image from the carousel?')) return;
+        OUTCOME_CAROUSEL.remove(btn.dataset.id);
+        renderOutcomeAdmin();
+        const toast = document.getElementById('adminToast');
+        if (toast) {
+          toast.innerHTML = '<span>&#10003;</span> Image removed';
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 2500);
+        }
+      });
+    });
+
+    const uploadBtn = document.getElementById('outcomeUploadBtn');
+    if (uploadBtn && outcomeUploadInput) {
+      uploadBtn.addEventListener('click', () => outcomeUploadInput.click());
+    }
+  }
+
+  if (outcomeAdminGrid) {
+    renderOutcomeAdmin();
+    if (outcomeUploadInput) {
+      outcomeUploadInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        const toast = document.getElementById('adminToast');
+        let remaining = files.length;
+        files.forEach(file => {
+          if (file.size > OUTCOME_CAROUSEL.MAX_SIZE) {
+            alert('"' + file.name + '" is larger than 3MB. Please use a smaller image.');
+            remaining--;
+            if (remaining === 0) { outcomeUploadInput.value = ''; renderOutcomeAdmin(); }
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const added = OUTCOME_CAROUSEL.add(ev.target.result);
+            if (!added) alert('Reached max ' + OUTCOME_CAROUSEL.MAX_COUNT + ' images. Remove one first.');
+            remaining--;
+            if (remaining === 0) {
+              outcomeUploadInput.value = '';
+              renderOutcomeAdmin();
+              if (toast) {
+                toast.innerHTML = '<span>&#10003;</span> Carousel image' + (files.length > 1 ? 's' : '') + ' added!';
+                toast.style.display = 'flex';
+                setTimeout(() => { toast.style.display = 'none'; }, 2500);
+              }
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+    }
   }
 
   // Feature cards editor
