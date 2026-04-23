@@ -3433,11 +3433,14 @@ if (currentPage === 'lesson.html') {
 // ===== Intern Testimonials =====
 const TESTIMONIALS = {
   KEY: 'intern_testimonials',
+  MAX_SIZE: 10 * 1024 * 1024,
+  MAX_DIM: 400,
+  JPEG_QUALITY: 0.85,
 
   defaultItems: [
-    { id: 't1', rating: 5, quote: 'The creatives months gave me so much confidence. I went from never opening Canva to producing ad-ready content that actually performed.', name: 'Ana Torres',  role: 'Former Marketing Intern' },
-    { id: 't2', rating: 5, quote: 'The Ads Manager month was intense but amazing. By week 16, I launched a real campaign and knew how to read every metric on the dashboard.',           name: 'Marco Reyes', role: 'Junior Media Buyer' },
-    { id: 't3', rating: 5, quote: 'Learning Botcake and Chatfuel was a game-changer. I set up automated funnels that saved the team hours every week on customer inquiries.',               name: 'Jamie Lee',   role: 'E-commerce Marketing Associate' }
+    { id: 't1', rating: 5, quote: 'The creatives months gave me so much confidence. I went from never opening Canva to producing ad-ready content that actually performed.', name: 'Ana Torres',  role: 'Former Marketing Intern', avatar: '' },
+    { id: 't2', rating: 5, quote: 'The Ads Manager month was intense but amazing. By week 16, I launched a real campaign and knew how to read every metric on the dashboard.',           name: 'Marco Reyes', role: 'Junior Media Buyer', avatar: '' },
+    { id: 't3', rating: 5, quote: 'Learning Botcake and Chatfuel was a game-changer. I set up automated funnels that saved the team hours every week on customer inquiries.',               name: 'Jamie Lee',   role: 'E-commerce Marketing Associate', avatar: '' }
   ],
 
   getAll() {
@@ -3457,6 +3460,39 @@ const TESTIMONIALS = {
   renderStars(n) {
     const r = Math.max(0, Math.min(5, parseInt(n) || 0));
     return '&#9733;'.repeat(r) + '&#9734;'.repeat(5 - r);
+  },
+
+  // Compress+resize image file to square JPEG dataURL (cropped cover, 400x400)
+  compressFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const D = this.MAX_DIM;
+            const canvas = document.createElement('canvas');
+            canvas.width = D;
+            canvas.height = D;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, D, D);
+            // Cover crop: center the image and fill the square
+            const ratio = Math.max(D / img.width, D / img.height);
+            const w = img.width * ratio;
+            const h = img.height * ratio;
+            const dx = (D - w) / 2;
+            const dy = (D - h) / 2;
+            ctx.drawImage(img, dx, dy, w, h);
+            resolve(canvas.toDataURL('image/jpeg', this.JPEG_QUALITY));
+          } catch (e) { reject(e); }
+        };
+        img.onerror = () => reject(new Error('Not a valid image'));
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
   }
 };
 
@@ -3641,19 +3677,22 @@ if (currentPage === 'index.html') {
     const items = TESTIMONIALS.getAll();
     if (!items.length) return;
     const escapeHtml = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    grid.innerHTML = items.map(t =>
-      '<div class="testimonial-card">'
-      + '<div class="testimonial-stars">' + TESTIMONIALS.renderStars(t.rating) + '</div>'
-      + '<blockquote>&ldquo;' + escapeHtml(t.quote) + '&rdquo;</blockquote>'
-      + '<div class="testimonial-author">'
-      +   '<div class="testimonial-avatar">' + escapeHtml(TESTIMONIALS.getInitials(t.name)) + '</div>'
-      +   '<div class="testimonial-name">'
-      +     '<strong>' + escapeHtml(t.name) + '</strong>'
-      +     '<span>' + escapeHtml(t.role) + '</span>'
-      +   '</div>'
-      + '</div>'
-      + '</div>'
-    ).join('');
+    grid.innerHTML = items.map(t => {
+      const avatarHtml = t.avatar
+        ? '<div class="testimonial-avatar has-photo"><img src="' + t.avatar + '" alt="' + escapeHtml(t.name) + '"></div>'
+        : '<div class="testimonial-avatar">' + escapeHtml(TESTIMONIALS.getInitials(t.name)) + '</div>';
+      return '<div class="testimonial-card">'
+        + '<div class="testimonial-stars">' + TESTIMONIALS.renderStars(t.rating) + '</div>'
+        + '<blockquote>&ldquo;' + escapeHtml(t.quote) + '&rdquo;</blockquote>'
+        + '<div class="testimonial-author">'
+        +   avatarHtml
+        +   '<div class="testimonial-name">'
+        +     '<strong>' + escapeHtml(t.name) + '</strong>'
+        +     '<span>' + escapeHtml(t.role) + '</span>'
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
   })();
 
   // Render Program Outcome title / subtitle / description from admin settings
@@ -3975,8 +4014,18 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
     const esc = (s) => String(s || '').replace(/"/g, '&quot;');
     testimonialsEditor.innerHTML = items.map((t, i) => {
       const ratingOpts = [5,4,3,2,1].map(r => '<option value="' + r + '"' + (parseInt(t.rating) === r ? ' selected' : '') + '>' + r + ' star' + (r > 1 ? 's' : '') + '</option>').join('');
-      return '<div class="testimonial-row" data-idx="' + i + '" style="display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:start;padding:16px;border:2px solid var(--border);border-radius:12px;margin-bottom:12px;background:var(--bg);">'
-        + '<div style="width:48px;height:48px;border-radius:50%;background:var(--primary-glow);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.95rem;">' + TESTIMONIALS.getInitials(t.name) + '</div>'
+      const initials = TESTIMONIALS.getInitials(t.name);
+      const avatarInner = t.avatar
+        ? '<img src="' + t.avatar + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">'
+        : '<span class="t-initials" style="font-weight:700;font-size:0.95rem;color:var(--primary);">' + initials + '</span>';
+      return '<div class="testimonial-row" data-idx="' + i + '" data-avatar="' + (t.avatar || '') + '" style="display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:start;padding:16px;border:2px solid var(--border);border-radius:12px;margin-bottom:12px;background:var(--bg);">'
+        + '<div class="t-avatar-wrap" style="position:relative;width:64px;">'
+        +   '<div class="t-avatar-circle" style="width:64px;height:64px;border-radius:50%;background:var(--primary-glow);overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Click to upload photo">' + avatarInner + '</div>'
+        +   '<button type="button" class="t-avatar-upload" data-idx="' + i + '" title="Upload photo" style="position:absolute;bottom:-4px;right:-4px;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;border:2px solid var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">'
+        +     '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'
+        +   '</button>'
+        +   (t.avatar ? '<button type="button" class="t-avatar-clear" data-idx="' + i + '" title="Remove photo" style="position:absolute;top:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;border:2px solid var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:0.7rem;">&#10005;</button>' : '')
+        + '</div>'
         + '<div style="display:flex;flex-direction:column;gap:8px;min-width:0;">'
         +   '<div style="display:grid;grid-template-columns:1fr 1fr 140px;gap:8px;">'
         +     '<input type="text" class="t-name" placeholder="Full name" value="' + esc(t.name) + '" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;background:var(--surface);color:var(--text);">'
@@ -3989,15 +4038,56 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       + '</div>';
     }).join('');
 
-    // Live-update avatar initials as name changes
+    // Live-update avatar initials as name changes (only when no photo)
     testimonialsEditor.querySelectorAll('.testimonial-row').forEach(row => {
       const nameInput = row.querySelector('.t-name');
-      const avatar = row.querySelector('div[style*="border-radius:50%"]');
-      if (nameInput && avatar) {
+      const initialsEl = row.querySelector('.t-initials');
+      if (nameInput && initialsEl) {
         nameInput.addEventListener('input', () => {
-          avatar.textContent = TESTIMONIALS.getInitials(nameInput.value);
+          initialsEl.textContent = TESTIMONIALS.getInitials(nameInput.value);
         });
       }
+      // Click avatar or upload button -> trigger file input
+      const avatarCircle = row.querySelector('.t-avatar-circle');
+      const uploadBtn = row.querySelector('.t-avatar-upload');
+      const triggerUpload = (idx) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.style.display = 'none';
+        input.addEventListener('change', async (ev) => {
+          const file = ev.target.files && ev.target.files[0];
+          if (!file) return;
+          if (file.size > TESTIMONIALS.MAX_SIZE) { alert('Image must be under 10MB.'); return; }
+          try {
+            const compressed = await TESTIMONIALS.compressFile(file);
+            const current = collectTestimonialsFromDOM();
+            if (current[idx]) current[idx].avatar = compressed;
+            TESTIMONIALS.save(current);
+            renderTestimonialsEditor();
+          } catch (err) {
+            console.error('Avatar upload failed:', err);
+            alert('Could not process image. Try a different one.');
+          }
+        });
+        document.body.appendChild(input);
+        input.click();
+        setTimeout(() => input.remove(), 0);
+      };
+      if (avatarCircle) avatarCircle.addEventListener('click', () => triggerUpload(parseInt(row.dataset.idx)));
+      if (uploadBtn) uploadBtn.addEventListener('click', (e) => { e.stopPropagation(); triggerUpload(parseInt(uploadBtn.dataset.idx)); });
+    });
+
+    // Remove avatar photo (revert to initials)
+    testimonialsEditor.querySelectorAll('.t-avatar-clear').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.idx);
+        const current = collectTestimonialsFromDOM();
+        if (current[idx]) current[idx].avatar = '';
+        TESTIMONIALS.save(current);
+        renderTestimonialsEditor();
+      });
     });
 
     testimonialsEditor.querySelectorAll('.t-remove').forEach(btn => {
@@ -4018,7 +4108,8 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       name: row.querySelector('.t-name').value.trim(),
       role: row.querySelector('.t-role').value.trim(),
       rating: parseInt(row.querySelector('.t-rating').value) || 5,
-      quote: row.querySelector('.t-quote').value.trim()
+      quote: row.querySelector('.t-quote').value.trim(),
+      avatar: row.dataset.avatar || ''
     }));
   }
 
