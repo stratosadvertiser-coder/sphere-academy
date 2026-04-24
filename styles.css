@@ -1787,6 +1787,49 @@ img {
   line-height: 1.7;
   color: var(--text-light);
 }
+
+/* Logo framing in About section */
+.about-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.about-logo-frame {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.22), rgba(124, 58, 237, 0.18) 55%, transparent 80%),
+              linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  box-shadow: 0 20px 44px -14px rgba(124, 58, 237, 0.45),
+              0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.about-logo-frame::after {
+  /* soft glow ring */
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  opacity: 0.35;
+  filter: blur(14px);
+  z-index: -1;
+}
+.about-logo-frame:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 26px 54px -14px rgba(124, 58, 237, 0.6),
+              0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+.about-logo {
+  max-width: 88%;
+  max-height: 88%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(124, 58, 237, 0.35));
+}
 .about-pillars {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
