@@ -50,6 +50,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 90px; /* offset anchor jumps so fixed navbar doesn't hide section tops */
 }
 
 body {
