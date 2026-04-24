@@ -548,6 +548,31 @@ const AUTH = {
     }
 
     if (this.isLoggedIn()) {
+      // ===== Inject persistent tabs: Dashboard / Course / Profile =====
+      // Skip on login/signup (public pages) and admin.html (admin has its own nav).
+      const navLinksEl = document.querySelector('.nav-links');
+      const tabPages = ['dashboard.html', 'course.html', 'lesson.html', 'profile.html'];
+      if (navLinksEl && tabPages.indexOf(pathname) !== -1 && !navLinksEl.querySelector('.nav-tab-link')) {
+        const tabs = [
+          { href: 'dashboard.html', label: 'Dashboard', pages: ['dashboard.html'] },
+          { href: 'course.html',    label: 'Course',    pages: ['course.html', 'lesson.html'] },
+          { href: 'profile.html',   label: 'Profile',   pages: ['profile.html'] }
+        ];
+        // Prepend so tabs appear before the mobile CTA
+        const frag = document.createDocumentFragment();
+        tabs.forEach(t => {
+          const li = document.createElement('li');
+          li.className = 'nav-tab-item';
+          const a = document.createElement('a');
+          a.href = t.href;
+          a.textContent = t.label;
+          a.className = 'nav-tab-link' + (t.pages.indexOf(pathname) !== -1 ? ' active' : '');
+          li.appendChild(a);
+          frag.appendChild(li);
+        });
+        navLinksEl.insertBefore(frag, navLinksEl.firstChild);
+      }
+
       const loginBtn = navCta.querySelector('a[href="login.html"]');
       const enrollBtn = navCta.querySelector('a[href="signup.html"]');
 
@@ -4779,11 +4804,29 @@ if (currentPage === 'dashboard.html') {
     if (fracEl) fracEl.textContent = completed + ' / 16 weeks';
     const ring = document.querySelector('.progress-ring-fg');
     if (ring) {
-      const r = 60;
+      const r = 62;  // must match circle r attr in dashboard.html
       const c = 2 * Math.PI * r;
       ring.setAttribute('stroke-dasharray', c.toString());
-      ring.setAttribute('stroke-dashoffset', (c - (c * pct / 100)).toString());
+      ring.setAttribute('stroke-dashoffset', c.toString()); // start fully hidden
+      // Animate to actual value
+      setTimeout(() => { ring.setAttribute('stroke-dashoffset', (c - (c * pct / 100)).toString()); }, 100);
     }
+    // Progress sub message
+    const progressSubEl = document.getElementById('dashProgressSub');
+    if (progressSubEl) {
+      if (pct === 0) progressSubEl.textContent = "Let's get started!";
+      else if (pct < 25) progressSubEl.textContent = 'Great beginning — keep going!';
+      else if (pct < 50) progressSubEl.textContent = "You're building momentum!";
+      else if (pct < 75) progressSubEl.textContent = 'Over halfway there — awesome!';
+      else if (pct < 100) progressSubEl.textContent = 'Almost done — push through!';
+      else progressSubEl.textContent = 'Program complete! 🎉';
+    }
+
+    // Hero stats
+    const hCompleted = document.getElementById('dashHeroCompleted');
+    const hRemaining = document.getElementById('dashHeroRemaining');
+    if (hCompleted) hCompleted.textContent = completed;
+    if (hRemaining) hRemaining.textContent = Math.max(0, 16 - completed);
 
     // 3) Determine "current lesson" for Continue button, Current Week, and Upcoming
     let currentLesson = null;
@@ -4810,6 +4853,11 @@ if (currentPage === 'dashboard.html') {
       continueBtn.href = 'lesson.html?week=' + currentLesson.id;
       if (continueLabel) continueLabel.textContent = 'Continue: W' + currentLesson.week + ' — ' + currentLesson.title;
     }
+
+    // Hero "Current week" stat
+    const hTime = document.getElementById('dashHeroTimeSpent');
+    if (hTime && currentLesson) hTime.textContent = 'W' + currentLesson.week;
+    else if (hTime && completed >= 16) hTime.textContent = 'Done';
 
     // Current Week card
     const weekNumEl = document.getElementById('dashWeekNum');

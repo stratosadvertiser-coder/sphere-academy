@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Sphere Academy</title>
   <meta name="description" content="Your learning dashboard — progress, next lesson, activity, and reminders.">
-  <link rel="stylesheet" href="styles.css?v=2025-04-24-video">
+  <link rel="stylesheet" href="styles.css?v=2025-04-24-dash2">
 </head>
 <body class="page-loaded">
 
@@ -19,9 +19,6 @@
         </a>
       </div>
       <ul class="nav-links">
-        <li><a href="dashboard.html" class="active">Dashboard</a></li>
-        <li><a href="course.html">Course</a></li>
-        <li><a href="profile.html">Profile</a></li>
         <li class="nav-mobile-cta"><a href="login.html" class="btn btn-outline">Log In</a></li>
       </ul>
       <div class="nav-cta">
@@ -44,10 +41,25 @@
 
       <!-- Hero: Welcome + Continue CTA -->
       <div class="dash-hero">
+        <div class="dash-hero-deco"></div>
         <div class="dash-hero-text">
           <p class="dash-eyebrow">YOUR DASHBOARD</p>
           <h1>Welcome back, <span id="dashName">Student</span>!</h1>
           <p class="dash-hero-sub" id="dashSub">Pick up where you left off and keep learning.</p>
+          <div class="dash-hero-stats">
+            <div class="dash-hero-stat">
+              <strong id="dashHeroCompleted">0</strong>
+              <span>Completed</span>
+            </div>
+            <div class="dash-hero-stat">
+              <strong id="dashHeroRemaining">16</strong>
+              <span>To go</span>
+            </div>
+            <div class="dash-hero-stat">
+              <strong id="dashHeroTimeSpent">&mdash;</strong>
+              <span>Current week</span>
+            </div>
+          </div>
         </div>
         <a href="lesson.html?week=w1" id="dashContinueBtn" class="dash-continue-btn">
           <span id="dashContinueLabel">Continue Learning</span>
@@ -59,23 +71,36 @@
       <div class="dash-grid">
 
         <!-- Progress ring -->
-        <div class="dash-card">
-          <p class="dash-card-label">Overall Progress</p>
+        <div class="dash-card dash-progress-card">
+          <div class="dash-card-header-row">
+            <p class="dash-card-label">Overall Progress</p>
+            <div class="dash-card-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+          </div>
           <div class="progress-ring-wrap">
-            <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
-              <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke-width="10" fill="none"/>
-              <circle class="progress-ring-fg" cx="70" cy="70" r="60" stroke-width="10" fill="none" stroke-linecap="round" transform="rotate(-90 70 70)"/>
+            <svg class="progress-ring" width="150" height="150" viewBox="0 0 150 150">
+              <defs>
+                <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#3b82f6"/>
+                  <stop offset="100%" stop-color="#7c3aed"/>
+                </linearGradient>
+              </defs>
+              <circle class="progress-ring-bg" cx="75" cy="75" r="62" stroke-width="12" fill="none"/>
+              <circle class="progress-ring-fg" cx="75" cy="75" r="62" stroke-width="12" fill="none" stroke-linecap="round" transform="rotate(-90 75 75)"/>
             </svg>
             <div class="progress-ring-text">
               <strong id="dashPct">0%</strong>
               <span id="dashFrac">0 / 16 weeks</span>
             </div>
           </div>
+          <p class="progress-sub" id="dashProgressSub">Let's get started!</p>
         </div>
 
         <!-- Current Week -->
         <div class="dash-card">
-          <p class="dash-card-label">Current Week</p>
+          <div class="dash-card-header-row">
+            <p class="dash-card-label">Current Week</p>
+            <div class="dash-card-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          </div>
           <strong class="week-num" id="dashWeekNum">Week 1</strong>
           <p class="week-title" id="dashWeekTitle">Digital Marketing &amp; Ecommerce</p>
           <div class="week-meta">
@@ -86,7 +111,10 @@
 
         <!-- Upcoming reminder -->
         <div class="dash-card">
-          <p class="dash-card-label">Upcoming Lesson</p>
+          <div class="dash-card-header-row">
+            <p class="dash-card-label">Upcoming Lesson</p>
+            <div class="dash-card-icon amber"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          </div>
           <strong class="reminder-title" id="dashReminderTitle">Next Up</strong>
           <p class="reminder-desc" id="dashReminderDesc">Start with the first week of the program.</p>
           <div class="reminder-footer">
@@ -138,6 +166,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-04-24-video"></script>
+  <script src="script.js?v=2025-04-24-dash2"></script>
 </body>
 </html>
