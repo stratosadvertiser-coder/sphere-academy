@@ -333,6 +333,7 @@ img {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--bg-alt);
+  color: #111827;               /* dark icon in light mode */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -340,10 +341,14 @@ img {
   font-size: 1.1rem;
   transition: all var(--transition);
 }
+[data-theme="dark"] .theme-toggle {
+  color: #ffffff;               /* white icon in dark mode */
+}
 
 .theme-toggle:hover {
   border-color: var(--primary);
   background: var(--primary-light);
+  color: var(--primary);        /* brand color on hover — works both modes */
 }
 
 .hamburger {
@@ -4844,6 +4849,7 @@ img {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--bg-alt);
+  color: #111827;               /* dark icon in light mode */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4851,8 +4857,15 @@ img {
   font-size: 1.1rem;
   transition: all var(--transition);
 }
+[data-theme="dark"] .notif-btn {
+  color: #ffffff;               /* white icon in dark mode */
+}
 
-.notif-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+.notif-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
 
 .notif-badge {
   position: absolute;
