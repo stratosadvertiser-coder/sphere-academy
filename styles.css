@@ -1367,11 +1367,13 @@ img {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
   padding: 32px;
-  transition: all var(--transition);
+  transition: transform 0.1s ease-out, box-shadow var(--transition), border-color var(--transition);
   position: relative;
   color: #f8fafc;
   box-shadow: 0 12px 32px -12px rgba(76, 29, 149, 0.45);
   overflow: hidden;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 
 .testimonial-card::before {

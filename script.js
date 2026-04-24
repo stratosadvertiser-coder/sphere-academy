@@ -4384,15 +4384,14 @@ if (currentPage === 'index.html') {
   const sectionTitleEl = document.querySelector('.features-header .section-title');
   if (sectionTitleEl) sectionTitleEl.textContent = SITE_SETTINGS.getTitle();
 
-  // 3D tilt on the Training Program hero card (mouse-move parallax)
-  (function initHeroCardTilt() {
-    const wrap = document.getElementById('heroCardWrap');
-    if (!wrap) return;
-    // Skip on touch/small devices where hover+tilt feels odd
+  // 3D tilt on mouse-move parallax — reusable for hero card + testimonial cards
+  function applyTilt(el, options) {
+    if (!el) return;
     if (!window.matchMedia('(hover: hover) and (min-width: 900px)').matches) return;
 
-    const MAX_ROT = 7;      // max degrees of rotation
-    const DAMP = 0.12;      // smoothing factor
+    const MAX_ROT = (options && options.maxRot) || 7;    // max degrees of rotation
+    const DAMP = (options && options.damp) || 0.12;      // smoothing factor
+    const PERSPECTIVE = (options && options.perspective) || 1200;
     let targetX = 0, targetY = 0;
     let currentX = 0, currentY = 0;
     let raf = null;
@@ -4401,34 +4400,39 @@ if (currentPage === 'index.html') {
     function tick() {
       currentX += (targetX - currentX) * DAMP;
       currentY += (targetY - currentY) * DAMP;
-      wrap.style.transform = 'perspective(1200px) rotateX(' + currentX.toFixed(2) + 'deg) rotateY(' + currentY.toFixed(2) + 'deg)';
-      // Keep animating while hovering or until we're close enough to rest
+      el.style.transform = 'perspective(' + PERSPECTIVE + 'px) rotateX(' + currentX.toFixed(2) + 'deg) rotateY(' + currentY.toFixed(2) + 'deg)';
       if (hovering || Math.abs(currentX) > 0.05 || Math.abs(currentY) > 0.05) {
         raf = requestAnimationFrame(tick);
       } else {
-        wrap.style.transform = '';
+        el.style.transform = '';
         raf = null;
       }
     }
 
-    wrap.addEventListener('mouseenter', () => {
+    el.addEventListener('mouseenter', () => {
       hovering = true;
       if (!raf) raf = requestAnimationFrame(tick);
     });
-    wrap.addEventListener('mousemove', (e) => {
-      const rect = wrap.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width;   // 0..1
-      const py = (e.clientY - rect.top)  / rect.height;  // 0..1
-      targetY =  (px - 0.5) * 2 * MAX_ROT;  // left/right => rotateY
-      targetX = -(py - 0.5) * 2 * MAX_ROT;  // up/down   => rotateX (inverted)
+    el.addEventListener('mousemove', (e) => {
+      const rect = el.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;
+      const py = (e.clientY - rect.top)  / rect.height;
+      targetY =  (px - 0.5) * 2 * MAX_ROT;
+      targetX = -(py - 0.5) * 2 * MAX_ROT;
     });
-    wrap.addEventListener('mouseleave', () => {
+    el.addEventListener('mouseleave', () => {
       hovering = false;
       targetX = 0;
       targetY = 0;
       if (!raf) raf = requestAnimationFrame(tick);
     });
-  })();
+  }
+
+  // Apply to the Training Program hero card immediately
+  applyTilt(document.getElementById('heroCardWrap'));
+
+  // Expose applyTilt so the testimonial render block can re-apply after rebuild
+  window.__applyTilt = applyTilt;
 
   // Render feature cards from admin settings
   const featuresGridEl = document.getElementById('featuresGrid');
@@ -4492,6 +4496,13 @@ if (currentPage === 'index.html') {
         + '</div>'
         + '</div>';
     }).join('');
+
+    // Attach 3D tilt to each freshly-rendered card (slightly gentler than hero)
+    if (typeof window.__applyTilt === 'function') {
+      grid.querySelectorAll('.testimonial-card').forEach(card => {
+        window.__applyTilt(card, { maxRot: 6, damp: 0.14, perspective: 1000 });
+      });
+    }
   })();
 
   // Render Program Outcome title / subtitle / description from admin settings
