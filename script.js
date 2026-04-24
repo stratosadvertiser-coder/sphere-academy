@@ -187,6 +187,8 @@ const DATA_SYNC = {
         if (s.outcome_images) safeSetItem('outcome_images', JSON.stringify(s.outcome_images));
         if (s.outcome_text) safeSetItem('outcome_text', JSON.stringify(s.outcome_text));
         if (s.testimonials) safeSetItem('intern_testimonials', JSON.stringify(s.testimonials));
+        if (s.about_text) safeSetItem('about_text', JSON.stringify(s.about_text));
+        if (s.about_pillars) safeSetItem('about_pillars', JSON.stringify(s.about_pillars));
       }
 
       // Card images
@@ -508,7 +510,7 @@ const ANALYTICS = {
 function _snapshotSyncedKeys() {
   const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes', 'site_month_descriptions',
                 'site_skill_tags', 'site_section_title', 'site_card_emojis', 'site_feature_cards',
-                'outcome_images', 'outcome_text', 'intern_testimonials',
+                'outcome_images', 'outcome_text', 'intern_testimonials', 'about_text', 'about_pillars',
                 'card_image_1', 'card_image_2', 'card_image_3', 'card_image_4'];
   const snap = {};
   keys.forEach(k => { snap[k] = safeGetItem(k) || ''; });
@@ -3950,6 +3952,50 @@ if (currentPage === 'lesson.html') {
 }
 
 // ===== EDITABLE SITE SETTINGS (Tags & Title) =====
+// ===== About Stratos Sphere Academy section =====
+const ABOUT = {
+  TEXT_KEY: 'about_text',
+  PILLARS_KEY: 'about_pillars',
+
+  defaultText: {
+    label: 'About Us',
+    title: 'About Stratos Sphere Academy',
+    desc: 'Stratos Sphere Academy is a 4-month hands-on marketing training program built to transform beginners into confident, job-ready digital marketers. Through structured weekly modules covering creatives, tools, AI-powered workflows, and Meta Ads, we equip interns with the real-world skills that matter — from designing high-converting content to launching and optimizing paid campaigns.'
+  },
+  defaultPillars: [
+    { icon: 'graduation', color: 'blue',   title: 'Structured Learning', desc: '16 weekly modules with quizzes, assignments, and clear milestones.' },
+    { icon: 'star',       color: 'purple', title: 'Real-World Skills',   desc: 'Hands-on creative production, bot automation, and Meta Ads execution.' },
+    { icon: 'award',      color: 'green',  title: 'Career-Ready',        desc: 'Graduate with a portfolio, a certificate, and a place on the marketing team.' }
+  ],
+
+  getText() {
+    const stored = safeGetJSON(this.TEXT_KEY, null);
+    if (stored && typeof stored === 'object') {
+      return {
+        label: stored.label || this.defaultText.label,
+        title: stored.title || this.defaultText.title,
+        desc: stored.desc || this.defaultText.desc
+      };
+    }
+    return { ...this.defaultText };
+  },
+  saveText(text) {
+    const ok = safeSetItem(this.TEXT_KEY, JSON.stringify(text));
+    if (ok && typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ about_text: text });
+    return ok;
+  },
+  getPillars() {
+    const stored = safeGetJSON(this.PILLARS_KEY, null);
+    if (stored && Array.isArray(stored) && stored.length > 0) return stored;
+    return this.defaultPillars.map(p => ({ ...p }));
+  },
+  savePillars(pillars) {
+    const ok = safeSetItem(this.PILLARS_KEY, JSON.stringify(pillars));
+    if (ok && typeof DATA_SYNC !== 'undefined') DATA_SYNC.saveSettings({ about_pillars: pillars });
+    return ok;
+  }
+};
+
 // ===== Intern Testimonials =====
 const TESTIMONIALS = {
   KEY: 'intern_testimonials',
@@ -4350,6 +4396,32 @@ if (currentPage === 'index.html') {
       + '</div>'
     ).join('');
   }
+
+  // Render About section from admin settings
+  (function renderAbout() {
+    try {
+      const txt = ABOUT.getText();
+      const labelEl = document.getElementById('aboutLabel');
+      const titleEl = document.getElementById('aboutTitle');
+      const descEl = document.getElementById('aboutDesc');
+      if (labelEl) labelEl.textContent = txt.label;
+      if (titleEl) titleEl.textContent = txt.title;
+      if (descEl) descEl.textContent = txt.desc;
+
+      const pillarsEl = document.getElementById('aboutPillars');
+      if (pillarsEl) {
+        const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const pillars = ABOUT.getPillars();
+        pillarsEl.innerHTML = pillars.map(p =>
+          '<div class="about-pillar">'
+          + '<div class="about-pillar-icon ' + (p.color || 'blue') + '">' + SITE_SETTINGS.renderIcon(p.icon || 'star') + '</div>'
+          + '<h3>' + esc(p.title) + '</h3>'
+          + '<p>' + esc(p.desc) + '</p>'
+          + '</div>'
+        ).join('');
+      }
+    } catch (e) { console.warn('About render failed:', e); }
+  })();
 
   // Render Intern Testimonials from admin settings
   (function renderTestimonials() {
@@ -4886,6 +4958,116 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
         const toast = document.getElementById('adminToast');
         if (toast) {
           toast.innerHTML = '<span>&#10003;</span> Testimonials reset to defaults';
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+      });
+    }
+  }
+
+  // ===== ABOUT SECTION EDITOR =====
+  const aboutLabelInput = document.getElementById('aboutLabelInput');
+  const aboutTitleInput = document.getElementById('aboutTitleInput');
+  const aboutDescInput = document.getElementById('aboutDescInput');
+  const aboutPillarsEditor = document.getElementById('aboutPillarsEditor');
+  const saveAboutBtn = document.getElementById('saveAboutBtn');
+  const resetAboutBtn = document.getElementById('resetAboutBtn');
+
+  function renderAboutPillarsEditor() {
+    if (!aboutPillarsEditor || typeof ABOUT === 'undefined') return;
+    const pillars = ABOUT.getPillars();
+    const iconOptions = (typeof SITE_SETTINGS !== 'undefined' && SITE_SETTINGS.ICONS) ? Object.keys(SITE_SETTINGS.ICONS) : ['star', 'award', 'graduation'];
+    const colorOptions = (typeof SITE_SETTINGS !== 'undefined' && SITE_SETTINGS.COLORS) ? SITE_SETTINGS.COLORS : ['blue', 'amber', 'green', 'purple', 'pink', 'red', 'teal', 'orange'];
+    const esc = (s) => String(s || '').replace(/"/g, '&quot;');
+
+    aboutPillarsEditor.innerHTML = pillars.map((p, i) => {
+      const iconOpts = iconOptions.map(k => '<option value="' + k + '"' + (p.icon === k ? ' selected' : '') + '>' + k + '</option>').join('');
+      const colorOpts = colorOptions.map(c => '<option value="' + c + '"' + (p.color === c ? ' selected' : '') + '>' + c + '</option>').join('');
+      return '<div class="about-pillar-row" data-idx="' + i + '" style="display:grid;grid-template-columns:auto 1fr;gap:12px;padding:16px;border:2px solid var(--border);border-radius:12px;margin-bottom:12px;background:var(--bg);">'
+        + '<div class="ap-preview feature-icon ' + (p.color || 'blue') + '" style="width:48px;height:48px;align-self:start;">' + ((typeof SITE_SETTINGS !== 'undefined' && SITE_SETTINGS.renderIcon) ? SITE_SETTINGS.renderIcon(p.icon) : '') + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:8px;">'
+        +   '<div style="font-size:0.78rem;font-weight:600;color:var(--text-light);">Pillar ' + (i + 1) + '</div>'
+        +   '<input type="text" class="ap-title" placeholder="Pillar title" value="' + esc(p.title) + '" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem;background:var(--surface);color:var(--text);">'
+        +   '<textarea class="ap-desc" rows="2" placeholder="Pillar description" style="padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--surface);color:var(--text);resize:vertical;">' + String(p.desc || '').replace(/</g, '&lt;') + '</textarea>'
+        +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +     '<label style="font-size:0.78rem;color:var(--text-light);display:flex;flex-direction:column;gap:4px;">Icon<select class="ap-icon" style="padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--surface);color:var(--text);">' + iconOpts + '</select></label>'
+        +     '<label style="font-size:0.78rem;color:var(--text-light);display:flex;flex-direction:column;gap:4px;">Color<select class="ap-color" style="padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--surface);color:var(--text);">' + colorOpts + '</select></label>'
+        +   '</div>'
+        + '</div>'
+      + '</div>';
+    }).join('');
+
+    // Live preview updates
+    aboutPillarsEditor.querySelectorAll('.about-pillar-row').forEach(row => {
+      const iconSel = row.querySelector('.ap-icon');
+      const colorSel = row.querySelector('.ap-color');
+      const preview = row.querySelector('.ap-preview');
+      const refresh = () => {
+        if (preview && typeof SITE_SETTINGS !== 'undefined' && SITE_SETTINGS.renderIcon) {
+          preview.innerHTML = SITE_SETTINGS.renderIcon(iconSel.value);
+          if (SITE_SETTINGS.COLORS) SITE_SETTINGS.COLORS.forEach(c => preview.classList.remove(c));
+          preview.classList.add(colorSel.value);
+        }
+      };
+      if (iconSel) iconSel.addEventListener('change', refresh);
+      if (colorSel) colorSel.addEventListener('change', refresh);
+    });
+  }
+
+  function collectAboutPillarsFromDOM() {
+    if (!aboutPillarsEditor) return [];
+    return Array.from(aboutPillarsEditor.querySelectorAll('.about-pillar-row')).map(row => ({
+      icon: row.querySelector('.ap-icon').value,
+      color: row.querySelector('.ap-color').value,
+      title: row.querySelector('.ap-title').value.trim(),
+      desc: row.querySelector('.ap-desc').value.trim()
+    }));
+  }
+
+  if (aboutTitleInput || aboutDescInput || aboutPillarsEditor) {
+    // Prefill text
+    if (typeof ABOUT !== 'undefined') {
+      const t = ABOUT.getText();
+      if (aboutLabelInput) aboutLabelInput.value = t.label;
+      if (aboutTitleInput) aboutTitleInput.value = t.title;
+      if (aboutDescInput) aboutDescInput.value = t.desc;
+    }
+    renderAboutPillarsEditor();
+
+    if (saveAboutBtn) {
+      saveAboutBtn.addEventListener('click', () => {
+        if (typeof ABOUT === 'undefined') { alert('About module not loaded. Hard-refresh the page.'); return; }
+        const text = {
+          label: (aboutLabelInput && aboutLabelInput.value.trim()) || ABOUT.defaultText.label,
+          title: (aboutTitleInput && aboutTitleInput.value.trim()) || ABOUT.defaultText.title,
+          desc:  (aboutDescInput  && aboutDescInput.value.trim())  || ABOUT.defaultText.desc
+        };
+        ABOUT.saveText(text);
+        const pillars = collectAboutPillarsFromDOM().filter(p => p.title || p.desc);
+        ABOUT.savePillars(pillars);
+        const toast = document.getElementById('adminToast');
+        if (toast) {
+          toast.innerHTML = '<span>&#10003;</span> About section saved!';
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+      });
+    }
+
+    if (resetAboutBtn) {
+      resetAboutBtn.addEventListener('click', () => {
+        if (!confirm('Reset the About section to default content? This will overwrite your edits.')) return;
+        if (typeof ABOUT === 'undefined') return;
+        ABOUT.saveText({ ...ABOUT.defaultText });
+        ABOUT.savePillars(ABOUT.defaultPillars.map(p => ({ ...p })));
+        const t = ABOUT.getText();
+        if (aboutLabelInput) aboutLabelInput.value = t.label;
+        if (aboutTitleInput) aboutTitleInput.value = t.title;
+        if (aboutDescInput) aboutDescInput.value = t.desc;
+        renderAboutPillarsEditor();
+        const toast = document.getElementById('adminToast');
+        if (toast) {
+          toast.innerHTML = '<span>&#10003;</span> About section reset to defaults';
           toast.style.display = 'flex';
           setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
