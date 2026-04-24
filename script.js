@@ -958,7 +958,7 @@ if (themeToggle) {
   // Update icon based on current theme
   function updateThemeIcon() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    themeToggle.innerHTML = isDark ? '&#9728;' : '&#9790;';
+    themeToggle.innerHTML = isDark ? '&#9728;' : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
   }
   updateThemeIcon();
 
@@ -1270,7 +1270,7 @@ if (currentPage === 'lesson.html') {
     const main = document.querySelector('.lesson-main');
     if (main) {
       main.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px;">'
-        + '<div style="font-size:4rem;margin-bottom:16px;">&#128274;</div>'
+        + '<div style="font-size:4rem;margin-bottom:16px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
         + '<h2 style="margin-bottom:8px;">Coming Soon</h2>'
         + '<p style="color:var(--text-light);">This lesson hasn\'t been published yet. Check back later!</p>'
         + '<a href="course.html" class="btn btn-primary" style="margin-top:24px;">Back to Course</a></div>';
@@ -2764,7 +2764,7 @@ if (searchBtn && searchOverlay) {
         return;
       }
       searchResults.innerHTML = matches.map(l => {
-        const icon = l.published ? '&#9654;' : '&#128274;';
+        const icon = l.published ? '&#9654;' : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
         return '<a class="search-result-item" href="lesson.html?week=' + l.id + '">'
           + '<div class="search-result-icon">' + icon + '</div>'
           + '<div class="search-result-info"><h4>W' + l.week + ': ' + l.title + '</h4>'
