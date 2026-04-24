@@ -55,6 +55,7 @@ const PROGRESS = {
       data[weekId] = true;
     }
     safeSetItem(this.STORAGE_KEY, JSON.stringify(data));
+    try { if (typeof USER_SYNC !== 'undefined') USER_SYNC.save(); } catch (e) {}
     return this.isCompleted(weekId);
   },
 
@@ -293,6 +294,216 @@ const DATA_SYNC = {
 // Initialize Firestore immediately
 DATA_SYNC.init();
 
+// ============================================================
+// USER_SYNC — Per-student data sync to Firestore (for admin analytics)
+// Each logged-in student writes a lightweight snapshot of their progress,
+// quiz scores, assignment submissions, and activity to users/{username}.
+// Admin analytics aggregates across all users.
+// ============================================================
+const USER_SYNC = {
+  COLLECTION: 'sphere_users',
+  lastWrite: 0,
+  MIN_INTERVAL_MS: 5000, // throttle writes — at most once per 5 sec
+
+  _buildSnapshot() {
+    try {
+      const username = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+      if (!username) return null;
+      // Progress: { w1: true, ... }
+      const progress = (typeof PROGRESS !== 'undefined') ? PROGRESS.getAll() : {};
+      // Quiz scores: { w1: 85, w2: 100, ... } — percentages only
+      const quizRaw = (typeof QUIZ_RESULTS !== 'undefined') ? QUIZ_RESULTS.getAll() : {};
+      const quizScores = {};
+      const quizAttempts = {};
+      Object.keys(quizRaw).forEach(k => {
+        if (quizRaw[k] && typeof quizRaw[k].percentage === 'number') quizScores[k] = quizRaw[k].percentage;
+        if (quizRaw[k] && typeof quizRaw[k].attempts === 'number') quizAttempts[k] = quizRaw[k].attempts;
+      });
+      // Assignments: { w1: true, ... } — just whether submitted (strip file data)
+      const asgnRaw = (typeof ASSIGNMENTS !== 'undefined') ? ASSIGNMENTS.getAll() : {};
+      const assignments = {};
+      Object.keys(asgnRaw).forEach(k => {
+        if (asgnRaw[k] && asgnRaw[k].submitted) assignments[k] = true;
+      });
+      // Activity-by-day rollup (last 30 days) for engagement chart
+      const activity = (typeof ACTIVITY !== 'undefined') ? ACTIVITY.getAll() : [];
+      const activityByDay = {};
+      activity.forEach(e => {
+        if (!e.date) return;
+        const day = e.date.slice(0, 10); // YYYY-MM-DD
+        activityByDay[day] = (activityByDay[day] || 0) + 1;
+      });
+      return {
+        username,
+        displayName: (AUTH.getDisplayName && AUTH.getDisplayName()) || username,
+        role: (AUTH.isAdmin && AUTH.isAdmin()) ? 'admin' : 'student',
+        progress,
+        quizScores,
+        quizAttempts,
+        assignments,
+        activityByDay,
+        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+      };
+    } catch (e) {
+      console.warn('[USER_SYNC] buildSnapshot failed:', e);
+      return null;
+    }
+  },
+
+  // Write snapshot to Firestore (throttled)
+  save(force) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    if (typeof AUTH === 'undefined' || !AUTH.isLoggedIn || !AUTH.isLoggedIn()) return;
+    const now = Date.now();
+    if (!force && (now - this.lastWrite) < this.MIN_INTERVAL_MS) return;
+    this.lastWrite = now;
+    const snap = this._buildSnapshot();
+    if (!snap) return;
+    try {
+      DATA_SYNC.db.collection(this.COLLECTION).doc(snap.username).set(snap, { merge: true })
+        .catch(e => console.warn('[USER_SYNC] write failed:', e.message));
+    } catch (e) { /* non-fatal */ }
+  },
+
+  // Admin: fetch all student docs
+  async fetchAll() {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return [];
+    try {
+      const snap = await DATA_SYNC.db.collection(this.COLLECTION).get();
+      const out = [];
+      snap.forEach(doc => out.push({ id: doc.id, ...doc.data() }));
+      return out;
+    } catch (e) {
+      console.error('[USER_SYNC] fetchAll failed:', e);
+      return [];
+    }
+  }
+};
+
+// ============================================================
+// ANALYTICS — Aggregate all student data for admin dashboard
+// ============================================================
+const ANALYTICS = {
+  // Compute everything from a fetched user list
+  compute(users) {
+    // Only include students (exclude admin)
+    const students = (users || []).filter(u => (u.role || 'student') === 'student');
+    const total = students.length;
+
+    // Completion rate per lesson (w1..w16)
+    const completionByWeek = {};
+    for (let i = 1; i <= 16; i++) {
+      const wid = 'w' + i;
+      let done = 0;
+      students.forEach(u => { if (u.progress && u.progress[wid]) done++; });
+      completionByWeek[wid] = {
+        weekId: wid,
+        completed: done,
+        total,
+        percent: total > 0 ? Math.round((done / total) * 100) : 0
+      };
+    }
+
+    // Avg quiz score per week
+    const quizByWeek = {};
+    for (let i = 1; i <= 16; i++) {
+      const wid = 'w' + i;
+      const scores = [];
+      students.forEach(u => {
+        if (u.quizScores && typeof u.quizScores[wid] === 'number') scores.push(u.quizScores[wid]);
+      });
+      quizByWeek[wid] = {
+        weekId: wid,
+        count: scores.length,
+        avg: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+        min: scores.length ? Math.min.apply(null, scores) : null,
+        max: scores.length ? Math.max.apply(null, scores) : null
+      };
+    }
+
+    // Assignment submission % per week
+    const submissionByWeek = {};
+    for (let i = 1; i <= 16; i++) {
+      const wid = 'w' + i;
+      let submitted = 0;
+      students.forEach(u => { if (u.assignments && u.assignments[wid]) submitted++; });
+      submissionByWeek[wid] = {
+        weekId: wid,
+        submitted,
+        total,
+        percent: total > 0 ? Math.round((submitted / total) * 100) : 0
+      };
+    }
+
+    // Engagement timeline — activity events per day (last 30 days)
+    const engagement = {};
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      engagement[ymd] = 0;
+    }
+    students.forEach(u => {
+      if (!u.activityByDay) return;
+      Object.keys(u.activityByDay).forEach(day => {
+        if (day in engagement) engagement[day] += (u.activityByDay[day] || 0);
+      });
+    });
+
+    // Student leaderboard
+    const leaderboard = students.map(u => {
+      const completed = u.progress ? Object.values(u.progress).filter(Boolean).length : 0;
+      const quizVals = u.quizScores ? Object.values(u.quizScores).filter(v => typeof v === 'number') : [];
+      const avgQuiz = quizVals.length ? Math.round(quizVals.reduce((a, b) => a + b, 0) / quizVals.length) : 0;
+      const submitted = u.assignments ? Object.values(u.assignments).filter(Boolean).length : 0;
+      // Composite score: completion 10pts, avg quiz is already 0-100, submission 5pts
+      const score = completed * 10 + avgQuiz + submitted * 5;
+      return {
+        username: u.id || u.username || 'unknown',
+        displayName: u.displayName || u.username || 'Unknown',
+        completed,
+        avgQuiz,
+        submitted,
+        score,
+        lastActive: u.lastActive || null
+      };
+    }).sort((a, b) => b.score - a.score);
+
+    // Overall summary
+    const totalCompletions = Object.values(completionByWeek).reduce((a, w) => a + w.completed, 0);
+    const avgProgressPct = total > 0 ? Math.round((totalCompletions / (total * 16)) * 100) : 0;
+    const totalSubmissions = Object.values(submissionByWeek).reduce((a, w) => a + w.submitted, 0);
+    const allQuizScores = [];
+    students.forEach(u => {
+      if (u.quizScores) Object.values(u.quizScores).forEach(v => { if (typeof v === 'number') allQuizScores.push(v); });
+    });
+    const overallAvgQuiz = allQuizScores.length ? Math.round(allQuizScores.reduce((a, b) => a + b, 0) / allQuizScores.length) : 0;
+
+    // Active today count
+    const todayYMD = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    let activeToday = 0;
+    students.forEach(u => {
+      if (u.activityByDay && u.activityByDay[todayYMD]) activeToday++;
+    });
+
+    return {
+      summary: {
+        totalStudents: total,
+        avgProgressPct,
+        overallAvgQuiz,
+        totalSubmissions,
+        activeToday
+      },
+      completionByWeek,
+      quizByWeek,
+      submissionByWeek,
+      engagement,
+      leaderboard
+    };
+  }
+};
+
 // Snapshot of localStorage BEFORE Firestore load — used to detect if data changed
 function _snapshotSyncedKeys() {
   const keys = ['lessons_data', 'site_month_names', 'site_month_prefixes', 'site_month_descriptions',
@@ -367,6 +578,7 @@ const ASSIGNMENTS = {
         if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('lesson_completed', weekId, lesson ? ('W' + lesson.week + ': ' + lesson.title) : weekId);
       } catch (e) {}
     }
+    try { if (typeof USER_SYNC !== 'undefined') USER_SYNC.save(true); } catch (e) {}
     return true;
   },
 
@@ -389,8 +601,11 @@ const QUIZ_RESULTS = {
   isPassed(weekId) { const r = this.get(weekId); return r && r.passed === true; },
   save(weekId, score, total, passed) {
     const all = this.getAll();
-    all[weekId] = { score, total, passed, percentage: Math.round((score/total)*100), date: new Date().toISOString() };
+    const prev = all[weekId];
+    const attempts = (prev && prev.attempts ? prev.attempts : 0) + 1;
+    all[weekId] = { score, total, passed, percentage: Math.round((score/total)*100), attempts, date: new Date().toISOString() };
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try { if (typeof USER_SYNC !== 'undefined') USER_SYNC.save(); } catch (e) {}
   }
 };
 
@@ -646,6 +861,12 @@ const AUTH = {
 
 // Update nav on every page
 AUTH.updateNav();
+
+// Sync student data to Firestore on every page load (for admin analytics).
+// Delayed so Firebase anonymous auth has time to complete first.
+if (AUTH.isLoggedIn()) {
+  setTimeout(() => { try { USER_SYNC.save(true); } catch (e) {} }, 1500);
+}
 
 // Password show/hide toggle — auto-wrap every <input type="password">
 (function initPasswordToggles() {
@@ -4950,3 +5171,169 @@ if (currentPage === 'dashboard.html') {
     console.error('Dashboard render error:', e);
   }
 }
+
+// ============================================================
+// ADMIN ANALYTICS PANEL
+// ============================================================
+if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin()) {
+  const summaryEl = document.getElementById('analyticsSummary');
+  const statusEl = document.getElementById('analyticsStatus');
+  const refreshBtn = document.getElementById('analyticsRefreshBtn');
+
+  // Only bind if the Analytics DOM is present
+  if (summaryEl && statusEl) {
+    const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    async function renderAnalytics() {
+      statusEl.textContent = 'Loading analytics…';
+      statusEl.style.display = 'block';
+      summaryEl.innerHTML = '';
+      // Hide all cards until data is ready
+      ['analyticsEngagementCard','analyticsCompletionCard','analyticsQuizCard','analyticsSubmissionCard','analyticsLeaderboardCard']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+
+      if (typeof USER_SYNC === 'undefined' || typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) {
+        statusEl.innerHTML = '<div class="analytics-empty"><strong>Firestore not ready.</strong><br>Check firebase-config.js and ensure Firestore is enabled. Once students log in and work through lessons, their data will appear here.</div>';
+        return;
+      }
+
+      const users = await USER_SYNC.fetchAll();
+      if (!users || users.length === 0) {
+        statusEl.innerHTML = '<div class="analytics-empty"><strong>No student data yet.</strong><br>Students must log in at least once for their stats to sync. As they complete lessons, pass quizzes, and submit assignments, their data will show up here.</div>';
+        return;
+      }
+
+      const data = ANALYTICS.compute(users);
+      if (data.summary.totalStudents === 0) {
+        statusEl.innerHTML = '<div class="analytics-empty"><strong>No students enrolled.</strong><br>Only admin account(s) have synced data so far. Share the signup link so students can enroll.</div>';
+        return;
+      }
+
+      statusEl.style.display = 'none';
+
+      // Summary cards
+      const s = data.summary;
+      summaryEl.innerHTML =
+        '<div class="analytics-stat-card"><span class="label">Total Students</span><strong class="value">' + s.totalStudents + '</strong><span class="hint">Enrolled &amp; synced</span></div>'
+      + '<div class="analytics-stat-card"><span class="label">Avg Progress</span><strong class="value">' + s.avgProgressPct + '%</strong><span class="hint">Across all students</span></div>'
+      + '<div class="analytics-stat-card"><span class="label">Overall Quiz Avg</span><strong class="value">' + s.overallAvgQuiz + '%</strong><span class="hint">' + s.totalSubmissions + ' submissions total</span></div>'
+      + '<div class="analytics-stat-card"><span class="label">Active Today</span><strong class="value">' + s.activeToday + '</strong><span class="hint">Students with activity</span></div>';
+
+      // Engagement chart (bar chart — one bar per day)
+      const engCard = document.getElementById('analyticsEngagementCard');
+      const engChart = document.getElementById('analyticsEngagementChart');
+      if (engCard && engChart) {
+        const entries = Object.entries(data.engagement);
+        const max = Math.max.apply(null, [1].concat(entries.map(e => e[1])));
+        engChart.innerHTML = '<div class="engagement-bars">' + entries.map(([day, count]) => {
+          const pct = Math.round((count / max) * 100);
+          const dayLabel = day.slice(-2);  // "15"
+          const monthLabel = day.slice(5, 7); // "04"
+          return '<div class="engagement-bar-col" title="' + day + ': ' + count + ' events">'
+            + '<div class="engagement-bar" style="height:' + Math.max(pct, 2) + '%"></div>'
+            + '<span class="engagement-day">' + dayLabel + '</span>'
+            + '</div>';
+        }).join('') + '</div>';
+        engCard.style.display = 'block';
+      }
+
+      // Completion rate per lesson
+      const compCard = document.getElementById('analyticsCompletionCard');
+      const compList = document.getElementById('analyticsCompletionList');
+      if (compCard && compList) {
+        compList.innerHTML = '<div class="analytics-bars">' + Object.values(data.completionByWeek).map(w => {
+          const lesson = (typeof LESSONS !== 'undefined') ? LESSONS.get(w.weekId) : null;
+          const title = lesson ? ('W' + lesson.week + ' — ' + lesson.title) : w.weekId.toUpperCase();
+          return '<div class="analytics-bar-row">'
+            + '<div class="analytics-bar-label">' + esc(title) + '</div>'
+            + '<div class="analytics-bar-track"><div class="analytics-bar-fill blue" style="width:' + w.percent + '%"></div></div>'
+            + '<div class="analytics-bar-value"><strong>' + w.percent + '%</strong><span>' + w.completed + '/' + w.total + '</span></div>'
+            + '</div>';
+        }).join('') + '</div>';
+        compCard.style.display = 'block';
+      }
+
+      // Quiz averages
+      const quizCard = document.getElementById('analyticsQuizCard');
+      const quizList = document.getElementById('analyticsQuizList');
+      if (quizCard && quizList) {
+        const rows = Object.values(data.quizByWeek).filter(q => q.count > 0);
+        if (rows.length === 0) {
+          quizList.innerHTML = '<p style="color:var(--text-light);padding:16px 0;">No quiz attempts yet.</p>';
+        } else {
+          quizList.innerHTML = '<div class="analytics-bars">' + rows.map(q => {
+            const lesson = (typeof LESSONS !== 'undefined') ? LESSONS.get(q.weekId) : null;
+            const title = lesson ? ('W' + lesson.week + ' — ' + lesson.title) : q.weekId.toUpperCase();
+            return '<div class="analytics-bar-row">'
+              + '<div class="analytics-bar-label">' + esc(title) + '</div>'
+              + '<div class="analytics-bar-track"><div class="analytics-bar-fill purple" style="width:' + q.avg + '%"></div></div>'
+              + '<div class="analytics-bar-value"><strong>' + q.avg + '%</strong><span>' + q.count + ' attempt' + (q.count === 1 ? '' : 's') + '</span></div>'
+              + '</div>';
+          }).join('') + '</div>';
+        }
+        quizCard.style.display = 'block';
+      }
+
+      // Assignment submission rates
+      const subCard = document.getElementById('analyticsSubmissionCard');
+      const subList = document.getElementById('analyticsSubmissionList');
+      if (subCard && subList) {
+        const rows = Object.values(data.submissionByWeek).filter(x => {
+          const lesson = (typeof LESSONS !== 'undefined') ? LESSONS.get(x.weekId) : null;
+          return lesson && lesson.assignment && lesson.assignment.enabled;
+        });
+        if (rows.length === 0) {
+          subList.innerHTML = '<p style="color:var(--text-light);padding:16px 0;">No lessons have assignments enabled.</p>';
+        } else {
+          subList.innerHTML = '<div class="analytics-bars">' + rows.map(w => {
+            const lesson = LESSONS.get(w.weekId);
+            const title = 'W' + lesson.week + ' — ' + (lesson.assignment.title || lesson.title);
+            return '<div class="analytics-bar-row">'
+              + '<div class="analytics-bar-label">' + esc(title) + '</div>'
+              + '<div class="analytics-bar-track"><div class="analytics-bar-fill pink" style="width:' + w.percent + '%"></div></div>'
+              + '<div class="analytics-bar-value"><strong>' + w.percent + '%</strong><span>' + w.submitted + '/' + w.total + '</span></div>'
+              + '</div>';
+          }).join('') + '</div>';
+        }
+        subCard.style.display = 'block';
+      }
+
+      // Leaderboard
+      const lbCard = document.getElementById('analyticsLeaderboardCard');
+      const lbTable = document.getElementById('analyticsLeaderboard');
+      if (lbCard && lbTable) {
+        const rows = data.leaderboard.slice(0, 25);
+        lbTable.innerHTML =
+          '<thead><tr><th style="width:48px">#</th><th>Student</th><th>Done</th><th>Quiz Avg</th><th>Submissions</th><th>Score</th></tr></thead>'
+          + '<tbody>' + rows.map((u, i) => {
+            const medal = i === 0 ? '&#129351;' : i === 1 ? '&#129352;' : i === 2 ? '&#129353;' : (i + 1);
+            return '<tr' + (i < 3 ? ' class="podium"' : '') + '>'
+              + '<td class="rank">' + medal + '</td>'
+              + '<td class="name">' + esc(u.displayName) + '<span class="username">@' + esc(u.username) + '</span></td>'
+              + '<td>' + u.completed + ' / 16</td>'
+              + '<td>' + (u.avgQuiz ? u.avgQuiz + '%' : '—') + '</td>'
+              + '<td>' + u.submitted + '</td>'
+              + '<td><strong>' + u.score + '</strong></td>'
+              + '</tr>';
+          }).join('') + '</tbody>';
+        lbCard.style.display = 'block';
+      }
+    }
+
+    // Bind refresh button
+    if (refreshBtn) refreshBtn.addEventListener('click', renderAnalytics);
+
+    // Run once when Analytics tab is first clicked (lazy load)
+    const analyticsTab = document.querySelector('.admin-tab[data-tab="analytics"]');
+    if (analyticsTab) {
+      let alreadyLoaded = false;
+      analyticsTab.addEventListener('click', () => {
+        if (alreadyLoaded) return;
+        alreadyLoaded = true;
+        // Give Firebase anonymous auth a moment to complete
+        setTimeout(renderAnalytics, 500);
+      });
+    }
+  }
+}
+
