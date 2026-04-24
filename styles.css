@@ -366,7 +366,7 @@ img {
 
 /* ===== HERO ===== */
 .hero {
-  padding: 140px 0 80px;
+  padding: 100px 0 60px;
   background: linear-gradient(135deg, var(--bg) 0%, var(--primary-light) 50%, var(--bg) 100%);
   position: relative;
   overflow: hidden;
@@ -698,12 +698,12 @@ img {
 
 /* ===== FEATURES ===== */
 .features {
-  padding: 100px 0;
+  padding: 70px 0;
 }
 
 .features-header {
   text-align: center;
-  margin-bottom: 60px;
+  margin-bottom: 40px;
 }
 
 .features-header .section-label {
@@ -819,14 +819,14 @@ img {
 
 /* ===== CURRICULUM ===== */
 .curriculum {
-  padding: 100px 0;
+  padding: 70px 0;
   background: var(--bg-alt);
   position: relative;
 }
 
 .curriculum-header {
   text-align: center;
-  margin-bottom: 60px;
+  margin-bottom: 40px;
 }
 
 .curriculum-header .section-label {
@@ -946,7 +946,7 @@ img {
 
 /* ===== INSTRUCTOR ===== */
 .instructor {
-  padding: 100px 0;
+  padding: 70px 0;
   position: relative;
 }
 
@@ -1204,13 +1204,13 @@ img {
 
 /* ===== TESTIMONIALS ===== */
 .testimonials {
-  padding: 100px 0;
+  padding: 70px 0;
   background: var(--bg-alt);
 }
 
 .testimonials-header {
   text-align: center;
-  margin-bottom: 60px;
+  margin-bottom: 40px;
 }
 
 .testimonials-header .section-label {
@@ -1744,6 +1744,69 @@ img {
 }
 
 /* ============================================================
+   ABOUT STRATOS SPHERE ACADEMY
+   ============================================================ */
+.about-section {
+  padding: 70px 0;
+  text-align: center;
+}
+.about-section .section-label,
+.about-section .section-title {
+  text-align: center;
+}
+.about-desc {
+  max-width: 760px;
+  margin: 16px auto 40px;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-light);
+}
+.about-pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.about-pillar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.about-pillar:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px -10px rgba(0, 0, 0, 0.12);
+}
+.about-pillar-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.about-pillar-icon.blue   { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 6px 14px -3px rgba(37, 99, 235, 0.4); }
+.about-pillar-icon.purple { background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); box-shadow: 0 6px 14px -3px rgba(124, 58, 237, 0.4); }
+.about-pillar-icon.green  { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); box-shadow: 0 6px 14px -3px rgba(16, 185, 129, 0.4); }
+.about-pillar h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+.about-pillar p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-light);
+  line-height: 1.55;
+}
+
+/* ============================================================
    PREREQUISITES / LOCKED LESSON
    ============================================================ */
 .lesson-locked {
@@ -2171,7 +2234,7 @@ img {
 
 .pricing-header {
   text-align: center;
-  margin-bottom: 60px;
+  margin-bottom: 40px;
 }
 
 .pricing-header .section-label {
@@ -2282,7 +2345,7 @@ img {
 
 /* ===== NEWSLETTER ===== */
 .newsletter {
-  padding: 80px 0;
+  padding: 70px 0;
   background: var(--bg-alt);
 }
 
@@ -2331,7 +2394,7 @@ img {
 
 /* ===== CTA ===== */
 .cta {
-  padding: 100px 0;
+  padding: 70px 0;
   background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 50%, #a855f7 100%);
   color: #fff;
   text-align: center;
