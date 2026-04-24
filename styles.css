@@ -952,14 +952,14 @@ img {
 
 .instructor .container {
   display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 60px;
+  grid-template-columns: 380px 1fr;
+  gap: 56px;
   align-items: center;
 }
 
 .instructor-img {
-  width: 300px;
-  height: 300px;
+  width: 380px;
+  height: 380px;
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--primary-light), #c7d2fe, #ede9fe);
   display: flex;
@@ -980,8 +980,9 @@ img {
 
 /* ===== Program Outcome Carousel ===== */
 .outcome-carousel {
-  width: 300px;
-  height: 300px;
+  width: 380px;
+  height: 380px;
+  max-width: 100%;
   border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
@@ -5136,9 +5137,13 @@ img {
 
   /* === INSTRUCTOR === */
   .instructor-img {
-    width: 200px;
-    height: 200px;
+    width: 260px;
+    height: 260px;
     font-size: 4rem;
+  }
+  .outcome-carousel {
+    width: 260px;
+    height: 260px;
   }
 
   .instructor-info h2 {
@@ -5531,9 +5536,13 @@ img {
   }
 
   .instructor-img {
-    width: 160px;
-    height: 160px;
+    width: 220px;
+    height: 220px;
     font-size: 3.5rem;
+  }
+  .outcome-carousel {
+    width: 220px;
+    height: 220px;
   }
 
   .instructor-info h2 {
