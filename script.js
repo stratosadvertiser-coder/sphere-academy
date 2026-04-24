@@ -64,6 +64,50 @@ const PROGRESS = {
 
   getPercentage() {
     return Math.round((this.getCompletedCount() / 16) * 100);
+  },
+
+  // Last accessed lesson (for "Continue" button on dashboard)
+  LAST_KEY: 'last_accessed_lesson',
+  setLastAccessed(weekId) { if (weekId) safeSetItem(this.LAST_KEY, weekId); },
+  getLastAccessed() { return safeGetItem(this.LAST_KEY) || ''; }
+};
+
+// ===== ACTIVITY FEED (dashboard recent-activity tracker) =====
+const ACTIVITY = {
+  KEY: 'activity_feed',
+  MAX: 20,
+  log(type, weekId, title) {
+    try {
+      const list = safeGetJSON(this.KEY, []);
+      list.unshift({ type, weekId: weekId || '', title: title || '', date: new Date().toISOString() });
+      const trimmed = list.slice(0, this.MAX);
+      safeSetItem(this.KEY, JSON.stringify(trimmed));
+    } catch (e) { /* non-fatal */ }
+  },
+  getAll() {
+    const v = safeGetJSON(this.KEY, []);
+    return Array.isArray(v) ? v : [];
+  },
+  labelFor(type) {
+    return ({
+      lesson_viewed: 'Viewed lesson',
+      lesson_completed: 'Completed lesson',
+      quiz_passed: 'Passed quiz',
+      quiz_failed: 'Tried quiz',
+      assignment_submitted: 'Submitted assignment'
+    })[type] || 'Activity';
+  },
+  iconFor(type) {
+    // Returns inline SVG path
+    const map = {
+      lesson_viewed:      '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+      lesson_completed:   '<polyline points="20 6 9 17 4 12"/>',
+      quiz_passed:        '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+      quiz_failed:        '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+      assignment_submitted:'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'
+    };
+    const path = map[type] || '<circle cx="12" cy="12" r="10"/>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
   }
 };
 
@@ -310,9 +354,18 @@ const ASSIGNMENTS = {
       submittedAt: new Date().toISOString()
     };
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    // Log activity
+    try {
+      const lesson = (typeof LESSONS !== 'undefined') ? LESSONS.get(weekId) : null;
+      if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('assignment_submitted', weekId, lesson ? ('W' + lesson.week + ': ' + lesson.title) : weekId);
+    } catch (e) {}
     // Auto-complete lesson
     if (!PROGRESS.isCompleted(weekId)) {
       PROGRESS.toggle(weekId);
+      try {
+        const lesson = (typeof LESSONS !== 'undefined') ? LESSONS.get(weekId) : null;
+        if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('lesson_completed', weekId, lesson ? ('W' + lesson.week + ': ' + lesson.title) : weekId);
+      } catch (e) {}
     }
     return true;
   },
@@ -473,18 +526,20 @@ const AUTH = {
       if (searchBtn) searchBtn.style.display = 'none';
       if (notifBtn) notifBtn.style.display = 'none';
       if (this.isLoggedIn()) {
+        const target = this.isAdmin() ? 'admin.html' : 'dashboard.html';
+        const label = this.isAdmin() ? 'Admin Panel' : 'Dashboard';
         const loginBtn = navCta.querySelector('a[href="login.html"]');
         if (loginBtn) {
-          loginBtn.href = 'course.html';
-          loginBtn.textContent = 'Go to Course \u2192';
+          loginBtn.href = target;
+          loginBtn.textContent = label + ' \u2192';
           loginBtn.classList.remove('btn-outline');
           loginBtn.classList.add('btn-primary');
         }
         // Also update mobile CTA
         const mobileLoginLinks = document.querySelectorAll('.nav-mobile-cta a[href="login.html"]');
         mobileLoginLinks.forEach(a => {
-          a.href = 'course.html';
-          a.textContent = 'Go to Course';
+          a.href = target;
+          a.textContent = label;
           a.classList.remove('btn-outline');
           a.classList.add('btn-primary');
         });
@@ -603,7 +658,7 @@ AUTH.updateNav();
 })();
 
 // Protect pages
-const protectedPages = ['course.html', 'lesson.html', 'profile.html', 'admin.html'];
+const protectedPages = ['course.html', 'lesson.html', 'profile.html', 'admin.html', 'dashboard.html'];
 const currentPage = window.location.pathname.split('/').pop();
 if (protectedPages.includes(currentPage)) {
   AUTH.requireAuth();
@@ -815,7 +870,7 @@ if (loginForm) {
     const password = document.getElementById('password').value;
 
     if (AUTH.login(username, password)) {
-      window.location.href = 'course.html';
+      window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
     } else {
       if (loginError) {
         loginError.textContent = 'Invalid username or password.';
@@ -1253,6 +1308,20 @@ if (currentPage === 'lesson.html') {
   const isAdmin = AUTH.isAdmin();
   const isPublished = lesson && lesson.published === true;
 
+  // Dashboard tracking: remember last accessed + log view activity
+  if (lesson && (isAdmin || isPublished) && AUTH.isLoggedIn()) {
+    try { PROGRESS.setLastAccessed(weekId); } catch (e) {}
+    // Only log view once per hour per lesson to avoid spam
+    try {
+      const lastViewKey = 'last_view_' + weekId;
+      const lastView = parseInt(safeGetItem(lastViewKey) || '0', 10);
+      if (Date.now() - lastView > 60 * 60 * 1000) {
+        if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('lesson_viewed', weekId, 'W' + lesson.week + ': ' + lesson.title);
+        safeSetItem(lastViewKey, String(Date.now()));
+      }
+    } catch (e) {}
+  }
+
   // Show error if lesson not found
   if (!lesson) {
     const main = document.querySelector('.lesson-main');
@@ -1456,9 +1525,12 @@ if (currentPage === 'lesson.html') {
           resultDiv.className = 'quiz-result ' + (passed ? 'pass' : 'fail');
           if (passed) {
             resultDiv.innerHTML = '&#10003; You passed! ' + percentage + '% (' + correct + '/' + total + ' correct)';
+            // Log quiz activity
+            try { if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('quiz_passed', weekId, 'W' + lesson.week + ': ' + lesson.title + ' — ' + percentage + '%'); } catch (e) {}
             // Auto-complete lesson if passed
             if (!PROGRESS.isCompleted(weekId)) {
               PROGRESS.toggle(weekId);
+              try { if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('lesson_completed', weekId, 'W' + lesson.week + ': ' + lesson.title); } catch (e) {}
               // Update complete button
               const cb = document.getElementById('completeBtn');
               if (cb) {
@@ -1469,6 +1541,7 @@ if (currentPage === 'lesson.html') {
             NOTIFS.add('You passed the Week ' + lesson.week + ' assessment with ' + percentage + '%!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>');
           } else {
             resultDiv.innerHTML = '&#10007; Score: ' + percentage + '% — Need ' + quiz.passScore + '% to pass. <a href="javascript:location.reload()" style="color:inherit;font-weight:700;text-decoration:underline;">Try Again</a>';
+            try { if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('quiz_failed', weekId, 'W' + lesson.week + ': ' + lesson.title + ' — ' + percentage + '%'); } catch (e) {}
           }
           quizSection.querySelector('.quiz-submit').before(resultDiv);
         });
@@ -1669,7 +1742,11 @@ if (currentPage === 'lesson.html') {
         : '&#9744; Mark Week ' + lesson.week + ' as Complete';
 
       completeBtn.addEventListener('click', function() {
+        const wasComplete = PROGRESS.isCompleted(weekId);
         const nowComplete = PROGRESS.toggle(weekId);
+        if (!wasComplete && nowComplete) {
+          try { if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('lesson_completed', weekId, 'W' + lesson.week + ': ' + lesson.title); } catch (e) {}
+        }
         this.classList.toggle('completed', nowComplete);
         this.innerHTML = nowComplete
           ? '&#10003; Week ' + lesson.week + ' Completed'
@@ -3169,7 +3246,7 @@ if (currentPage === 'login.html') {
       safeSetItem('auth_avatar', user.photoURL);
     }
 
-    window.location.href = 'course.html';
+    window.location.href = 'dashboard.html';
   }
 
   async function signInWith(providerName) {
@@ -4572,5 +4649,165 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
         }
       });
     }
+  }
+}
+
+// ============================================================
+// STUDENT DASHBOARD
+// ============================================================
+if (currentPage === 'dashboard.html') {
+  try {
+    // Helper: relative time string
+    const relTime = (iso) => {
+      if (!iso) return '';
+      const diff = Date.now() - new Date(iso).getTime();
+      const m = Math.floor(diff / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      const d = Math.floor(h / 24);
+      if (d < 7) return d + 'd ago';
+      return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+    const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // 1) Welcome name
+    const nameEl = document.getElementById('dashName');
+    if (nameEl) {
+      const n = (typeof AUTH !== 'undefined' && AUTH.getDisplayName) ? (AUTH.getDisplayName() || 'Student') : 'Student';
+      nameEl.textContent = n.split(/\s+/)[0] || n;
+    }
+
+    // 2) Progress ring
+    const completed = (typeof PROGRESS !== 'undefined') ? PROGRESS.getCompletedCount() : 0;
+    const pct = (typeof PROGRESS !== 'undefined') ? PROGRESS.getPercentage() : 0;
+    const pctEl = document.getElementById('dashPct');
+    const fracEl = document.getElementById('dashFrac');
+    if (pctEl) pctEl.textContent = pct + '%';
+    if (fracEl) fracEl.textContent = completed + ' / 16 weeks';
+    const ring = document.querySelector('.progress-ring-fg');
+    if (ring) {
+      const r = 60;
+      const c = 2 * Math.PI * r;
+      ring.setAttribute('stroke-dasharray', c.toString());
+      ring.setAttribute('stroke-dashoffset', (c - (c * pct / 100)).toString());
+    }
+
+    // 3) Determine "current lesson" for Continue button, Current Week, and Upcoming
+    let currentLesson = null;
+    try {
+      if (typeof LESSONS !== 'undefined') {
+        const all = LESSONS.getAll();
+        const lastId = (typeof PROGRESS !== 'undefined') ? PROGRESS.getLastAccessed() : '';
+        const lastLesson = lastId ? LESSONS.get(lastId) : null;
+        // Prefer last accessed if not yet completed, else next incomplete published lesson
+        if (lastLesson && (typeof PROGRESS === 'undefined' || !PROGRESS.isCompleted(lastLesson.id))) {
+          currentLesson = lastLesson;
+        } else {
+          currentLesson = all.find(l => l.published && (typeof PROGRESS === 'undefined' || !PROGRESS.isCompleted(l.id))) || null;
+        }
+        // Fallback: last accessed even if completed, or first lesson
+        if (!currentLesson) currentLesson = lastLesson || all[0] || null;
+      }
+    } catch (e) {}
+
+    // Continue Learning button
+    const continueBtn = document.getElementById('dashContinueBtn');
+    const continueLabel = document.getElementById('dashContinueLabel');
+    if (continueBtn && currentLesson) {
+      continueBtn.href = 'lesson.html?week=' + currentLesson.id;
+      if (continueLabel) continueLabel.textContent = 'Continue: W' + currentLesson.week + ' — ' + currentLesson.title;
+    }
+
+    // Current Week card
+    const weekNumEl = document.getElementById('dashWeekNum');
+    const weekTitleEl = document.getElementById('dashWeekTitle');
+    const deadlineEl = document.getElementById('dashDeadline');
+    if (currentLesson) {
+      if (weekNumEl) weekNumEl.textContent = 'Week ' + currentLesson.week;
+      if (weekTitleEl) weekTitleEl.textContent = currentLesson.title;
+      if (deadlineEl) {
+        if (currentLesson.assignment && currentLesson.assignment.enabled) {
+          deadlineEl.textContent = 'Assignment required';
+        } else if (currentLesson.quiz && currentLesson.quiz.enabled) {
+          deadlineEl.textContent = 'Quiz required to pass';
+        } else {
+          deadlineEl.textContent = 'Flexible pace';
+        }
+      }
+    } else if (completed >= 16) {
+      if (weekNumEl) weekNumEl.textContent = 'Complete!';
+      if (weekTitleEl) weekTitleEl.textContent = 'You finished all 16 weeks.';
+      if (deadlineEl) deadlineEl.textContent = 'Download your certificate';
+    }
+
+    // Upcoming Lesson reminder
+    const reminderTitle = document.getElementById('dashReminderTitle');
+    const reminderDesc = document.getElementById('dashReminderDesc');
+    const reminderStatus = document.getElementById('dashReminderStatus');
+    const reminderLink = document.getElementById('dashReminderLink');
+    if (currentLesson) {
+      const hasAssignment = currentLesson.assignment && currentLesson.assignment.enabled;
+      const hasQuiz = currentLesson.quiz && currentLesson.quiz.enabled;
+      if (hasAssignment) {
+        if (reminderTitle) reminderTitle.textContent = currentLesson.assignment.title || 'Weekly Assignment';
+        if (reminderDesc) reminderDesc.textContent = currentLesson.assignment.description || 'Submit your deliverable for Week ' + currentLesson.week + '.';
+        if (reminderStatus) {
+          const submitted = (typeof ASSIGNMENTS !== 'undefined') && ASSIGNMENTS.isSubmitted(currentLesson.id);
+          reminderStatus.textContent = submitted ? 'Submitted' : 'Pending';
+          reminderStatus.className = 'reminder-status ' + (submitted ? 'submitted' : 'pending');
+        }
+      } else if (hasQuiz) {
+        if (reminderTitle) reminderTitle.textContent = 'Week ' + currentLesson.week + ' Assessment';
+        if (reminderDesc) reminderDesc.textContent = 'Complete the quiz for ' + currentLesson.title + '.';
+        if (reminderStatus) {
+          const passed = (typeof QUIZ_RESULTS !== 'undefined') && QUIZ_RESULTS.isPassed(currentLesson.id);
+          reminderStatus.textContent = passed ? 'Passed' : 'Pending';
+          reminderStatus.className = 'reminder-status ' + (passed ? 'submitted' : 'pending');
+        }
+      } else {
+        if (reminderTitle) reminderTitle.textContent = 'Week ' + currentLesson.week + ': ' + currentLesson.title;
+        if (reminderDesc) reminderDesc.textContent = 'Watch the lesson and mark it as complete.';
+        if (reminderStatus) {
+          const isDone = (typeof PROGRESS !== 'undefined') && PROGRESS.isCompleted(currentLesson.id);
+          reminderStatus.textContent = isDone ? 'Completed' : 'Pending';
+          reminderStatus.className = 'reminder-status ' + (isDone ? 'submitted' : 'pending');
+        }
+      }
+      if (reminderLink) reminderLink.href = 'lesson.html?week=' + currentLesson.id;
+    }
+
+    // Activity Feed
+    const activityEl = document.getElementById('dashActivity');
+    const activityCountEl = document.getElementById('dashActivityCount');
+    if (activityEl && typeof ACTIVITY !== 'undefined') {
+      const events = ACTIVITY.getAll();
+      if (activityCountEl) activityCountEl.textContent = events.length + ' event' + (events.length === 1 ? '' : 's');
+      if (events.length === 0) {
+        activityEl.innerHTML = '<li class="activity-empty">No activity yet. Your lesson views, quizzes, and submissions will show here.</li>';
+      } else {
+        activityEl.innerHTML = events.slice(0, 10).map(e => {
+          const colorMap = {
+            lesson_viewed: 'blue',
+            lesson_completed: 'green',
+            quiz_passed: 'purple',
+            quiz_failed: 'amber',
+            assignment_submitted: 'pink'
+          };
+          const color = colorMap[e.type] || 'blue';
+          return '<li class="activity-item">'
+            + '<div class="activity-icon ' + color + '">' + ACTIVITY.iconFor(e.type) + '</div>'
+            + '<div class="activity-body">'
+            +   '<strong>' + esc(ACTIVITY.labelFor(e.type)) + '</strong>'
+            +   '<span>' + esc(e.title) + '</span>'
+            + '</div>'
+            + '<time>' + relTime(e.date) + '</time>'
+            + '</li>';
+        }).join('');
+      }
+    }
+  } catch (e) {
+    console.error('Dashboard render error:', e);
   }
 }

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Sphere Academy</title>
+  <meta name="description" content="Your learning dashboard — progress, next lesson, activity, and reminders.">
+  <link rel="stylesheet" href="styles.css?v=2025-04-24-dash">
+</head>
+<body class="page-loaded">
+
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <div class="nav-left">
+        <a href="index.html" class="logo">
+          <div class="logo-icon"><img src="logo.png" alt="Sphere Academy"></div>
+          Sphere Academy
+        </a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="dashboard.html" class="active">Dashboard</a></li>
+        <li><a href="course.html">Course</a></li>
+        <li><a href="profile.html">Profile</a></li>
+        <li class="nav-mobile-cta"><a href="login.html" class="btn btn-outline">Log In</a></li>
+      </ul>
+      <div class="nav-cta">
+        <button class="theme-toggle" id="searchBtn" aria-label="Search" title="Search lessons"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        <button class="notif-btn" id="notifBtn" aria-label="Notifications" title="Notifications"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-badge" id="notifBadge" style="display:none;">0</span></button>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+        <a href="login.html" class="btn btn-outline">Log In</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Dashboard -->
+  <section class="dash-page">
+    <div class="container">
+
+      <!-- Hero: Welcome + Continue CTA -->
+      <div class="dash-hero">
+        <div class="dash-hero-text">
+          <p class="dash-eyebrow">YOUR DASHBOARD</p>
+          <h1>Welcome back, <span id="dashName">Student</span>!</h1>
+          <p class="dash-hero-sub" id="dashSub">Pick up where you left off and keep learning.</p>
+        </div>
+        <a href="lesson.html?week=w1" id="dashContinueBtn" class="dash-continue-btn">
+          <span id="dashContinueLabel">Continue Learning</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+
+      <!-- Top row: 3 cards -->
+      <div class="dash-grid">
+
+        <!-- Progress ring -->
+        <div class="dash-card">
+          <p class="dash-card-label">Overall Progress</p>
+          <div class="progress-ring-wrap">
+            <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+              <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke-width="10" fill="none"/>
+              <circle class="progress-ring-fg" cx="70" cy="70" r="60" stroke-width="10" fill="none" stroke-linecap="round" transform="rotate(-90 70 70)"/>
+            </svg>
+            <div class="progress-ring-text">
+              <strong id="dashPct">0%</strong>
+              <span id="dashFrac">0 / 16 weeks</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Week -->
+        <div class="dash-card">
+          <p class="dash-card-label">Current Week</p>
+          <strong class="week-num" id="dashWeekNum">Week 1</strong>
+          <p class="week-title" id="dashWeekTitle">Digital Marketing &amp; Ecommerce</p>
+          <div class="week-meta">
+            <span class="week-meta-label">Next deadline</span>
+            <strong id="dashDeadline">Flexible pace</strong>
+          </div>
+        </div>
+
+        <!-- Upcoming reminder -->
+        <div class="dash-card">
+          <p class="dash-card-label">Upcoming Lesson</p>
+          <strong class="reminder-title" id="dashReminderTitle">Next Up</strong>
+          <p class="reminder-desc" id="dashReminderDesc">Start with the first week of the program.</p>
+          <div class="reminder-footer">
+            <span class="reminder-status" id="dashReminderStatus">Pending</span>
+            <a href="#" id="dashReminderLink" class="reminder-link">View &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Feed -->
+      <div class="dash-section">
+        <div class="dash-section-header">
+          <h2>Recent Activity</h2>
+          <span class="dash-section-sub" id="dashActivityCount">0 events</span>
+        </div>
+        <ul class="activity-feed" id="dashActivity">
+          <li class="activity-empty">No activity yet. Your lesson views, quizzes, and submissions will show here.</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Back to Top -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">&#8593;</button>
+
+  <!-- Notification Dropdown -->
+  <div class="notif-dropdown" id="notifDropdown">
+    <div class="notif-header">Notifications</div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+
+  <!-- Search Overlay -->
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-box">
+      <div class="search-input-wrap">
+        <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+        <input type="text" id="searchInput" placeholder="Search lessons..." autofocus>
+        <button class="search-close" id="searchClose">&#10005;</button>
+      </div>
+      <div class="search-results" id="searchResults">
+        <div class="search-empty">Type to search across all 16 lessons</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="script.js?v=2025-04-24-dash"></script>
+</body>
+</html>
