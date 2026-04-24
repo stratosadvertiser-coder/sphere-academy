@@ -5034,22 +5034,40 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
     }
     renderAboutPillarsEditor();
 
+    // Shared save function (used by both the quick-save button and the bottom save button)
+    function saveAboutAll() {
+      if (typeof ABOUT === 'undefined') { alert('About module not loaded. Hard-refresh the page.'); return false; }
+      const text = {
+        label: (aboutLabelInput && aboutLabelInput.value.trim()) || ABOUT.defaultText.label,
+        title: (aboutTitleInput && aboutTitleInput.value.trim()) || ABOUT.defaultText.title,
+        desc:  (aboutDescInput  && aboutDescInput.value.trim())  || ABOUT.defaultText.desc
+      };
+      ABOUT.saveText(text);
+      const pillars = collectAboutPillarsFromDOM().filter(p => p.title || p.desc);
+      ABOUT.savePillars(pillars);
+      const toast = document.getElementById('adminToast');
+      if (toast) {
+        toast.innerHTML = '<span>&#10003;</span> About section saved to landing page!';
+        toast.style.display = 'flex';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      }
+      return true;
+    }
+
     if (saveAboutBtn) {
-      saveAboutBtn.addEventListener('click', () => {
-        if (typeof ABOUT === 'undefined') { alert('About module not loaded. Hard-refresh the page.'); return; }
-        const text = {
-          label: (aboutLabelInput && aboutLabelInput.value.trim()) || ABOUT.defaultText.label,
-          title: (aboutTitleInput && aboutTitleInput.value.trim()) || ABOUT.defaultText.title,
-          desc:  (aboutDescInput  && aboutDescInput.value.trim())  || ABOUT.defaultText.desc
-        };
-        ABOUT.saveText(text);
-        const pillars = collectAboutPillarsFromDOM().filter(p => p.title || p.desc);
-        ABOUT.savePillars(pillars);
-        const toast = document.getElementById('adminToast');
-        if (toast) {
-          toast.innerHTML = '<span>&#10003;</span> About section saved!';
-          toast.style.display = 'flex';
-          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      saveAboutBtn.addEventListener('click', saveAboutAll);
+    }
+
+    // Quick-save button right after the text fields
+    const saveAboutTextBtn = document.getElementById('saveAboutTextBtn');
+    const saveAboutTextStatus = document.getElementById('saveAboutTextStatus');
+    if (saveAboutTextBtn) {
+      saveAboutTextBtn.addEventListener('click', () => {
+        if (!saveAboutAll()) return;
+        // Also show inline confirmation
+        if (saveAboutTextStatus) {
+          saveAboutTextStatus.style.display = 'inline';
+          setTimeout(() => { saveAboutTextStatus.style.display = 'none'; }, 2500);
         }
       });
     }
