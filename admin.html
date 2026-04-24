@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel - Sphere Academy</title>
   <meta name="description" content="Admin dashboard for managing lessons, content, and course settings in Sphere Academy.">
-  <link rel="stylesheet" href="styles.css?v=2025-04-24-bell">
+  <link rel="stylesheet" href="styles.css?v=2025-04-24-video">
 </head>
 <body class="page-loaded">
 
@@ -323,14 +323,20 @@
               <div class="profile-form-grid">
                 <div class="form-group">
                   <label for="editorVideoUrl">Video URL</label>
-                  <input type="url" id="editorVideoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                  <input type="url" id="editorVideoUrl" placeholder="Paste link from YouTube, Vimeo, Google Drive, Facebook, Loom, TikTok, or direct .mp4">
+                  <small style="color:var(--text-light); font-size:0.78rem; margin-top:6px; display:block;">Supports: YouTube &bull; Vimeo &bull; Google Drive &bull; Facebook Video &bull; Loom &bull; TikTok &bull; Direct .mp4 URL. Just paste — the provider is auto-detected.</small>
                 </div>
                 <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                   <div>
                     <label for="editorVideoType">Type</label>
                     <select id="editorVideoType">
+                      <option value="auto">Auto-detect</option>
                       <option value="youtube">YouTube</option>
                       <option value="vimeo">Vimeo</option>
+                      <option value="gdrive">Google Drive</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="loom">Loom</option>
+                      <option value="tiktok">TikTok</option>
                       <option value="direct">Direct MP4</option>
                     </select>
                   </div>
@@ -476,6 +482,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-04-24-bell"></script>
+  <script src="script.js?v=2025-04-24-video"></script>
 </body>
 </html>

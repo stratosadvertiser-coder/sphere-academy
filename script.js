@@ -825,36 +825,127 @@ const LESSONS = {
     if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split(/[?&#]/)[0];
     if (url.includes('v=')) return url.split('v=')[1].split(/[?&#]/)[0];
     if (url.includes('/embed/')) return url.split('/embed/')[1].split(/[?&#]/)[0];
+    if (url.includes('/shorts/')) return url.split('/shorts/')[1].split(/[?&#]/)[0];
     return url;
   },
 
+  // Detect which free video platform the URL belongs to
+  detectProvider(url) {
+    if (!url) return { type: 'unknown', id: '', label: 'Video' };
+    url = url.trim();
+    // YouTube
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      return { type: 'youtube', id: this.extractYouTubeId(url), label: 'YouTube' };
+    }
+    // Vimeo
+    if (url.includes('vimeo.com')) {
+      const m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      return { type: 'vimeo', id: m ? m[1] : '', label: 'Vimeo' };
+    }
+    // Google Drive
+    if (url.includes('drive.google.com')) {
+      const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      return { type: 'gdrive', id: m ? m[1] : '', label: 'Google Drive' };
+    }
+    // Facebook
+    if (url.includes('facebook.com') || url.includes('fb.watch')) {
+      return { type: 'facebook', id: url, label: 'Facebook' };
+    }
+    // Loom
+    if (url.includes('loom.com')) {
+      const m = url.match(/loom\.com\/(?:share|embed)\/([a-f0-9]+)/);
+      return { type: 'loom', id: m ? m[1] : '', label: 'Loom' };
+    }
+    // TikTok
+    if (url.includes('tiktok.com')) {
+      const m = url.match(/video\/(\d+)/);
+      return { type: 'tiktok', id: m ? m[1] : url, label: 'TikTok' };
+    }
+    // Direct video file
+    if (url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i)) {
+      return { type: 'mp4', id: url, label: 'Video' };
+    }
+    return { type: 'mp4', id: url, label: 'Video' };
+  },
+
+  // Provider-specific SVG mini icons for the click-to-play overlay
+  providerIconSVG(type) {
+    const paths = {
+      youtube:  '<path d="M23 12s0-3.6-.46-5.32a2.78 2.78 0 0 0-2-2C18.88 4.26 12 4.26 12 4.26s-6.88 0-8.54.42a2.78 2.78 0 0 0-2 2C1 8.4 1 12 1 12s0 3.6.46 5.32a2.78 2.78 0 0 0 2 2c1.66.42 8.54.42 8.54.42s6.88 0 8.54-.42a2.78 2.78 0 0 0 2-2C23 15.6 23 12 23 12z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor"/>',
+      vimeo:    '<rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 10c0-1 3-4 4-4s2 3 3 6 1 5 3 3"/>',
+      gdrive:   '<path d="M7.71 3.5L1.15 15l3.15 5h15.43l-3.15-5L10.85 3.5H7.71z"/><path d="M16.15 15H4.3"/>',
+      facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
+      loom:     '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/>',
+      tiktok:   '<path d="M9 3v12a3 3 0 1 1-3-3"/><path d="M15 3v3a5 5 0 0 0 5 5"/>',
+      mp4:      '<polygon points="6 4 20 12 6 20" fill="currentColor"/>'
+    };
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px">' + (paths[type] || paths.mp4) + '</svg>';
+  },
+
+  // Build the actual iframe/video embed for autoplay=true
+  _buildPlayerHTML(provider, url, ap) {
+    switch (provider.type) {
+      case 'youtube':
+        if (!provider.id) return '';
+        return '<iframe src="https://www.youtube.com/embed/' + provider.id + '?autoplay=' + ap + '&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;border-radius:12px;"></iframe>';
+      case 'vimeo':
+        if (!provider.id) return '';
+        return '<iframe src="https://player.vimeo.com/video/' + provider.id + '?autoplay=' + ap + '" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="width:100%;height:100%;border-radius:12px;"></iframe>';
+      case 'gdrive':
+        if (!provider.id) return '';
+        return '<iframe src="https://drive.google.com/file/d/' + provider.id + '/preview" allow="autoplay" allowfullscreen style="width:100%;height:100%;border-radius:12px;"></iframe>';
+      case 'facebook':
+        return '<iframe src="https://www.facebook.com/plugins/video.php?href=' + encodeURIComponent(url) + '&show_text=false&autoplay=' + (ap ? 'true' : 'false') + '" scrolling="no" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" style="width:100%;height:100%;border-radius:12px;"></iframe>';
+      case 'loom':
+        if (!provider.id) return '';
+        return '<iframe src="https://www.loom.com/embed/' + provider.id + (ap ? '?autoplay=1' : '') + '" frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border-radius:12px;"></iframe>';
+      case 'tiktok':
+        if (!provider.id) return '';
+        return '<iframe src="https://www.tiktok.com/embed/v2/' + provider.id + '" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="width:100%;height:100%;border-radius:12px;"></iframe>';
+      case 'mp4':
+      default:
+        return '<video src="' + url + '" controls' + (ap ? ' autoplay' : '') + ' style="width:100%;height:100%;border-radius:12px;background:#000;"></video>';
+    }
+  },
+
   getVideoEmbed(lesson, autoplay) {
-    if (!lesson.videoUrl) return '';
+    if (!lesson || !lesson.videoUrl) return '';
     const url = lesson.videoUrl.trim();
     const ap = autoplay ? 1 : 0;
+    const provider = this.detectProvider(url);
 
-    if (lesson.videoType === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
-      const vid = this.extractYouTubeId(url);
-      if (!vid) return '';
-      // Clean click-to-play preview (no ugly YouTube watermark fallback).
-      // Thumbnail shown as subtle background with dark overlay + custom play button.
-      if (!autoplay) {
-        return '<div class="yt-thumb-player" data-vid="' + vid + '">'
-          + '<img class="yt-thumb-img" src="https://img.youtube.com/vi/' + vid + '/maxresdefault.jpg" alt="" onerror="this.onerror=null;this.src=\'https://img.youtube.com/vi/' + vid + '/hqdefault.jpg\';this.classList.add(\'yt-thumb-fallback\')">'
-          + '<div class="yt-thumb-overlay"></div>'
-          + '<div class="yt-thumb-play" aria-label="Play video">'
-          +   '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20"/></svg>'
-          + '</div>'
-          + '<div class="yt-thumb-hint">Click to play</div>'
-          + '</div>';
-      }
-      return '<iframe src="https://www.youtube.com/embed/' + vid + '?autoplay=' + ap + '&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;border-radius:12px;"></iframe>';
+    // If autoplay=true → render the real iframe/video
+    if (autoplay) return this._buildPlayerHTML(provider, url, ap);
+
+    // MP4 direct files don't need click-to-play — show video directly with controls
+    if (provider.type === 'mp4') return this._buildPlayerHTML(provider, url, 0);
+
+    // All other providers → click-to-play preview
+    // YouTube gets a real thumbnail from img.youtube.com
+    // Vimeo gets a real thumbnail from vumbnail.com
+    // Everything else (Drive, FB, Loom, TikTok) gets a clean gradient placeholder
+    let thumbSrc = '';
+    let thumbFallback = '';
+    if (provider.type === 'youtube' && provider.id) {
+      thumbSrc = 'https://img.youtube.com/vi/' + provider.id + '/maxresdefault.jpg';
+      thumbFallback = 'https://img.youtube.com/vi/' + provider.id + '/hqdefault.jpg';
+    } else if (provider.type === 'vimeo' && provider.id) {
+      thumbSrc = 'https://vumbnail.com/' + provider.id + '.jpg';
+      thumbFallback = 'https://vumbnail.com/' + provider.id + '_small.jpg';
     }
-    if (lesson.videoType === 'vimeo' || url.includes('vimeo.com')) {
-      const vid = url.split('vimeo.com/')[1]?.split(/[?&/]/)[0] || url;
-      return '<iframe src="https://player.vimeo.com/video/' + vid + '?autoplay=' + ap + '" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="width:100%;height:100%;border-radius:12px;"></iframe>';
-    }
-    return '<video src="' + url + '" controls' + (autoplay ? ' autoplay' : '') + ' style="width:100%;height:100%;border-radius:12px;"></video>';
+
+    const imgHtml = thumbSrc
+      ? '<img class="yt-thumb-img" src="' + thumbSrc + '" alt="" onerror="this.onerror=null;this.src=\'' + thumbFallback + '\';this.classList.add(\'yt-thumb-fallback\')">'
+      : '';
+
+    return '<div class="yt-thumb-player" data-vid="' + (provider.id || '') + '" data-provider="' + provider.type + '">'
+      + imgHtml
+      + '<div class="yt-thumb-overlay"></div>'
+      + '<div class="yt-thumb-play" aria-label="Play video">'
+      +   '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20"/></svg>'
+      + '</div>'
+      + '<div class="yt-thumb-hint">' + this.providerIconSVG(provider.type) + provider.label + ' · Click to play</div>'
+      + '</div>';
   }
 };
 
