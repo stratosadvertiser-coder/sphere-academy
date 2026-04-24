@@ -4384,6 +4384,52 @@ if (currentPage === 'index.html') {
   const sectionTitleEl = document.querySelector('.features-header .section-title');
   if (sectionTitleEl) sectionTitleEl.textContent = SITE_SETTINGS.getTitle();
 
+  // 3D tilt on the Training Program hero card (mouse-move parallax)
+  (function initHeroCardTilt() {
+    const wrap = document.getElementById('heroCardWrap');
+    if (!wrap) return;
+    // Skip on touch/small devices where hover+tilt feels odd
+    if (!window.matchMedia('(hover: hover) and (min-width: 900px)').matches) return;
+
+    const MAX_ROT = 7;      // max degrees of rotation
+    const DAMP = 0.12;      // smoothing factor
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let raf = null;
+    let hovering = false;
+
+    function tick() {
+      currentX += (targetX - currentX) * DAMP;
+      currentY += (targetY - currentY) * DAMP;
+      wrap.style.transform = 'perspective(1200px) rotateX(' + currentX.toFixed(2) + 'deg) rotateY(' + currentY.toFixed(2) + 'deg)';
+      // Keep animating while hovering or until we're close enough to rest
+      if (hovering || Math.abs(currentX) > 0.05 || Math.abs(currentY) > 0.05) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        wrap.style.transform = '';
+        raf = null;
+      }
+    }
+
+    wrap.addEventListener('mouseenter', () => {
+      hovering = true;
+      if (!raf) raf = requestAnimationFrame(tick);
+    });
+    wrap.addEventListener('mousemove', (e) => {
+      const rect = wrap.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;   // 0..1
+      const py = (e.clientY - rect.top)  / rect.height;  // 0..1
+      targetY =  (px - 0.5) * 2 * MAX_ROT;  // left/right => rotateY
+      targetX = -(py - 0.5) * 2 * MAX_ROT;  // up/down   => rotateX (inverted)
+    });
+    wrap.addEventListener('mouseleave', () => {
+      hovering = false;
+      targetX = 0;
+      targetY = 0;
+      if (!raf) raf = requestAnimationFrame(tick);
+    });
+  })();
+
   // Render feature cards from admin settings
   const featuresGridEl = document.getElementById('featuresGrid');
   if (featuresGridEl) {
