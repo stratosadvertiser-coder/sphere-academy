@@ -1066,6 +1066,61 @@ const LESSONS = {
     return this.getAll().filter(l => l.published).length;
   },
 
+  // ===== Prerequisites / Auto-Unlock =====
+  // Week N is unlocked iff Week (N-1) was completed AND its quiz passed
+  // (if the quiz is enabled) AND its assignment submitted (if enabled).
+  // Week 1 is always unlocked. Admin bypass: admin always sees everything.
+  isUnlocked(weekId) {
+    try {
+      if (typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin()) return true;
+      const lesson = this.get(weekId);
+      if (!lesson) return false;
+      if ((lesson.week || 1) <= 1) return true;
+      const prevWeekId = 'w' + (lesson.week - 1);
+      const prev = this.get(prevWeekId);
+      if (!prev) return true; // no previous lesson defined — unlock
+      // Lesson must be marked complete
+      if (typeof PROGRESS !== 'undefined' && !PROGRESS.isCompleted(prevWeekId)) return false;
+      // If prev has a quiz enabled, must be passed
+      if (prev.quiz && prev.quiz.enabled && prev.quiz.questions && prev.quiz.questions.length > 0) {
+        if (typeof QUIZ_RESULTS !== 'undefined' && !QUIZ_RESULTS.isPassed(prevWeekId)) return false;
+      }
+      // If prev has assignment enabled, must be submitted
+      if (prev.assignment && prev.assignment.enabled) {
+        if (typeof ASSIGNMENTS !== 'undefined' && !ASSIGNMENTS.isSubmitted(prevWeekId)) return false;
+      }
+      return true;
+    } catch (e) { return true; /* on any error, fail open */ }
+  },
+
+  // What's blocking a locked lesson — returns an array of requirements
+  getUnlockRequirements(weekId) {
+    const out = [];
+    try {
+      const lesson = this.get(weekId);
+      if (!lesson || (lesson.week || 1) <= 1) return out;
+      const prevWeekId = 'w' + (lesson.week - 1);
+      const prev = this.get(prevWeekId);
+      if (!prev) return out;
+      const prevLabel = 'Week ' + prev.week + ' \u2014 ' + prev.title;
+      if (typeof PROGRESS !== 'undefined' && !PROGRESS.isCompleted(prevWeekId)) {
+        out.push({ type: 'complete', label: 'Complete the lesson: ' + prevLabel, weekId: prevWeekId });
+      }
+      if (prev.quiz && prev.quiz.enabled && prev.quiz.questions && prev.quiz.questions.length > 0) {
+        if (typeof QUIZ_RESULTS !== 'undefined' && !QUIZ_RESULTS.isPassed(prevWeekId)) {
+          const pass = prev.quiz.passScore || 70;
+          out.push({ type: 'quiz', label: 'Pass the Week ' + prev.week + ' quiz (' + pass + '%+)', weekId: prevWeekId });
+        }
+      }
+      if (prev.assignment && prev.assignment.enabled) {
+        if (typeof ASSIGNMENTS !== 'undefined' && !ASSIGNMENTS.isSubmitted(prevWeekId)) {
+          out.push({ type: 'assignment', label: 'Submit the Week ' + prev.week + ' assignment', weekId: prevWeekId });
+        }
+      }
+    } catch (e) {}
+    return out;
+  },
+
   extractYouTubeId(url) {
     if (!url) return '';
     if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split(/[?&#]/)[0];
@@ -1304,6 +1359,29 @@ if (currentPage === 'login.html' && window.location.search.includes('registered=
 }
 
 // ===== COURSE CARD IMAGES (dynamic from localStorage) =====
+// ===== Add lock indicators to ALL lesson-item links on course + home =====
+if (currentPage === 'course.html' || currentPage === 'index.html') {
+  try {
+    const LOCK_SVG_SMALL = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+    document.querySelectorAll('.lesson-item[href*="lesson.html"]').forEach(link => {
+      const m = (link.getAttribute('href') || '').match(/week=(\w+)/);
+      if (!m) return;
+      const wid = m[1];
+      if (!LESSONS.isUnlocked(wid)) {
+        link.classList.add('is-locked');
+        if (!link.querySelector('.lesson-item-lock')) {
+          const dur = link.querySelector('.duration');
+          const lockSpan = document.createElement('span');
+          lockSpan.className = 'lesson-item-lock';
+          lockSpan.innerHTML = LOCK_SVG_SMALL + 'Locked';
+          if (dur) link.insertBefore(lockSpan, dur);
+          else link.appendChild(lockSpan);
+        }
+      }
+    });
+  } catch (e) {}
+}
+
 if (currentPage === 'course.html' || currentPage === 'index.html') {
   const cardMonths = [
     { month: 1, selector: '.course-card-link[href*="week=w1"] .course-card-img, .course-card-link:nth-child(1) .course-card-img' },
@@ -1683,8 +1761,36 @@ if (currentPage === 'lesson.html') {
     }
   }
 
-  // Render content only if published OR admin
-  if (lesson && (isPublished || isAdmin)) {
+  // Prerequisites gate — if published but locked (and not admin), show locked screen
+  const isLocked = lesson && isPublished && !isAdmin && !LESSONS.isUnlocked(weekId);
+  if (isLocked) {
+    const main = document.querySelector('.lesson-main');
+    if (main) {
+      const reqs = LESSONS.getUnlockRequirements(weekId);
+      const reqListHtml = reqs.map(r => {
+        const iconSvg = r.type === 'quiz'
+          ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>'
+          : r.type === 'assignment'
+          ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        return '<li class="lock-req"><span class="lock-req-icon">' + iconSvg + '</span><span>' + r.label + '</span></li>';
+      }).join('');
+      const prevWeekNum = (lesson.week || 2) - 1;
+      main.innerHTML = '<div class="lesson-locked">'
+        + '<div class="lesson-locked-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
+        + '<h2>Week ' + lesson.week + ' is locked</h2>'
+        + '<p>Finish the Week ' + prevWeekNum + ' requirements below to unlock <strong>' + lesson.title + '</strong>.</p>'
+        + (reqs.length ? '<ul class="lock-req-list">' + reqListHtml + '</ul>' : '')
+        + '<div class="lesson-locked-actions">'
+        +   '<a href="lesson.html?week=w' + prevWeekNum + '" class="btn btn-primary">Go to Week ' + prevWeekNum + ' \u2192</a>'
+        +   '<a href="course.html" class="btn btn-outline">Back to Course</a>'
+        + '</div>'
+        + '</div>';
+    }
+  }
+
+  // Render content only if published OR admin AND not locked
+  if (lesson && (isPublished || isAdmin) && !isLocked) {
     // Update title
     const titleEl = document.querySelector('.lesson-content h1');
     if (titleEl) titleEl.textContent = lesson.title;
@@ -4372,7 +4478,8 @@ if (currentPage === 'index.html') {
     if (name) h3.textContent = name;
   });
 
-  // Sync curriculum weekly lesson titles from the latest admin data
+  // Sync curriculum weekly lesson titles + lock indicators from the latest admin data
+  const LOCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
   document.querySelectorAll('.curriculum .lesson-item').forEach(link => {
     const href = link.getAttribute('href') || '';
     const match = href.match(/week=(\w+)/);
@@ -4383,6 +4490,7 @@ if (currentPage === 'index.html') {
 
     const globalWeek = parseInt(weekId.replace(/\D/g, ''), 10);
     const intraWeek = ((globalWeek - 1) % 4) + 1;
+    const unlocked = LESSONS.isUnlocked(weekId);
 
     const icon = link.querySelector('.icon');
     const duration = link.querySelector('.duration');
@@ -4390,6 +4498,16 @@ if (currentPage === 'index.html') {
     link.innerHTML = '';
     if (icon) link.appendChild(icon);
     link.appendChild(document.createTextNode(' W' + intraWeek + ': ' + lesson.title + ' '));
+    // Add lock indicator if locked
+    if (!unlocked) {
+      const lockSpan = document.createElement('span');
+      lockSpan.className = 'lesson-item-lock';
+      lockSpan.innerHTML = LOCK_SVG + 'Locked';
+      link.appendChild(lockSpan);
+      link.classList.add('is-locked');
+    } else {
+      link.classList.remove('is-locked');
+    }
     if (duration) {
       duration.textContent = 'Week ' + (lesson.week || globalWeek);
       link.appendChild(duration);
@@ -5056,11 +5174,17 @@ if (currentPage === 'dashboard.html') {
         const all = LESSONS.getAll();
         const lastId = (typeof PROGRESS !== 'undefined') ? PROGRESS.getLastAccessed() : '';
         const lastLesson = lastId ? LESSONS.get(lastId) : null;
-        // Prefer last accessed if not yet completed, else next incomplete published lesson
-        if (lastLesson && (typeof PROGRESS === 'undefined' || !PROGRESS.isCompleted(lastLesson.id))) {
+        const isUnlockedOrAdmin = (l) => LESSONS.isUnlocked(l.id);
+        // Prefer last accessed if unlocked + not yet completed
+        if (lastLesson && isUnlockedOrAdmin(lastLesson) && (typeof PROGRESS === 'undefined' || !PROGRESS.isCompleted(lastLesson.id))) {
           currentLesson = lastLesson;
         } else {
-          currentLesson = all.find(l => l.published && (typeof PROGRESS === 'undefined' || !PROGRESS.isCompleted(l.id))) || null;
+          // Next incomplete, published, AND unlocked lesson
+          currentLesson = all.find(l =>
+            l.published
+            && isUnlockedOrAdmin(l)
+            && (typeof PROGRESS === 'undefined' || !PROGRESS.isCompleted(l.id))
+          ) || null;
         }
         // Fallback: last accessed even if completed, or first lesson
         if (!currentLesson) currentLesson = lastLesson || all[0] || null;

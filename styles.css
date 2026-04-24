@@ -1744,6 +1744,109 @@ img {
 }
 
 /* ============================================================
+   PREREQUISITES / LOCKED LESSON
+   ============================================================ */
+.lesson-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 60px 24px;
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.lesson-locked-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 24px -6px rgba(245, 158, 11, 0.45);
+  margin-bottom: 20px;
+}
+.lesson-locked h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+.lesson-locked p {
+  color: var(--text-light);
+  font-size: 0.95rem;
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+.lesson-locked p strong { color: var(--text); }
+
+.lock-req-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  text-align: left;
+}
+.lock-req {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 500;
+}
+.lock-req:last-child { border-bottom: none; }
+.lock-req-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--primary-glow);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lesson-locked-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Lock pill inside curriculum lesson items */
+.lesson-item.is-locked {
+  opacity: 0.65;
+}
+.lesson-item-lock {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  margin-right: 8px;
+  background: rgba(251, 191, 36, 0.15);
+  color: #b45309;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+[data-theme="dark"] .lesson-item-lock {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
+}
+
+/* ============================================================
    ADMIN ANALYTICS
    ============================================================ */
 .analytics-summary-grid {
