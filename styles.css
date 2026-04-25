@@ -591,45 +591,103 @@ img {
   position: relative;
 }
 
-/* ===== Animated gradient border wrapper around the hero card ===== */
-@property --grad-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-.hero-card-wrap {
-  position: relative;
-  border-radius: calc(var(--radius-lg) + 2px);
-  padding: 2px;
-  background: conic-gradient(from var(--grad-angle), #3b82f6, #7c3aed, #ec4899, #06b6d4, #3b82f6);
-  animation: spin-grad 6s linear infinite;
-  transition: transform 0.1s ease-out;
-  transform-style: preserve-3d;
-  will-change: transform;
-}
-@keyframes spin-grad {
-  to { --grad-angle: 360deg; }
-}
-/* Fallback for browsers without @property support — soft pulsing glow */
-@supports not (background: paint(anything)) {
-  .hero-card-wrap {
-    background: linear-gradient(135deg, #3b82f6, #7c3aed, #ec4899);
-    animation: pulse-grad 4s ease-in-out infinite;
-  }
-  @keyframes pulse-grad {
-    0%, 100% { filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); }
-    50%      { filter: drop-shadow(0 0 30px rgba(124, 58, 237, 0.7)); }
-  }
-}
-
 .hero-card {
   background: var(--bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
-  border: 1px solid transparent;   /* border effect handled by wrapper */
+  border: 1px solid var(--border);
   position: relative;
   z-index: 1;
+}
+
+/* ===== Hero Login Card (replaces the old Training Program card) ===== */
+.hero-login-card .hero-card-header {
+  flex-direction: column;
+  text-align: center;
+  padding: 32px 28px 24px;
+}
+.hero-login-card .hero-card-header h3 {
+  font-size: 1.5rem;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.hero-login-sub {
+  font-size: 0.88rem;
+  opacity: 0.9;
+  margin: 6px 0 0;
+}
+.hero-login-body {
+  padding: 28px;
+}
+.hero-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hero-login-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hero-login-form label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.hero-login-form input {
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+.hero-login-form input::placeholder { color: var(--text-light); }
+.hero-login-form input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+.hero-login-submit {
+  margin-top: 6px;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  padding: 13px 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.hero-login-divider {
+  position: relative;
+  text-align: center;
+  margin: 6px 0;
+  font-size: 0.78rem;
+  color: var(--text-light);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.hero-login-divider::before,
+.hero-login-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 24px);
+  height: 1px;
+  background: var(--border);
+}
+.hero-login-divider::before { left: 0; }
+.hero-login-divider::after { right: 0; }
+.hero-login-signup {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  padding: 13px 18px;
+  font-size: 0.92rem;
 }
 
 .hero-card-header {

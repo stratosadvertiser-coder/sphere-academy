@@ -4428,10 +4428,8 @@ if (currentPage === 'index.html') {
     });
   }
 
-  // Apply to the Training Program hero card immediately
-  applyTilt(document.getElementById('heroCardWrap'));
-
-  // Expose applyTilt so the testimonial render block can re-apply after rebuild
+  // Hero card is now a static login card — no tilt applied there.
+  // Expose applyTilt so the testimonial render block can still use it.
   window.__applyTilt = applyTilt;
 
   // Render feature cards from admin settings
