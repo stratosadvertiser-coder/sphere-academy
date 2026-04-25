@@ -56,12 +56,34 @@ html {
 body {
   font-family: 'Montserrat', 'Satoshi', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
   color: var(--text);
-  background: var(--bg);
+  /* One continuous violet mesh painted across the whole page so
+     every section shares the same backdrop — no more visible
+     color cuts between sections. Fixed so it stays put as you scroll. */
+  background:
+    radial-gradient(at 12% 8%,  #ddd6fe 0%, transparent 40%),
+    radial-gradient(at 88% 18%, #c7d2fe 0%, transparent 40%),
+    radial-gradient(at 30% 45%, #ede9fe 0%, transparent 45%),
+    radial-gradient(at 75% 65%, #ddd6fe 0%, transparent 45%),
+    radial-gradient(at 15% 82%, #e9d5ff 0%, transparent 40%),
+    radial-gradient(at 85% 95%, #c7d2fe 0%, transparent 45%),
+    #ffffff;
+  background-attachment: fixed;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   transition: background 0.3s ease, color 0.3s ease;
+}
+[data-theme="dark"] body {
+  background:
+    radial-gradient(at 12% 8%,  rgba(139, 92, 246, 0.16) 0%, transparent 40%),
+    radial-gradient(at 88% 18%, rgba(99, 102, 241, 0.14) 0%, transparent 40%),
+    radial-gradient(at 30% 45%, rgba(168, 85, 247, 0.12) 0%, transparent 45%),
+    radial-gradient(at 75% 65%, rgba(124, 58, 237, 0.14) 0%, transparent 45%),
+    radial-gradient(at 15% 82%, rgba(167, 139, 250, 0.12) 0%, transparent 40%),
+    radial-gradient(at 85% 95%, rgba(99, 102, 241, 0.13) 0%, transparent 45%),
+    var(--bg);
+  background-attachment: fixed;
 }
 
 /* Tight modern display tracking on big marketing titles */
@@ -437,17 +459,21 @@ img {
 
 .hero::before { content: none; }
 .hero::after {
-  /* Smooth fade-out at the bottom so the hero blends into the next
-     section instead of showing a hard horizontal edge. */
+  /* Smooth fade-out at the bottom so the hero gradient melts into the
+     body's violet mesh below — fade to transparent (not white) to keep
+     the whole page one continuous color flow. */
   content: '';
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   height: 140px;
-  background: linear-gradient(180deg, transparent 0%, var(--bg) 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(237, 233, 254, 0.6) 100%);
   pointer-events: none;
   z-index: 2;
+}
+[data-theme="dark"] .hero::after {
+  background: linear-gradient(180deg, transparent 0%, rgba(15, 14, 30, 0.6) 100%);
 }
 
 /* ===== ANIMATED BACKGROUND BLOBS ===== */
@@ -993,18 +1019,11 @@ img {
   padding: 70px 0;
   position: relative;
   overflow: hidden;
-  /* Soft Violet Mesh — blobs pulled inward so edges are pure white
-     and naturally fade into adjacent sections */
-  background:
-    radial-gradient(at 80% 35%, #ddd6fe 0%, transparent 45%),
-    radial-gradient(at 20% 65%, #c7d2fe 0%, transparent 45%),
-    #ffffff;
+  /* Transparent — body-level violet mesh shows through for continuous flow */
+  background: transparent;
 }
 [data-theme="dark"] .features {
-  background:
-    radial-gradient(at 95% 10%, rgba(139, 92, 246, 0.16) 0%, transparent 50%),
-    radial-gradient(at 10% 95%, rgba(99, 102, 241, 0.14) 0%, transparent 50%),
-    var(--bg);
+  background: transparent;
 }
 .features > .container { position: relative; z-index: 1; }
 
@@ -1129,20 +1148,11 @@ img {
   padding: 70px 0;
   position: relative;
   overflow: hidden;
-  /* Soft Violet Mesh — blobs pulled inward, edges stay pure white */
-  background:
-    radial-gradient(at 25% 40%, #ddd6fe 0%, transparent 45%),
-    radial-gradient(at 75% 55%, #c7d2fe 0%, transparent 45%),
-    radial-gradient(at 50% 50%, #ede9fe 0%, transparent 55%),
-    #ffffff;
+  /* Transparent — body-level violet mesh shows through for continuous flow */
+  background: transparent;
 }
 [data-theme="dark"] .curriculum {
-  background:
-    radial-gradient(at 8% 12%,  rgba(139, 92, 246, 0.18) 0%, transparent 50%),
-    radial-gradient(at 92% 18%, rgba(99, 102, 241, 0.16) 0%, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(168, 85, 247, 0.14) 0%, transparent 55%),
-    radial-gradient(at 100% 80%, rgba(124, 58, 237, 0.12) 0%, transparent 55%),
-    var(--bg);
+  background: transparent;
 }
 .curriculum > .container { position: relative; z-index: 1; }
 
@@ -1271,18 +1281,11 @@ img {
   padding: 70px 0;
   position: relative;
   overflow: hidden;
-  /* Soft Violet Mesh — blobs centered, edges fade to white */
-  background:
-    radial-gradient(at 30% 50%, #ede9fe 0%, transparent 50%),
-    radial-gradient(at 70% 50%, #ddd6fe 0%, transparent 45%),
-    #ffffff;
+  /* Transparent — body-level violet mesh shows through for continuous flow */
+  background: transparent;
 }
 [data-theme="dark"] .instructor {
-  background:
-    radial-gradient(at 50% 30%, rgba(139, 92, 246, 0.16) 0%, transparent 55%),
-    radial-gradient(at 0% 70%,  rgba(99, 102, 241, 0.14) 0%, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.13) 0%, transparent 50%),
-    var(--bg);
+  background: transparent;
 }
 .instructor > .container { position: relative; z-index: 1; }
 
@@ -1541,7 +1544,7 @@ img {
 /* ===== TESTIMONIALS ===== */
 .testimonials {
   padding: 70px 0;
-  background: var(--bg-alt);
+  background: transparent;
 }
 
 .testimonials-header {
@@ -2110,17 +2113,11 @@ img {
   text-align: center;
   position: relative;
   overflow: hidden;
-  /* Soft Violet Mesh — blobs pulled inward, edges stay pure white */
-  background:
-    radial-gradient(at 25% 55%, #c7d2fe 0%, transparent 45%),
-    radial-gradient(at 75% 45%, #ddd6fe 0%, transparent 45%),
-    #ffffff;
+  /* Transparent — body-level violet mesh shows through for continuous flow */
+  background: transparent;
 }
 [data-theme="dark"] .about-section {
-  background:
-    radial-gradient(at 5% 8%,   rgba(99, 102, 241, 0.14) 0%, transparent 50%),
-    radial-gradient(at 95% 90%, rgba(139, 92, 246, 0.16) 0%, transparent 50%),
-    var(--bg);
+  background: transparent;
 }
 .about-section > .container { position: relative; z-index: 1; }
 .about-section .section-label,
@@ -2869,7 +2866,7 @@ img {
 .footer {
   padding: 80px 0 30px;
   border-top: 1px solid var(--border);
-  background: var(--bg);
+  background: transparent;
 }
 
 .footer-grid {
