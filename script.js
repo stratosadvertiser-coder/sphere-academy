@@ -4431,6 +4431,19 @@ if (currentPage === 'index.html') {
   // Expose applyTilt so the testimonial render block can still use it.
   window.__applyTilt = applyTilt;
 
+  // "Start the Program" smart routing:
+  //   - Not logged in -> /login.html
+  //   - Logged in (admin or student) -> /course.html
+  (function smartStartButton() {
+    const btn = document.getElementById('startProgramBtn');
+    if (!btn) return;
+    if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn()) {
+      btn.href = 'course.html';
+    } else {
+      btn.href = 'login.html';
+    }
+  })();
+
   // Render feature cards from admin settings
   const featuresGridEl = document.getElementById('featuresGrid');
   if (featuresGridEl) {
