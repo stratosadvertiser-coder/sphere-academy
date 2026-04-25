@@ -452,29 +452,15 @@ img {
 /* ===== HERO ===== */
 .hero {
   padding: 100px 0 80px;
-  background: linear-gradient(135deg, var(--bg) 0%, var(--primary-light) 50%, var(--bg) 100%);
+  /* Transparent — body-level violet mesh shows through, animated blobs
+     give the hero its visual punch. No more hard edge at the bottom. */
+  background: transparent;
   position: relative;
   overflow: hidden;
 }
 
 .hero::before { content: none; }
-.hero::after {
-  /* Smooth fade-out at the bottom so the hero gradient melts into the
-     body's violet mesh below — fade to transparent (not white) to keep
-     the whole page one continuous color flow. */
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 140px;
-  background: linear-gradient(180deg, transparent 0%, rgba(237, 233, 254, 0.6) 100%);
-  pointer-events: none;
-  z-index: 2;
-}
-[data-theme="dark"] .hero::after {
-  background: linear-gradient(180deg, transparent 0%, rgba(15, 14, 30, 0.6) 100%);
-}
+.hero::after { content: none; }
 
 /* ===== ANIMATED BACKGROUND BLOBS ===== */
 .hero-blobs {
