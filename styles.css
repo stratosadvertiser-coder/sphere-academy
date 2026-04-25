@@ -4531,36 +4531,21 @@ img {
 .course-card-link {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(160deg, #8b5cf6 0%, #a78bfa 55%, #c4b5fd 100%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: all 0.35s ease;
   text-decoration: none;
-  color: #ffffff;
+  color: inherit;
   position: relative;
-  box-shadow: 0 12px 30px -14px rgba(139, 92, 246, 0.5);
+  box-shadow: var(--shadow);
 }
-
-.course-card-link::after {
-  /* subtle corner glow for depth */
-  content: '';
-  position: absolute;
-  top: -120px;
-  right: -120px;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.25), transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-.course-card-link > * { position: relative; z-index: 1; }
 
 .course-card-link:hover {
   transform: translateY(-6px);
-  box-shadow: 0 22px 44px -16px rgba(139, 92, 246, 0.6);
-  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary);
 }
 
 .course-card-link:hover .course-card-arrow {
@@ -4661,47 +4646,27 @@ img {
   width: fit-content;
 }
 
-/* Phase tag pills — solid white-tint pills with deep accent text on light violet card */
-.course-card-tag.blue {
-  background: rgba(255, 255, 255, 0.95);
-  color: #1d4ed8;
-}
-.course-card-tag.amber {
-  background: rgba(255, 255, 255, 0.95);
-  color: #b45309;
-}
-.course-card-tag.green {
-  background: rgba(255, 255, 255, 0.95);
-  color: #047857;
-}
-.course-card-tag.purple {
-  background: rgba(255, 255, 255, 0.95);
-  color: #6d28d9;
-}
+.course-card-tag.blue   { background: var(--primary-light); color: var(--primary); }
+.course-card-tag.amber  { background: #fef3c7; color: #92400e; }
+.course-card-tag.green  { background: #d1fae5; color: #065f46; }
+.course-card-tag.purple { background: #ede9fe; color: #5b21b6; }
+
+[data-theme="dark"] .course-card-tag.amber  { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+[data-theme="dark"] .course-card-tag.green  { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+[data-theme="dark"] .course-card-tag.purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
 
 .course-card-body h3 {
   font-size: 1.15rem;
   font-weight: 700;
   margin-bottom: 8px;
   letter-spacing: -0.01em;
-  color: #ffffff;
 }
 
 .course-card-body p {
   font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--text-light);
   line-height: 1.7;
   flex: 1;
-}
-
-.course-card-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
-}
-.course-card-lessons {
-  color: rgba(255, 255, 255, 0.88);
-}
-.course-card-arrow {
-  color: #ffffff;
 }
 
 .course-card-footer {
@@ -5706,24 +5671,22 @@ img {
   gap: 8px;
   margin-top: 12px;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.92);
-  font-weight: 600;
+  color: var(--text-light);
 }
 
 .course-card-progress-bar {
   flex: 1;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 50px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
   overflow: hidden;
 }
 
 .course-card-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ffffff 0%, #f0fdf4 100%);
-  border-radius: 50px;
-  transition: width 0.5s ease;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+  background: var(--success);
+  border-radius: 4px;
+  transition: width 0.3s ease;
 }
 
 /* ===== UNSAVED WARNING ===== */
