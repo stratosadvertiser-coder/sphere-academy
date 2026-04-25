@@ -1321,25 +1321,79 @@ img {
 .outcome-slides {
   position: absolute;
   inset: 0;
+  perspective: 1200px;
 }
 .outcome-slide {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 0.5s ease-in-out;
+  transform: scale(1.04);
+  transition:
+    opacity 0.7s cubic-bezier(.4, 0, .2, 1),
+    transform 0.9s cubic-bezier(.4, 0, .2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 .outcome-slide.active {
   opacity: 1;
+  transform: scale(1);
   z-index: 1;
+  pointer-events: auto;
 }
+/* Direction-aware enter: incoming slide drifts in from the side */
+.outcome-slide.entering-next { animation: outcome-enter-next 0.8s cubic-bezier(.4, 0, .2, 1) both; }
+.outcome-slide.entering-prev { animation: outcome-enter-prev 0.8s cubic-bezier(.4, 0, .2, 1) both; }
+/* Direction-aware leave: outgoing slide drifts away the opposite way */
+.outcome-slide.leaving-next { animation: outcome-leave-next 0.8s cubic-bezier(.4, 0, .2, 1) both; z-index: 0; }
+.outcome-slide.leaving-prev { animation: outcome-leave-prev 0.8s cubic-bezier(.4, 0, .2, 1) both; z-index: 0; }
+
+@keyframes outcome-enter-next {
+  0%   { opacity: 0; transform: translateX(8%) scale(1.06); filter: blur(4px); }
+  100% { opacity: 1; transform: translateX(0)  scale(1);    filter: blur(0); }
+}
+@keyframes outcome-enter-prev {
+  0%   { opacity: 0; transform: translateX(-8%) scale(1.06); filter: blur(4px); }
+  100% { opacity: 1; transform: translateX(0)   scale(1);    filter: blur(0); }
+}
+@keyframes outcome-leave-next {
+  0%   { opacity: 1; transform: translateX(0)    scale(1); }
+  100% { opacity: 0; transform: translateX(-6%) scale(0.96); }
+}
+@keyframes outcome-leave-prev {
+  0%   { opacity: 1; transform: translateX(0)   scale(1); }
+  100% { opacity: 0; transform: translateX(6%) scale(0.96); }
+}
+
 .outcome-slide img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  transform-origin: center;
+}
+/* Ken Burns: subtle slow zoom on the active image so the slide feels alive
+   even between transitions. */
+.outcome-slide.active img {
+  animation: outcome-kenburns 7s ease-in-out forwards;
+}
+@keyframes outcome-kenburns {
+  0%   { transform: scale(1)    translate(0, 0); }
+  100% { transform: scale(1.07) translate(-1.2%, -0.8%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .outcome-slide,
+  .outcome-slide.active img,
+  .outcome-slide.entering-next,
+  .outcome-slide.entering-prev,
+  .outcome-slide.leaving-next,
+  .outcome-slide.leaving-prev {
+    animation: none !important;
+    transition: opacity 0.3s ease !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }
 .outcome-placeholder {
   color: var(--primary);

@@ -4539,7 +4539,10 @@ if (currentPage === 'index.html') {
     let currentIdx = 0;
     let autoplayTimer = null;
 
-    function render() {
+    // Build slides + dots ONCE so the CSS transitions actually fire when
+    // we toggle the .active class (rebuilding DOM every transition would
+    // create elements already in their end state — no animation).
+    function build() {
       if (images.length === 0) {
         // Keep the placeholder SVG (already in HTML)
         if (dotsEl) dotsEl.innerHTML = '';
@@ -4548,18 +4551,17 @@ if (currentPage === 'index.html') {
         return;
       }
       slidesEl.innerHTML = images.map((img, i) =>
-        '<div class="outcome-slide ' + (i === currentIdx ? 'active' : '') + '" data-idx="' + i + '">'
+        '<div class="outcome-slide ' + (i === 0 ? 'active' : '') + '" data-idx="' + i + '">'
         + '<img src="' + img.src + '" alt="Program outcome ' + (i + 1) + '">'
         + '</div>'
       ).join('');
       if (dotsEl) {
         dotsEl.innerHTML = images.map((_, i) =>
-          '<button class="outcome-dot ' + (i === currentIdx ? 'active' : '') + '" data-idx="' + i + '" aria-label="Go to image ' + (i + 1) + '"></button>'
+          '<button class="outcome-dot ' + (i === 0 ? 'active' : '') + '" data-idx="' + i + '" aria-label="Go to image ' + (i + 1) + '"></button>'
         ).join('');
         dotsEl.querySelectorAll('.outcome-dot').forEach(dot => {
           dot.addEventListener('click', () => {
-            currentIdx = parseInt(dot.dataset.idx);
-            render();
+            setActive(parseInt(dot.dataset.idx));
             restartAutoplay();
           });
         });
@@ -4568,15 +4570,37 @@ if (currentPage === 'index.html') {
       if (nextBtn) nextBtn.style.display = images.length > 1 ? 'flex' : 'none';
     }
 
+    function setActive(idx) {
+      if (idx === currentIdx) return;
+      // Mark the OUTGOING slide so CSS can animate it differently
+      // (slide-out direction depends on whether we went forward or back).
+      const dir = ((idx - currentIdx + images.length) % images.length) === 1 ? 'next' : 'prev';
+      slidesEl.querySelectorAll('.outcome-slide').forEach(s => {
+        const sIdx = parseInt(s.dataset.idx);
+        s.classList.remove('leaving-next', 'leaving-prev', 'entering-next', 'entering-prev');
+        if (sIdx === currentIdx) {
+          s.classList.add(dir === 'next' ? 'leaving-next' : 'leaving-prev');
+          s.classList.remove('active');
+        } else if (sIdx === idx) {
+          s.classList.add(dir === 'next' ? 'entering-next' : 'entering-prev');
+          s.classList.add('active');
+        }
+      });
+      currentIdx = idx;
+      if (dotsEl) {
+        dotsEl.querySelectorAll('.outcome-dot').forEach(d => {
+          d.classList.toggle('active', parseInt(d.dataset.idx) === idx);
+        });
+      }
+    }
+
     function goNext() {
       if (images.length < 2) return;
-      currentIdx = (currentIdx + 1) % images.length;
-      render();
+      setActive((currentIdx + 1) % images.length);
     }
     function goPrev() {
       if (images.length < 2) return;
-      currentIdx = (currentIdx - 1 + images.length) % images.length;
-      render();
+      setActive((currentIdx - 1 + images.length) % images.length);
     }
     function startAutoplay() {
       if (images.length < 2) return;
@@ -4597,7 +4621,7 @@ if (currentPage === 'index.html') {
       carousel.addEventListener('mouseleave', startAutoplay);
     }
 
-    render();
+    build();
     startAutoplay();
   })();
 
