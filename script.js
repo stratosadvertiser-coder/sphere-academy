@@ -4428,15 +4428,8 @@ if (currentPage === 'index.html') {
     });
   }
 
-  // Hero card is now a static login card — no tilt applied there.
   // Expose applyTilt so the testimonial render block can still use it.
   window.__applyTilt = applyTilt;
-
-  // Hide the hero login card when the user is already logged in
-  if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn()) {
-    const heroEl = document.querySelector('.hero');
-    if (heroEl) heroEl.classList.add('is-logged-in');
-  }
 
   // Render feature cards from admin settings
   const featuresGridEl = document.getElementById('featuresGrid');
