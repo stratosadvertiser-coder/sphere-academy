@@ -545,12 +545,10 @@ img {
   text-wrap: balance;                       /* nicer wrapping where it does happen */
 }
 .hero h1 .highlight {
-  display: inline-block;
-  min-width: 17ch;
-  text-align: center;   /* center inside the reserved 17ch slot so the whole title stays centered */
-}
-@media (max-width: 640px) {
-  .hero h1 .highlight { min-width: 0; }
+  display: inline-block;   /* needed for the typing translateY animation */
+  /* No min-width — the highlight hugs its current word so there's no
+     awkward gap between "Marketing" and the cycling phrase. The title
+     subtly resizes each cycle but stays tightly together. */
 }
 
 .hero-badge {
