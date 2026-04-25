@@ -501,7 +501,7 @@ img {
 .hero .container {
   display: grid;
   grid-template-columns: 1fr;
-  max-width: 920px;
+  max-width: 1200px;
   gap: 40px;
   align-items: center;
   text-align: center;
@@ -521,6 +521,20 @@ img {
 .hero-badge {
   margin-left: auto;
   margin-right: auto;
+}
+/* Keep the cycling title on one line on desktop so words like
+   "Full Proficiency" never clip mid-cycle. On narrow screens we
+   let it wrap naturally to prevent horizontal scroll. */
+.hero h1 {
+  max-width: 100%;
+}
+.hero h1 .highlight {
+  display: inline-block;     /* needed for the typing transform */
+  min-width: 11ch;           /* reserve width for the longest cycling word */
+  text-align: center;
+}
+@media (min-width: 720px) {
+  .hero h1 { white-space: nowrap; }
 }
 
 .hero-badge {
