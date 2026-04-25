@@ -429,14 +429,26 @@ img {
 
 /* ===== HERO ===== */
 .hero {
-  padding: 100px 0 60px;
+  padding: 100px 0 80px;
   background: linear-gradient(135deg, var(--bg) 0%, var(--primary-light) 50%, var(--bg) 100%);
   position: relative;
   overflow: hidden;
 }
 
-.hero::before,
-.hero::after { content: none; }  /* replaced by animated hero-blobs */
+.hero::before { content: none; }
+.hero::after {
+  /* Smooth fade-out at the bottom so the hero blends into the next
+     section instead of showing a hard horizontal edge. */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 140px;
+  background: linear-gradient(180deg, transparent 0%, var(--bg) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
 
 /* ===== ANIMATED BACKGROUND BLOBS ===== */
 .hero-blobs {
