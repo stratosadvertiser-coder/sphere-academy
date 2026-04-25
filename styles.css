@@ -991,7 +991,34 @@ img {
 /* ===== FEATURES ===== */
 .features {
   padding: 70px 0;
+  position: relative;
+  overflow: hidden;
+  /* Soft Violet Mesh — top-right + bottom-left blobs */
+  background:
+    radial-gradient(at 95% 10%, #ddd6fe 0%, transparent 50%),
+    radial-gradient(at 10% 95%, #c7d2fe 0%, transparent 50%),
+    radial-gradient(at 60% 50%, #f5f3ff 0%, transparent 60%),
+    #ffffff;
 }
+[data-theme="dark"] .features {
+  background:
+    radial-gradient(at 95% 10%, rgba(139, 92, 246, 0.16) 0%, transparent 50%),
+    radial-gradient(at 10% 95%, rgba(99, 102, 241, 0.14) 0%, transparent 50%),
+    var(--bg);
+}
+.features::before,
+.features::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 0;
+}
+.features::before { top: 0;    background: linear-gradient(180deg, var(--bg) 0%, transparent 100%); }
+.features::after  { bottom: 0; background: linear-gradient(0deg,   var(--bg) 0%, transparent 100%); }
+.features > .container { position: relative; z-index: 1; }
 
 .features-header {
   text-align: center;
@@ -1276,7 +1303,34 @@ img {
 .instructor {
   padding: 70px 0;
   position: relative;
+  overflow: hidden;
+  /* Soft Violet Mesh — center-glow with corner accents */
+  background:
+    radial-gradient(at 50% 30%, #ede9fe 0%, transparent 55%),
+    radial-gradient(at 0% 70%,  #ddd6fe 0%, transparent 50%),
+    radial-gradient(at 100% 100%, #e9d5ff 0%, transparent 50%),
+    #ffffff;
 }
+[data-theme="dark"] .instructor {
+  background:
+    radial-gradient(at 50% 30%, rgba(139, 92, 246, 0.16) 0%, transparent 55%),
+    radial-gradient(at 0% 70%,  rgba(99, 102, 241, 0.14) 0%, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.13) 0%, transparent 50%),
+    var(--bg);
+}
+.instructor::before,
+.instructor::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 0;
+}
+.instructor::before { top: 0;    background: linear-gradient(180deg, var(--bg) 0%, transparent 100%); }
+.instructor::after  { bottom: 0; background: linear-gradient(0deg,   var(--bg) 0%, transparent 100%); }
+.instructor > .container { position: relative; z-index: 1; }
 
 .instructor .container {
   display: grid;
@@ -2100,7 +2154,34 @@ img {
 .about-section {
   padding: 70px 0;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+  /* Soft Violet Mesh — top-left + bottom-right blobs (mirror of .features) */
+  background:
+    radial-gradient(at 5% 8%,    #c7d2fe 0%, transparent 50%),
+    radial-gradient(at 95% 90%,  #ddd6fe 0%, transparent 50%),
+    radial-gradient(at 50% 50%,  #faf5ff 0%, transparent 60%),
+    #ffffff;
 }
+[data-theme="dark"] .about-section {
+  background:
+    radial-gradient(at 5% 8%,   rgba(99, 102, 241, 0.14) 0%, transparent 50%),
+    radial-gradient(at 95% 90%, rgba(139, 92, 246, 0.16) 0%, transparent 50%),
+    var(--bg);
+}
+.about-section::before,
+.about-section::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 0;
+}
+.about-section::before { top: 0;    background: linear-gradient(180deg, var(--bg) 0%, transparent 100%); }
+.about-section::after  { bottom: 0; background: linear-gradient(0deg,   var(--bg) 0%, transparent 100%); }
+.about-section > .container { position: relative; z-index: 1; }
 .about-section .section-label,
 .about-section .section-title {
   text-align: center;
