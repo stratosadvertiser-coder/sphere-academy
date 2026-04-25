@@ -534,19 +534,23 @@ img {
   margin-left: auto;
   margin-right: auto;
 }
-/* Keep the cycling title on one line on desktop so words like
-   "Full Proficiency" never clip mid-cycle. On narrow screens we
-   let it wrap naturally to prevent horizontal scroll. */
+/* Keep the cycling title from clipping. The cycling words are:
+   "Intern Roadmap" (14), "Creative Skills" (15), "Ads Manager" (11),
+   "Full Proficiency" (16). We reserve 17ch on the highlight so the
+   longest one has room with the inline-block translate animation. */
 .hero h1 {
   max-width: 100%;
+  font-size: clamp(2.1rem, 4.2vw, 2.9rem);  /* slightly smaller so all phrases fit */
+  padding: 0 12px;                          /* breathing room inside container */
+  text-wrap: balance;                       /* nicer wrapping where it does happen */
 }
 .hero h1 .highlight {
-  display: inline-block;     /* needed for the typing transform */
-  min-width: 11ch;           /* reserve width for the longest cycling word */
-  text-align: center;
+  display: inline-block;
+  min-width: 17ch;
+  text-align: left;
 }
-@media (min-width: 720px) {
-  .hero h1 { white-space: nowrap; }
+@media (max-width: 640px) {
+  .hero h1 .highlight { min-width: 0; }
 }
 
 .hero-badge {
