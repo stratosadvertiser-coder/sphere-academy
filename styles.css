@@ -607,14 +607,35 @@ img {
   max-width: 100%;
   padding: 28px 26px;
   border-radius: var(--radius-lg);
+  text-align: center;
 }
-.hero-auth-card .logo {
-  margin-bottom: 18px;
+/* Static, centered, non-clickable logo on the hero auth card */
+.hero-auth-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto 18px;
   font-size: 1.15rem;
+  font-weight: 700;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;       /* not clickable */
+  transform: none !important; /* override any inherited hover transforms */
+  width: fit-content;
 }
-.hero-auth-card .logo-icon {
+.hero-auth-logo:hover,
+.hero-auth-logo:active {
+  transform: none !important;
+  filter: none;
+}
+.hero-auth-logo .logo-icon {
   width: 32px;
   height: 32px;
+  transform: none !important;
+}
+.hero-auth-logo .logo-icon img {
+  transform: none !important;
 }
 .hero-auth-card h1 {
   font-size: 1.5rem;
@@ -626,6 +647,7 @@ img {
 }
 .hero-auth-card .auth-form {
   gap: 14px;
+  text-align: left;
 }
 .hero-auth-card .form-group input {
   padding: 11px 14px;
@@ -634,6 +656,9 @@ img {
 .hero-auth-card .form-row {
   font-size: 0.8rem;
   margin: 2px 0;
+}
+.hero-auth-card .auth-footer {
+  text-align: center;
 }
 .hero-auth-card .auth-form .btn {
   padding: 12px 18px;
