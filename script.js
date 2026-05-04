@@ -676,6 +676,31 @@ const AUTH = {
       email: email
     });
     safeSetItem(this.USERS_KEY, JSON.stringify(users));
+
+    // Push a baseline doc to Firestore right away so the admin's
+    // Analytics view shows newly registered students even before they
+    // log in for the first time. USER_SYNC.save() will merge real
+    // progress into this doc once the student actually starts using
+    // the site.
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && typeof firebase !== 'undefined') {
+        DATA_SYNC.db.collection('sphere_users').doc(username).set({
+          username: username,
+          displayName: fullName,
+          email: email,
+          role: 'student',
+          progress: {},
+          quizScores: {},
+          quizAttempts: {},
+          assignments: {},
+          activityByDay: {},
+          registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastActive: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true })
+          .catch(e => console.warn('[REGISTER] Firestore write failed:', e.message));
+      }
+    } catch (e) { /* non-fatal — local registration still succeeded */ }
+
     return { success: true };
   },
 
