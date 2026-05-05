@@ -4309,7 +4309,6 @@ if (currentPage === 'admin.html') {
 
 // ===== COURSE CARD PROGRESS BADGES =====
 if (currentPage === 'course.html') {
-  const courseCardLinks = document.querySelectorAll('.course-card-link');
   const months = [
     { start: 1, end: 4, label: 'Month 1' },
     { start: 5, end: 8, label: 'Month 2' },
@@ -4317,27 +4316,8 @@ if (currentPage === 'course.html') {
     { start: 13, end: 16, label: 'Month 4' }
   ];
 
-  courseCardLinks.forEach((card, i) => {
-    if (i < months.length) {
-      const m = months[i];
-      let done = 0;
-      for (let w = m.start; w <= m.end; w++) {
-        if (PROGRESS.isCompleted('w' + w)) done++;
-      }
-      const pct = Math.round((done / 4) * 100);
-      // Add progress bar
-      const existing = card.querySelector('.course-card-progress');
-      if (!existing) {
-        const div = document.createElement('div');
-        div.className = 'course-card-progress';
-        div.innerHTML = '<div class="course-card-progress-bar"><div class="course-card-progress-fill" style="width:' + pct + '%"></div></div>'
-          + '<span>' + done + '/4 complete</span>';
-        const meta = card.querySelector('.course-card-meta') || card.querySelector('p:last-child');
-        if (meta) meta.after(div);
-        else card.appendChild(div);
-      }
-    }
-  });
+  // (Per-card progress bars removed — cards stay clean with just
+  // image + phase tag + title. The Modules tab still shows progress.)
 
   // Also add to module headers in the Modules tab
   document.querySelectorAll('.module-item').forEach((item, i) => {
