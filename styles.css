@@ -453,7 +453,7 @@ img {
 
 /* ===== HERO ===== */
 .hero {
-  padding: 100px 0 80px;
+  padding: 150px 0 80px;
   /* Transparent — the body's fixed ambient wash spans across, so
      the hero blends seamlessly into the next section. Animated
      blobs supply the local visual punch. */
