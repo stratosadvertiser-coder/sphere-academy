@@ -708,6 +708,34 @@ const POSTS = {
       console.warn('[POSTS] fetchRemote:', e.message);
       return this.getAll();
     }
+  },
+
+  _listener: null,
+
+  // Real-time: any new post by anyone, anywhere, surfaces in seconds.
+  startLiveListener(onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    this.stopLiveListener();
+    try {
+      this._listener = DATA_SYNC.db.collection(this.COLLECTION)
+        .orderBy('createdAt', 'desc').limit(50)
+        .onSnapshot(snap => {
+          const remote = [];
+          snap.forEach(d => remote.push(d.data()));
+          const local = safeGetJSON(this.STORAGE_KEY, []);
+          // Local copy may have video posts that aren't in Firestore — keep them
+          const merged = _mergeById(remote, local);
+          safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+          if (typeof onUpdate === 'function') onUpdate(this.getAll());
+        }, err => console.warn('[POSTS] listener:', err.message));
+    } catch (e) { console.warn('[POSTS] startLiveListener:', e.message); }
+  },
+
+  stopLiveListener() {
+    if (this._listener) {
+      try { this._listener(); } catch (e) {}
+      this._listener = null;
+    }
   }
 };
 
@@ -772,6 +800,33 @@ const WINS = {
     } catch (e) {
       console.warn('[WINS] fetchRemote:', e.message);
       return this.getAll();
+    }
+  },
+
+  _listener: null,
+
+  // Real-time: any new win shared by anyone surfaces in seconds.
+  startLiveListener(onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    this.stopLiveListener();
+    try {
+      this._listener = DATA_SYNC.db.collection(this.COLLECTION)
+        .orderBy('createdAt', 'desc').limit(50)
+        .onSnapshot(snap => {
+          const remote = [];
+          snap.forEach(d => remote.push(d.data()));
+          const local = safeGetJSON(this.STORAGE_KEY, []);
+          const merged = _mergeById(remote, local);
+          safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+          if (typeof onUpdate === 'function') onUpdate(this.getAll());
+        }, err => console.warn('[WINS] listener:', err.message));
+    } catch (e) { console.warn('[WINS] startLiveListener:', e.message); }
+  },
+
+  stopLiveListener() {
+    if (this._listener) {
+      try { this._listener(); } catch (e) {}
+      this._listener = null;
     }
   }
 };
@@ -6135,9 +6190,16 @@ if (currentPage === 'dashboard.html') {
     renderPosts();
     // ===== Big Wins (WINS) =====
     renderWins();
-    // Pull fresh from Firestore async (non-blocking)
-    if (typeof POSTS !== 'undefined') POSTS.fetchRemote().then(renderPosts).catch(() => {});
-    if (typeof WINS !== 'undefined') WINS.fetchRemote().then(renderWins).catch(() => {});
+    // Pull fresh from Firestore + start live listener for the default
+    // (Feed) tab so new posts surface in real-time across all students.
+    if (typeof POSTS !== 'undefined') {
+      POSTS.fetchRemote().then(renderPosts).catch(() => {});
+      POSTS.startLiveListener(renderPosts);
+    }
+    if (typeof WINS !== 'undefined') {
+      WINS.fetchRemote().then(renderWins).catch(() => {});
+      // Wins listener starts when the Wins tab is opened (saves bandwidth).
+    }
   } catch (e) {
     console.error('Dashboard render error:', e);
   }
@@ -6696,18 +6758,40 @@ function bindDashboardSidebar() {
       if (link) toggleLabel.textContent = link.querySelector('span').textContent;
     }
     closeSidebar();
+
     // Lazy-render the panel's content
     if (tab === 'announcements') renderAnnouncements();
     if (tab === 'faq') renderFAQs();
     if (tab === 'wins') renderWins();
-    if (tab === 'chat') {
-      renderChat();
-      if (typeof CHAT !== 'undefined') {
+
+    // Real-time listeners — start the relevant one, stop the rest.
+    // Each tab gets its OWN live Firestore subscription so anything
+    // anyone posts elsewhere shows up on every other student's screen
+    // within seconds, no manual refresh needed.
+    if (typeof POSTS !== 'undefined') {
+      if (tab === 'feed') {
+        POSTS.fetchRemote().then(renderPosts).catch(() => {});
+        POSTS.startLiveListener(renderPosts);
+      } else {
+        POSTS.stopLiveListener();
+      }
+    }
+    if (typeof WINS !== 'undefined') {
+      if (tab === 'wins') {
+        WINS.fetchRemote().then(renderWins).catch(() => {});
+        WINS.startLiveListener(renderWins);
+      } else {
+        WINS.stopLiveListener();
+      }
+    }
+    if (typeof CHAT !== 'undefined') {
+      if (tab === 'chat') {
+        renderChat();
         CHAT.fetchRemote().then(renderChat).catch(() => {});
         CHAT.startLiveListener(renderChat);
+      } else {
+        CHAT.stopLiveListener();
       }
-    } else if (typeof CHAT !== 'undefined') {
-      CHAT.stopLiveListener();
     }
   }
 
