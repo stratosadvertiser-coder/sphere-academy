@@ -8,20 +8,14 @@
 }
 
 :root {
-  /* Stratos brand-aligned palette — blue primary + cyan accent
-     reflecting the cyan→blue→fuchsia gradient of the Stratos logo.
-     Fuchsia kept as a brand-gradient stop, not a UI accent, so the
-     interface stays calm and professional. */
-  --primary: #2563eb;
-  --primary-dark: #1e40af;
+  /* Professional deep-indigo palette — strong but not violet,
+     designed for long-session readability (academy / SaaS feel). */
+  --primary: #1e40af;
+  --primary-dark: #1e3a8a;
   --primary-light: #eff6ff;
-  --primary-glow: rgba(37, 99, 235, 0.14);
-  --accent: #06b6d4;
+  --primary-glow: rgba(30, 64, 175, 0.12);
+  --accent: #0891b2;
   --accent-light: #ecfeff;
-  --brand-fuchsia: #c026d3;
-  /* Stratos signature gradient — use ONLY on hero / CTA / featured
-     surfaces, never on regular buttons. Mirrors the logo. */
-  --brand-gradient: linear-gradient(135deg, #06b6d4 0%, #2563eb 55%, #c026d3 100%);
   --text: #0f172a;
   --text-light: #475569;
   --bg: #ffffff;
@@ -38,15 +32,13 @@
   --transition-slow: 0.4s ease;
 }
 
-/* Dark mode — deep navy with brighter blue/cyan to match brand */
+/* Dark mode — deep slate background with brighter blue accent */
 :root[data-theme="dark"] {
   --primary: #60a5fa;
   --primary-dark: #3b82f6;
   --primary-light: rgba(96, 165, 250, 0.12);
   --primary-glow: rgba(96, 165, 250, 0.1);
   --accent: #22d3ee;
-  --brand-fuchsia: #e879f9;
-  --brand-gradient: linear-gradient(135deg, #22d3ee 0%, #60a5fa 55%, #e879f9 100%);
   --text: #e2e8f0;
   --text-light: #94a3b8;
   --bg: #0b1220;
@@ -442,23 +434,11 @@ img {
 /* ===== HERO ===== */
 .hero {
   padding: 100px 0 80px;
-  /* Soft Stratos brand wash — cyan top-left, royal blue middle,
-     subtle fuchsia bottom-right. Low opacity so it reads as an
-     ambient backdrop, not a screaming gradient. */
-  background:
-    radial-gradient(ellipse at 15% 20%, rgba(6, 182, 212, 0.10) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 50%, rgba(37, 99, 235, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 85% 85%, rgba(192, 38, 211, 0.08) 0%, transparent 55%),
-    var(--bg);
+  /* Transparent — body-level violet mesh shows through, animated blobs
+     give the hero its visual punch. No more hard edge at the bottom. */
+  background: transparent;
   position: relative;
   overflow: hidden;
-}
-[data-theme="dark"] .hero {
-  background:
-    radial-gradient(ellipse at 15% 20%, rgba(34, 211, 238, 0.10) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 50%, rgba(96, 165, 250, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 85% 85%, rgba(232, 121, 249, 0.08) 0%, transparent 55%),
-    var(--bg);
 }
 
 .hero::before { content: none; }
@@ -482,14 +462,12 @@ img {
   filter: blur(80px);
   will-change: transform;
 }
-/* Hero blobs follow the Stratos logo gradient stops:
-   blob-a = cyan, blob-b = royal blue, blob-c = fuchsia */
 .blob-a {
   width: 540px;
   height: 540px;
   top: -180px;
   right: -140px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.28) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(30, 64, 175, 0.28) 0%, transparent 70%);
   animation: blob-float-a 22s ease-in-out infinite;
 }
 .blob-b {
@@ -497,7 +475,7 @@ img {
   height: 420px;
   top: 20%;
   left: -120px;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.26) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.24) 0%, transparent 70%);
   animation: blob-float-b 28s ease-in-out infinite;
 }
 .blob-c {
@@ -505,12 +483,12 @@ img {
   height: 360px;
   top: 30%;
   left: 45%;
-  background: radial-gradient(circle, rgba(192, 38, 211, 0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.22) 0%, transparent 70%);
   animation: blob-float-c 24s ease-in-out infinite;
 }
-[data-theme="dark"] .blob-a { background: radial-gradient(circle, rgba(34, 211, 238, 0.32) 0%, transparent 70%); }
-[data-theme="dark"] .blob-b { background: radial-gradient(circle, rgba(96, 165, 250, 0.28) 0%, transparent 70%); }
-[data-theme="dark"] .blob-c { background: radial-gradient(circle, rgba(232, 121, 249, 0.22) 0%, transparent 70%); }
+[data-theme="dark"] .blob-a { background: radial-gradient(circle, rgba(59, 130, 246, 0.32) 0%, transparent 70%); }
+[data-theme="dark"] .blob-b { background: radial-gradient(circle, rgba(37, 99, 235, 0.28) 0%, transparent 70%); }
+[data-theme="dark"] .blob-c { background: radial-gradient(circle, rgba(30, 58, 138, 0.24) 0%, transparent 70%); }
 
 @keyframes blob-float-a {
   0%, 100% { transform: translate(0, 0) scale(1); }
@@ -2863,7 +2841,7 @@ img {
 /* ===== CTA ===== */
 .cta {
   padding: 70px 0;
-  background: var(--brand-gradient);
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
   color: #fff;
   text-align: center;
   position: relative;
@@ -7410,11 +7388,11 @@ img {
   justify-content: space-between;
   gap: 16px;
   padding: 18px 24px;
-  background: var(--brand-gradient);
+  background: linear-gradient(135deg, #3b82f6, #1e40af 60%, #1e3a8a);
   border-radius: 16px;
   margin-bottom: 20px;
   color: #fff;
-  box-shadow: 0 8px 24px -10px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 8px 24px -10px rgba(30, 64, 175, 0.45);
 }
 .feed-welcome-text { min-width: 0; }
 .feed-welcome-text h1 {
