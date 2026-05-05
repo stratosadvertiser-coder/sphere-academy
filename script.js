@@ -6143,6 +6143,38 @@ function bindCommunityComposers() {
     composerAvatar.innerHTML = avatar ? '<img src="' + avatar + '" alt="">' : '<span>' + initials + '</span>';
   }
 
+  // Set first name in the Facebook-style trigger placeholder
+  const composerFirstName = document.getElementById('composerFirstName');
+  if (composerFirstName && typeof AUTH !== 'undefined') {
+    const display = AUTH.getDisplayName ? AUTH.getDisplayName() : 'friend';
+    composerFirstName.textContent = (display.split(/\s+/)[0] || 'friend');
+  }
+
+  // Facebook-style trigger: click expands the textarea composer
+  const composerTrigger = document.getElementById('composerTrigger');
+  const composerExpanded = document.getElementById('composerExpanded');
+  const composerCancel = document.getElementById('composerCancelBtn');
+  if (composerTrigger && composerExpanded) {
+    composerTrigger.addEventListener('click', () => {
+      composerExpanded.style.display = 'block';
+      composerTrigger.style.display = 'none';
+      const ta = document.getElementById('postText');
+      if (ta) ta.focus();
+    });
+  }
+  if (composerCancel && composerExpanded && composerTrigger) {
+    composerCancel.addEventListener('click', () => {
+      composerExpanded.style.display = 'none';
+      composerTrigger.style.display = '';
+      const ta = document.getElementById('postText');
+      if (ta) ta.value = '';
+      const cc = document.getElementById('postCharCount');
+      if (cc) cc.textContent = '0 / 500';
+      const sb = document.getElementById('postSubmitBtn');
+      if (sb) sb.disabled = true;
+    });
+  }
+
   // Post composer
   const postText = document.getElementById('postText');
   const postSubmit = document.getElementById('postSubmitBtn');
@@ -6159,6 +6191,11 @@ function bindCommunityComposers() {
       POSTS.add(postText.value);
       postText.value = '';
       updatePostState();
+      // Collapse the composer after posting
+      if (composerExpanded && composerTrigger) {
+        composerExpanded.style.display = 'none';
+        composerTrigger.style.display = '';
+      }
       renderPosts();
     });
     updatePostState();
