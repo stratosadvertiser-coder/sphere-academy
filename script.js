@@ -4162,6 +4162,7 @@ if (currentPage === 'login.html') {
     const email = user.email || '';
     const displayName = user.displayName || email.split('@')[0] || 'User';
     const username = (email.split('@')[0] || displayName).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const provider = (user.providerData && user.providerData[0]) ? user.providerData[0].providerId : 'oauth';
 
     // Create user in AUTH if doesn't exist
     const users = AUTH.getAllUsers();
@@ -4172,7 +4173,7 @@ if (currentPage === 'login.html') {
         role: 'student',
         fullName: displayName,
         email: email,
-        provider: user.providerData && user.providerData[0] ? user.providerData[0].providerId : 'oauth'
+        provider: provider
       });
       safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
     }
@@ -4191,6 +4192,30 @@ if (currentPage === 'login.html') {
     if (user.photoURL) {
       safeSetItem('auth_avatar', user.photoURL);
     }
+
+    // Push a baseline doc to Firestore IMMEDIATELY so the admin's
+    // Students tab shows Gmail / Google OAuth signups even if the
+    // dashboard's USER_SYNC.save() doesn't fire (closed tab, slow
+    // anon-auth handshake, etc.). Mirrors AUTH.register()'s write.
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && typeof firebase !== 'undefined') {
+        DATA_SYNC.db.collection('sphere_users').doc(username).set({
+          username: username,
+          displayName: displayName,
+          email: email,
+          role: 'student',
+          provider: provider,
+          progress: {},
+          quizScores: {},
+          quizAttempts: {},
+          assignments: {},
+          activityByDay: {},
+          registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastActive: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true })
+          .catch(e => console.warn('[OAUTH] Firestore write failed:', e.message));
+      }
+    } catch (e) { /* non-fatal */ }
 
     window.location.href = 'dashboard.html';
   }
