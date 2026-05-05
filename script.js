@@ -1051,14 +1051,48 @@ function timeAgo(ts) {
 const AUTH = {
   USERS_KEY: 'auth_users',
 
+  // Default admin account — reflects the real Stratos Sphere Academy
+  // branding so the navbar / analytics / posts show accurate info.
+  DEFAULT_ADMIN: {
+    username: 'admin',
+    password: 'admin123',
+    role: 'admin',
+    fullName: 'Stratos Admin',
+    email: 'admin@stratosphereacademy.com'
+  },
+
   // Initialize with default admin account
   initUsers() {
     if (!safeGetItem(this.USERS_KEY)) {
-      const defaultUsers = [
-        { username: 'admin', password: 'admin123', role: 'admin', fullName: 'Admin', email: 'admin@sphereacademy.com' }
-      ];
-      safeSetItem(this.USERS_KEY, JSON.stringify(defaultUsers));
+      safeSetItem(this.USERS_KEY, JSON.stringify([Object.assign({}, this.DEFAULT_ADMIN)]));
+      return;
     }
+    // Migration: keep the existing admin record but refresh the
+    // placeholder display fields to current brand info. Only touches
+    // entries that still have the legacy generic values — never
+    // overwrites a customised admin profile.
+    try {
+      const users = safeGetJSON(this.USERS_KEY, []);
+      let dirty = false;
+      users.forEach(u => {
+        if (u.role !== 'admin') return;
+        if (u.fullName === 'Admin' || u.fullName === 'admin' || !u.fullName) {
+          u.fullName = this.DEFAULT_ADMIN.fullName;
+          dirty = true;
+        }
+        if (u.email === 'admin@sphereacademy.com' || !u.email) {
+          u.email = this.DEFAULT_ADMIN.email;
+          dirty = true;
+        }
+      });
+      // Ensure at least one admin always exists (defensive — recreate if
+      // someone wiped the array but kept the key around).
+      if (!users.some(u => u.role === 'admin')) {
+        users.push(Object.assign({}, this.DEFAULT_ADMIN));
+        dirty = true;
+      }
+      if (dirty) safeSetItem(this.USERS_KEY, JSON.stringify(users));
+    } catch (e) { /* non-fatal */ }
   },
 
   getAllUsers() {
@@ -1082,11 +1116,16 @@ const AUTH = {
       safeSetItem('auth_logged_in', 'true');
       safeSetItem('auth_user', user.username);
       safeSetItem('auth_role', user.role);
-      // Set profile if first time
-      if (!safeGetItem('auth_profile')) {
+      // Set profile if first time, OR refresh placeholder admin profile
+      // so the navbar / posts show "Stratos Admin" instead of the legacy
+      // single-word "Admin".
+      const existing = safeGetJSON('auth_profile', null);
+      const isPlaceholder = !existing
+        || (user.role === 'admin' && (existing.firstName === 'Admin' || !existing.firstName));
+      if (isPlaceholder) {
         safeSetItem('auth_profile', JSON.stringify({
-          firstName: user.fullName.split(' ')[0] || '',
-          lastName: user.fullName.split(' ').slice(1).join(' ') || '',
+          firstName: (user.fullName || '').split(' ')[0] || '',
+          lastName: (user.fullName || '').split(' ').slice(1).join(' ') || '',
           email: user.email || ''
         }));
       }
