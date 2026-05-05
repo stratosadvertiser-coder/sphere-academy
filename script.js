@@ -4158,7 +4158,10 @@ if (currentPage === 'login.html') {
   }
 
   // Bridge Firebase user into existing AUTH system (localStorage)
-  function loginFirebaseUser(user) {
+  // ASYNC — awaits the Firestore baseline write before redirecting,
+  // otherwise window.location kills the in-flight network request
+  // and the admin Students tab never sees this signup.
+  async function loginFirebaseUser(user) {
     const email = user.email || '';
     const displayName = user.displayName || email.split('@')[0] || 'User';
     const username = (email.split('@')[0] || displayName).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -4193,13 +4196,12 @@ if (currentPage === 'login.html') {
       safeSetItem('auth_avatar', user.photoURL);
     }
 
-    // Push a baseline doc to Firestore IMMEDIATELY so the admin's
-    // Students tab shows Gmail / Google OAuth signups even if the
-    // dashboard's USER_SYNC.save() doesn't fire (closed tab, slow
-    // anon-auth handshake, etc.). Mirrors AUTH.register()'s write.
+    // AWAIT the Firestore baseline write so it actually finishes
+    // before we navigate away. Mirrors AUTH.register()'s write so
+    // the admin Students tab sees this signup immediately.
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && typeof firebase !== 'undefined') {
-        DATA_SYNC.db.collection('sphere_users').doc(username).set({
+        await DATA_SYNC.db.collection('sphere_users').doc(username).set({
           username: username,
           displayName: displayName,
           email: email,
@@ -4212,10 +4214,16 @@ if (currentPage === 'login.html') {
           activityByDay: {},
           registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
           lastActive: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true })
-          .catch(e => console.warn('[OAUTH] Firestore write failed:', e.message));
+        }, { merge: true });
+        console.log('[OAUTH] Synced to Firestore:', username);
+      } else {
+        console.warn('[OAUTH] DATA_SYNC.db not ready — skipping Firestore write');
       }
-    } catch (e) { /* non-fatal */ }
+    } catch (e) {
+      console.error('[OAUTH] Firestore write failed:', e && e.message ? e.message : e);
+      // Non-fatal — local login still works, just admin won't see them
+      // until they next interact with USER_SYNC.save() on dashboard.
+    }
 
     window.location.href = 'dashboard.html';
   }
@@ -4234,7 +4242,7 @@ if (currentPage === 'login.html') {
       }
       const result = await auth.signInWithPopup(provider);
       if (result && result.user) {
-        loginFirebaseUser(result.user);
+        await loginFirebaseUser(result.user);
       }
     } catch (err) {
       console.error('OAuth error:', err);
