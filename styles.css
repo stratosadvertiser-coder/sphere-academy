@@ -8221,3 +8221,168 @@ img {
   0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18); }
   50%      { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.28); }
 }
+
+/* ============================================================
+   POST COMPOSER — IMAGE + VIDEO UPLOAD
+   ============================================================ */
+.fb-composer-tools {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.composer-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-light);
+  border-radius: 50px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.composer-tool-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.composer-tool-btn svg {
+  flex-shrink: 0;
+}
+
+/* Pending media preview in the composer */
+.composer-media-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.composer-media-item {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.composer-media-item img,
+.composer-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.composer-media-item.video::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.35) 100%);
+  pointer-events: none;
+}
+.composer-media-vidlabel {
+  position: absolute;
+  bottom: 4px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.composer-media-vidlabel svg {
+  flex-shrink: 0;
+}
+.composer-media-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s ease;
+}
+.composer-media-remove:hover {
+  background: rgba(220, 38, 38, 0.9);
+}
+
+/* ============================================================
+   POST CARD MEDIA — rendered images / video inside posts
+   ============================================================ */
+.post-media {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-alt);
+}
+.post-media img,
+.post-media video {
+  width: 100%;
+  display: block;
+}
+.post-media.single img {
+  max-height: 480px;
+  object-fit: cover;
+}
+.post-media.grid-2,
+.post-media.grid-3,
+.post-media.grid-4 {
+  display: grid;
+  gap: 4px;
+}
+.post-media.grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.post-media.grid-2 img {
+  height: 240px;
+  object-fit: cover;
+}
+.post-media.grid-3 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 240px 240px;
+}
+.post-media.grid-3 .span-2 {
+  grid-row: span 2;
+  height: 100%;
+  object-fit: cover;
+}
+.post-media.grid-3 img:not(.span-2) {
+  height: 240px;
+  object-fit: cover;
+}
+.post-media.grid-4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 200px 200px;
+}
+.post-media.grid-4 img {
+  height: 200px;
+  object-fit: cover;
+}
+.post-media.video {
+  margin-top: 8px;
+  background: #000;
+}
+.post-media.video video {
+  max-height: 480px;
+  background: #000;
+}

@@ -634,15 +634,22 @@ const POSTS = {
   STORAGE_KEY: 'community_posts',
   COLLECTION: 'sphere_posts',
   MAX_LENGTH: 500,
+  MAX_IMAGES: 4,
+  MAX_VIDEO_BYTES: 8 * 1024 * 1024,
+  // Firestore docs cap at 1 MB; images compress to ~150 KB each, so up
+  // to 4 images comfortably fit. Videos are too big to sync — we keep
+  // them locally only and strip them from the Firestore-bound copy.
+  FIRESTORE_DOC_LIMIT: 900 * 1024,
 
   getAll() {
     const all = safeGetJSON(this.STORAGE_KEY, []);
     return all.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   },
 
-  add(text) {
+  add(text, media) {
     text = (text || '').trim().slice(0, this.MAX_LENGTH);
-    if (!text) return null;
+    media = Array.isArray(media) ? media.slice(0, this.MAX_IMAGES + 1) : [];
+    if (!text && media.length === 0) return null;
     const meta = _commonAuthorMeta();
     const post = {
       id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
@@ -651,16 +658,26 @@ const POSTS = {
       avatar: meta.avatar,
       initials: meta.initials,
       text: text,
+      media: media,
       createdAt: Date.now()
     };
     const all = safeGetJSON(this.STORAGE_KEY, []);
     all.push(post);
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
-    // Sync to Firestore
+    // Sync to Firestore — strip videos out (too big for 1 MB doc cap)
+    // and bail if the trimmed payload still won't fit.
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
-        DATA_SYNC.db.collection(this.COLLECTION).doc(post.id).set(post)
-          .catch(e => console.warn('[POSTS] sync failed:', e.message));
+        const remoteCopy = Object.assign({}, post, {
+          media: media.filter(m => m && m.type === 'image')
+        });
+        const sizeApprox = JSON.stringify(remoteCopy).length;
+        if (sizeApprox <= this.FIRESTORE_DOC_LIMIT) {
+          DATA_SYNC.db.collection(this.COLLECTION).doc(post.id).set(remoteCopy)
+            .catch(e => console.warn('[POSTS] sync failed:', e.message));
+        } else {
+          console.warn('[POSTS] payload too large (' + sizeApprox + 'B) — saved locally only');
+        }
       }
     } catch (e) {}
     return post;
@@ -6153,11 +6170,36 @@ function renderPosts() {
   }
   listEl.innerHTML = posts.slice(0, 30).map(p => {
     const canDelete = isAdmin || (me && p.username === me);
+    const media = Array.isArray(p.media) ? p.media : [];
+    const images = media.filter(m => m && m.type === 'image');
+    const video = media.find(m => m && m.type === 'video');
+    let mediaHTML = '';
+    if (images.length === 1) {
+      mediaHTML = '<div class="post-media single"><img src="' + images[0].dataUrl + '" alt="" loading="lazy"></div>';
+    } else if (images.length === 2) {
+      mediaHTML = '<div class="post-media grid-2">'
+        + images.map(im => '<img src="' + im.dataUrl + '" alt="" loading="lazy">').join('')
+        + '</div>';
+    } else if (images.length === 3) {
+      mediaHTML = '<div class="post-media grid-3">'
+        + '<img class="span-2" src="' + images[0].dataUrl + '" alt="" loading="lazy">'
+        + '<img src="' + images[1].dataUrl + '" alt="" loading="lazy">'
+        + '<img src="' + images[2].dataUrl + '" alt="" loading="lazy">'
+        + '</div>';
+    } else if (images.length >= 4) {
+      mediaHTML = '<div class="post-media grid-4">'
+        + images.slice(0, 4).map(im => '<img src="' + im.dataUrl + '" alt="" loading="lazy">').join('')
+        + '</div>';
+    }
+    if (video) {
+      mediaHTML += '<div class="post-media video"><video src="' + video.dataUrl + '" controls preload="metadata" playsinline></video></div>';
+    }
     return '<article class="post-item" data-id="' + p.id + '">'
       + '<div class="post-avatar">' + _avatarHTML(p) + '</div>'
       + '<div class="post-body">'
       +   '<div class="post-meta"><strong>' + _esc(p.displayName) + '</strong><time>' + timeAgo(p.createdAt) + '</time></div>'
-      +   '<p class="post-text">' + _esc(p.text) + '</p>'
+      +   (p.text ? '<p class="post-text">' + _esc(p.text) + '</p>' : '')
+      +   mediaHTML
       + '</div>'
       + (canDelete ? '<button class="post-delete-btn" data-id="' + p.id + '" aria-label="Delete post" title="Delete">&times;</button>' : '')
       + '</article>';
@@ -6244,21 +6286,127 @@ function bindCommunityComposers() {
     });
   }
 
-  // Post composer
+  // Post composer (text + media)
   const postText = document.getElementById('postText');
   const postSubmit = document.getElementById('postSubmitBtn');
   const postCharCount = document.getElementById('postCharCount');
+  const composerImageInput = document.getElementById('composerImageInput');
+  const composerVideoInput = document.getElementById('composerVideoInput');
+  const composerAddImageBtn = document.getElementById('composerAddImageBtn');
+  const composerAddVideoBtn = document.getElementById('composerAddVideoBtn');
+  const composerMediaPreview = document.getElementById('composerMediaPreview');
+  let composerMedia = []; // [{type:'image'|'video', dataUrl, name}]
+
+  function renderComposerMedia() {
+    if (!composerMediaPreview) return;
+    if (composerMedia.length === 0) {
+      composerMediaPreview.innerHTML = '';
+      composerMediaPreview.style.display = 'none';
+      return;
+    }
+    composerMediaPreview.style.display = 'flex';
+    composerMediaPreview.innerHTML = composerMedia.map((m, i) => {
+      if (m.type === 'image') {
+        return '<div class="composer-media-item">'
+          + '<img src="' + m.dataUrl + '" alt="">'
+          + '<button type="button" class="composer-media-remove" data-idx="' + i + '" aria-label="Remove">&times;</button>'
+          + '</div>';
+      }
+      return '<div class="composer-media-item video">'
+        + '<video src="' + m.dataUrl + '" muted preload="metadata"></video>'
+        + '<span class="composer-media-vidlabel">'
+        + '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg>'
+        + 'Video'
+        + '</span>'
+        + '<button type="button" class="composer-media-remove" data-idx="' + i + '" aria-label="Remove">&times;</button>'
+        + '</div>';
+    }).join('');
+    composerMediaPreview.querySelectorAll('.composer-media-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        composerMedia.splice(parseInt(btn.dataset.idx), 1);
+        renderComposerMedia();
+        if (typeof updatePostState === 'function') updatePostState();
+      });
+    });
+  }
+
+  if (composerAddImageBtn && composerImageInput) {
+    composerAddImageBtn.addEventListener('click', () => composerImageInput.click());
+    composerImageInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      const imageCount = composerMedia.filter(m => m.type === 'image').length;
+      const room = POSTS.MAX_IMAGES - imageCount;
+      if (room <= 0) {
+        alert('Up to ' + POSTS.MAX_IMAGES + ' photos per post.');
+        composerImageInput.value = '';
+        return;
+      }
+      const toCompress = files.slice(0, room);
+      for (const file of toCompress) {
+        if (!file.type.startsWith('image/')) continue;
+        try {
+          const dataUrl = (typeof OUTCOME_CAROUSEL !== 'undefined' && OUTCOME_CAROUSEL.compressFile)
+            ? await OUTCOME_CAROUSEL.compressFile(file)
+            : await new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = () => res(r.result);
+                r.onerror = () => rej(new Error('read failed'));
+                r.readAsDataURL(file);
+              });
+          composerMedia.push({ type: 'image', dataUrl: dataUrl, name: file.name });
+        } catch (err) {
+          console.error('[POSTS] image compress failed:', err);
+        }
+      }
+      composerImageInput.value = '';
+      renderComposerMedia();
+      if (typeof updatePostState === 'function') updatePostState();
+    });
+  }
+
+  if (composerAddVideoBtn && composerVideoInput) {
+    composerAddVideoBtn.addEventListener('click', () => composerVideoInput.click());
+    composerVideoInput.addEventListener('change', (e) => {
+      const file = (e.target.files || [])[0];
+      composerVideoInput.value = '';
+      if (!file) return;
+      if (!file.type.startsWith('video/')) {
+        alert('Please pick a video file.');
+        return;
+      }
+      if (file.size > POSTS.MAX_VIDEO_BYTES) {
+        alert('Video is ' + Math.round(file.size / 1024 / 1024) + ' MB. Max is ' + Math.round(POSTS.MAX_VIDEO_BYTES / 1024 / 1024) + ' MB.');
+        return;
+      }
+      // One video per post
+      composerMedia = composerMedia.filter(m => m.type !== 'video');
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        composerMedia.push({ type: 'video', dataUrl: ev.target.result, name: file.name });
+        renderComposerMedia();
+        if (typeof updatePostState === 'function') updatePostState();
+      };
+      reader.onerror = () => alert('Failed to read video.');
+      reader.readAsDataURL(file);
+    });
+  }
+
+  let updatePostState;
   if (postText && postSubmit) {
-    const updatePostState = () => {
+    updatePostState = () => {
       const len = postText.value.trim().length;
       if (postCharCount) postCharCount.textContent = postText.value.length + ' / 500';
-      postSubmit.disabled = len === 0;
+      // Allow posting with text-only OR media-only (or both)
+      postSubmit.disabled = (len === 0 && composerMedia.length === 0);
     };
     postText.addEventListener('input', updatePostState);
     postSubmit.addEventListener('click', () => {
-      if (!postText.value.trim()) return;
-      POSTS.add(postText.value);
+      if (postText.value.trim().length === 0 && composerMedia.length === 0) return;
+      POSTS.add(postText.value, composerMedia);
       postText.value = '';
+      composerMedia = [];
+      renderComposerMedia();
       updatePostState();
       // Collapse the composer after posting
       if (composerExpanded && composerTrigger) {
@@ -6268,6 +6416,14 @@ function bindCommunityComposers() {
       renderPosts();
     });
     updatePostState();
+  }
+
+  // Reset media when Cancel is clicked too
+  if (composerCancel) {
+    composerCancel.addEventListener('click', () => {
+      composerMedia = [];
+      renderComposerMedia();
+    });
   }
 
   // Win composer (collapsed by default)
