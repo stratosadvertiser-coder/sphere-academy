@@ -611,6 +611,230 @@ const QUIZ_RESULTS = {
   }
 };
 
+// ============================================================
+// COMMUNITY MODULES — POSTS (timeline) + WINS (celebrations) + EVENTS
+// localStorage first, optional Firestore sync for cross-browser visibility.
+// ============================================================
+function _commonAuthorMeta() {
+  const username = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : 'anonymous';
+  const displayName = (typeof AUTH !== 'undefined' && AUTH.getDisplayName) ? AUTH.getDisplayName() : username;
+  const avatar = (typeof AUTH !== 'undefined' && AUTH.getAvatarImage) ? AUTH.getAvatarImage() : null;
+  const initials = (typeof AUTH !== 'undefined' && AUTH.getInitials) ? AUTH.getInitials() : 'U';
+  return { username, displayName, avatar, initials };
+}
+
+function _mergeById(remote, local) {
+  const merged = remote.slice();
+  local.forEach(item => { if (!merged.find(r => r.id === item.id)) merged.push(item); });
+  return merged;
+}
+
+// ===== POSTS — Community feed (Home tab) =====
+const POSTS = {
+  STORAGE_KEY: 'community_posts',
+  COLLECTION: 'sphere_posts',
+  MAX_LENGTH: 500,
+
+  getAll() {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    return all.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  },
+
+  add(text) {
+    text = (text || '').trim().slice(0, this.MAX_LENGTH);
+    if (!text) return null;
+    const meta = _commonAuthorMeta();
+    const post = {
+      id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      username: meta.username,
+      displayName: meta.displayName,
+      avatar: meta.avatar,
+      initials: meta.initials,
+      text: text,
+      createdAt: Date.now()
+    };
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    all.push(post);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    // Sync to Firestore
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(post.id).set(post)
+          .catch(e => console.warn('[POSTS] sync failed:', e.message));
+      }
+    } catch (e) {}
+    return post;
+  },
+
+  remove(id) {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all.filter(p => p.id !== id)));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  async fetchRemote() {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
+    try {
+      const snap = await DATA_SYNC.db.collection(this.COLLECTION)
+        .orderBy('createdAt', 'desc').limit(50).get();
+      const remote = [];
+      snap.forEach(d => remote.push(d.data()));
+      const local = safeGetJSON(this.STORAGE_KEY, []);
+      const merged = _mergeById(remote, local);
+      safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+      return this.getAll();
+    } catch (e) {
+      console.warn('[POSTS] fetchRemote:', e.message);
+      return this.getAll();
+    }
+  }
+};
+
+// ===== WINS — Big wins celebrations (Home tab) =====
+const WINS = {
+  STORAGE_KEY: 'community_wins',
+  COLLECTION: 'sphere_wins',
+
+  getAll() {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    return all.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  },
+
+  add(title, description) {
+    title = (title || '').trim().slice(0, 120);
+    description = (description || '').trim().slice(0, 400);
+    if (!title) return null;
+    const meta = _commonAuthorMeta();
+    const win = {
+      id: 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      username: meta.username,
+      displayName: meta.displayName,
+      avatar: meta.avatar,
+      initials: meta.initials,
+      title: title,
+      description: description,
+      createdAt: Date.now()
+    };
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    all.push(win);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(win.id).set(win)
+          .catch(e => console.warn('[WINS] sync failed:', e.message));
+      }
+    } catch (e) {}
+    return win;
+  },
+
+  remove(id) {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all.filter(w => w.id !== id)));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  async fetchRemote() {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
+    try {
+      const snap = await DATA_SYNC.db.collection(this.COLLECTION)
+        .orderBy('createdAt', 'desc').limit(50).get();
+      const remote = [];
+      snap.forEach(d => remote.push(d.data()));
+      const local = safeGetJSON(this.STORAGE_KEY, []);
+      const merged = _mergeById(remote, local);
+      safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+      return this.getAll();
+    } catch (e) {
+      console.warn('[WINS] fetchRemote:', e.message);
+      return this.getAll();
+    }
+  }
+};
+
+// ===== EVENTS — Upcoming events / workshops / live sessions =====
+const EVENTS = {
+  STORAGE_KEY: 'community_events',
+  COLLECTION: 'sphere_events',
+
+  getAll() {
+    return safeGetJSON(this.STORAGE_KEY, []);
+  },
+
+  add(event) {
+    const ev = {
+      id: 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      title: (event.title || '').trim().slice(0, 120),
+      description: (event.description || '').trim().slice(0, 600),
+      date: event.date,  // ISO string
+      location: (event.location || '').trim().slice(0, 120),
+      link: (event.link || '').trim(),
+      type: event.type || 'workshop',
+      createdAt: Date.now()
+    };
+    if (!ev.title || !ev.date) return null;
+    const all = this.getAll();
+    all.push(ev);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(ev.id).set(ev)
+          .catch(e => console.warn('[EVENTS] sync failed:', e.message));
+      }
+    } catch (e) {}
+    return ev;
+  },
+
+  remove(id) {
+    const all = this.getAll().filter(e => e.id !== id);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  async fetchRemote() {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
+    try {
+      const snap = await DATA_SYNC.db.collection(this.COLLECTION).get();
+      const remote = [];
+      snap.forEach(d => remote.push(d.data()));
+      const local = this.getAll();
+      const merged = _mergeById(remote, local);
+      safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+      return this.getAll();
+    } catch (e) {
+      console.warn('[EVENTS] fetchRemote:', e.message);
+      return this.getAll();
+    }
+  }
+};
+
+function timeAgo(ts) {
+  if (!ts) return 'just now';
+  const diff = Math.max(0, Date.now() - ts);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  if (d < 7) return d + 'd ago';
+  const w = Math.floor(d / 7);
+  if (w < 5) return w + 'w ago';
+  const date = new Date(ts);
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 // ===== ADMIN AUTH SYSTEM =====
 const AUTH = {
   USERS_KEY: 'auth_users',
@@ -769,7 +993,7 @@ const AUTH = {
       if (notifBtn) notifBtn.style.display = 'none';
       if (this.isLoggedIn()) {
         const target = this.isAdmin() ? 'admin.html' : 'dashboard.html';
-        const label = this.isAdmin() ? 'Admin Panel' : 'Dashboard';
+        const label = this.isAdmin() ? 'Admin Panel' : 'Home';
         const loginBtn = navCta.querySelector('a[href="login.html"]');
         if (loginBtn) {
           loginBtn.href = target;
@@ -790,15 +1014,16 @@ const AUTH = {
     }
 
     if (this.isLoggedIn()) {
-      // ===== Inject persistent tabs: Dashboard / Course / Profile =====
+      // ===== Inject persistent tabs: Home / Course / Events =====
+      // Profile remains accessible via the avatar in the right-hand nav-cta.
       // Skip on login/signup (public pages) and admin.html (admin has its own nav).
       const navLinksEl = document.querySelector('.nav-links');
-      const tabPages = ['dashboard.html', 'course.html', 'lesson.html', 'profile.html'];
+      const tabPages = ['dashboard.html', 'course.html', 'lesson.html', 'profile.html', 'events.html'];
       if (navLinksEl && tabPages.indexOf(pathname) !== -1 && !navLinksEl.querySelector('.nav-tab-link')) {
         const tabs = [
-          { href: 'dashboard.html', label: 'Dashboard', pages: ['dashboard.html'] },
-          { href: 'course.html',    label: 'Course',    pages: ['course.html', 'lesson.html'] },
-          { href: 'profile.html',   label: 'Profile',   pages: ['profile.html'] }
+          { href: 'dashboard.html', label: 'Home',   pages: ['dashboard.html'] },
+          { href: 'course.html',    label: 'Course', pages: ['course.html', 'lesson.html'] },
+          { href: 'events.html',    label: 'Events', pages: ['events.html'] }
         ];
         // Prepend so tabs appear before the mobile CTA
         const frag = document.createDocumentFragment();
@@ -5607,9 +5832,257 @@ if (currentPage === 'dashboard.html') {
         }).join('');
       }
     }
+
+    // ===== Community Feed (POSTS) =====
+    renderPosts();
+    // ===== Big Wins (WINS) =====
+    renderWins();
+    // Pull fresh from Firestore async (non-blocking)
+    if (typeof POSTS !== 'undefined') POSTS.fetchRemote().then(renderPosts).catch(() => {});
+    if (typeof WINS !== 'undefined') WINS.fetchRemote().then(renderWins).catch(() => {});
   } catch (e) {
     console.error('Dashboard render error:', e);
   }
+}
+
+// ============================================================
+// COMMUNITY FEED + BIG WINS — Dashboard render + composer handlers
+// ============================================================
+function _avatarHTML(item) {
+  if (item && item.avatar) return '<img src="' + item.avatar + '" alt="">';
+  const initials = (item && item.initials) ? item.initials : 'U';
+  return '<span>' + initials + '</span>';
+}
+
+function _esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderPosts() {
+  const listEl = document.getElementById('postList');
+  const countEl = document.getElementById('feedCount');
+  if (!listEl || typeof POSTS === 'undefined') return;
+  const posts = POSTS.getAll();
+  const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+  const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+  if (countEl) countEl.textContent = posts.length === 0 ? "Share what's on your mind" : (posts.length + ' post' + (posts.length === 1 ? '' : 's'));
+  if (posts.length === 0) {
+    listEl.innerHTML = '<div class="post-empty"><div class="post-empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Be the first to post. The community feed is empty.</p></div>';
+    return;
+  }
+  listEl.innerHTML = posts.slice(0, 30).map(p => {
+    const canDelete = isAdmin || (me && p.username === me);
+    return '<article class="post-item" data-id="' + p.id + '">'
+      + '<div class="post-avatar">' + _avatarHTML(p) + '</div>'
+      + '<div class="post-body">'
+      +   '<div class="post-meta"><strong>' + _esc(p.displayName) + '</strong><time>' + timeAgo(p.createdAt) + '</time></div>'
+      +   '<p class="post-text">' + _esc(p.text) + '</p>'
+      + '</div>'
+      + (canDelete ? '<button class="post-delete-btn" data-id="' + p.id + '" aria-label="Delete post" title="Delete">&times;</button>' : '')
+      + '</article>';
+  }).join('');
+  // Wire delete buttons
+  listEl.querySelectorAll('.post-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Delete this post?')) return;
+      POSTS.remove(btn.dataset.id);
+      renderPosts();
+    });
+  });
+}
+
+function renderWins() {
+  const listEl = document.getElementById('winsList');
+  if (!listEl || typeof WINS === 'undefined') return;
+  const wins = WINS.getAll();
+  const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+  const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+  if (wins.length === 0) {
+    listEl.innerHTML = '<div class="wins-empty"><div class="wins-empty-icon">&#127881;</div><p>No wins shared yet. Drop yours and start the celebration.</p></div>';
+    return;
+  }
+  listEl.innerHTML = wins.slice(0, 20).map(w => {
+    const canDelete = isAdmin || (me && w.username === me);
+    return '<article class="win-item" data-id="' + w.id + '">'
+      + '<div class="win-trophy">&#127942;</div>'
+      + '<div class="win-body">'
+      +   '<h4>' + _esc(w.title) + '</h4>'
+      +   (w.description ? '<p>' + _esc(w.description) + '</p>' : '')
+      +   '<div class="win-meta"><span class="win-author">' + _esc(w.displayName) + '</span><time>' + timeAgo(w.createdAt) + '</time></div>'
+      + '</div>'
+      + (canDelete ? '<button class="win-delete-btn" data-id="' + w.id + '" aria-label="Delete win" title="Delete">&times;</button>' : '')
+      + '</article>';
+  }).join('');
+  listEl.querySelectorAll('.win-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Delete this win?')) return;
+      WINS.remove(btn.dataset.id);
+      renderWins();
+    });
+  });
+}
+
+function bindCommunityComposers() {
+  // Composer avatar setup
+  const composerAvatar = document.getElementById('composerAvatar');
+  if (composerAvatar && typeof AUTH !== 'undefined') {
+    const avatar = AUTH.getAvatarImage && AUTH.getAvatarImage();
+    const initials = AUTH.getInitials ? AUTH.getInitials() : 'U';
+    composerAvatar.innerHTML = avatar ? '<img src="' + avatar + '" alt="">' : '<span>' + initials + '</span>';
+  }
+
+  // Post composer
+  const postText = document.getElementById('postText');
+  const postSubmit = document.getElementById('postSubmitBtn');
+  const postCharCount = document.getElementById('postCharCount');
+  if (postText && postSubmit) {
+    const updatePostState = () => {
+      const len = postText.value.trim().length;
+      if (postCharCount) postCharCount.textContent = postText.value.length + ' / 500';
+      postSubmit.disabled = len === 0;
+    };
+    postText.addEventListener('input', updatePostState);
+    postSubmit.addEventListener('click', () => {
+      if (!postText.value.trim()) return;
+      POSTS.add(postText.value);
+      postText.value = '';
+      updatePostState();
+      renderPosts();
+    });
+    updatePostState();
+  }
+
+  // Win composer (collapsed by default)
+  const shareWinBtn = document.getElementById('shareWinBtn');
+  const winComposer = document.getElementById('winComposer');
+  const winTitle = document.getElementById('winTitle');
+  const winDescription = document.getElementById('winDescription');
+  const winSubmit = document.getElementById('winSubmitBtn');
+  const winCancel = document.getElementById('winCancelBtn');
+  const updateWinState = () => {
+    if (!winSubmit || !winTitle) return;
+    winSubmit.disabled = winTitle.value.trim().length === 0;
+  };
+  if (shareWinBtn && winComposer) {
+    shareWinBtn.addEventListener('click', () => {
+      winComposer.style.display = winComposer.style.display === 'none' ? 'block' : 'none';
+      if (winComposer.style.display === 'block' && winTitle) winTitle.focus();
+    });
+  }
+  if (winCancel && winComposer) {
+    winCancel.addEventListener('click', () => {
+      winComposer.style.display = 'none';
+      if (winTitle) winTitle.value = '';
+      if (winDescription) winDescription.value = '';
+      updateWinState();
+    });
+  }
+  if (winTitle) winTitle.addEventListener('input', updateWinState);
+  if (winSubmit) {
+    winSubmit.addEventListener('click', () => {
+      if (!winTitle || !winTitle.value.trim()) return;
+      WINS.add(winTitle.value, winDescription ? winDescription.value : '');
+      winTitle.value = '';
+      if (winDescription) winDescription.value = '';
+      if (winComposer) winComposer.style.display = 'none';
+      updateWinState();
+      renderWins();
+    });
+  }
+}
+
+if (currentPage === 'dashboard.html') {
+  document.addEventListener('DOMContentLoaded', bindCommunityComposers);
+  // Also bind immediately if DOMContentLoaded already fired
+  if (document.readyState !== 'loading') bindCommunityComposers();
+}
+
+// ============================================================
+// EVENTS PAGE — render events with Upcoming/Past filter
+// ============================================================
+function renderEventsPage(filter) {
+  const listEl = document.getElementById('eventsList');
+  if (!listEl || typeof EVENTS === 'undefined') return;
+  const all = EVENTS.getAll();
+  const now = Date.now();
+  const partition = (e) => {
+    const t = new Date(e.date).getTime();
+    return isNaN(t) ? 'past' : (t >= now ? 'upcoming' : 'past');
+  };
+  const items = all
+    .filter(e => partition(e) === (filter || 'upcoming'))
+    .sort((a, b) => {
+      const ta = new Date(a.date).getTime();
+      const tb = new Date(b.date).getTime();
+      return (filter === 'past') ? tb - ta : ta - tb;
+    });
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="events-empty"><div class="events-empty-icon">'
+      + '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+      + '</div>'
+      + '<h3>No ' + (filter === 'past' ? 'past' : 'upcoming') + ' events</h3>'
+      + '<p>' + (filter === 'past' ? 'Past events will appear here as they happen.' : 'New events get posted here. Check back soon, or follow Stratos on social for live updates.') + '</p>'
+      + '</div>';
+    return;
+  }
+  const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+  listEl.innerHTML = items.map(e => {
+    const d = new Date(e.date);
+    const dateValid = !isNaN(d.getTime());
+    const monthShort = dateValid ? d.toLocaleDateString(undefined, { month: 'short' }).toUpperCase() : '—';
+    const dayNum = dateValid ? d.getDate() : '?';
+    const timeStr = dateValid ? d.toLocaleString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
+    const typeBadge = e.type ? '<span class="event-type-badge ' + _esc(e.type) + '">' + _esc(e.type) + '</span>' : '';
+    const linkBtn = e.link ? '<a href="' + _esc(e.link) + '" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Join &rarr;</a>' : '';
+    return '<article class="event-card" data-id="' + e.id + '">'
+      + '<div class="event-date-block">'
+      +   '<span class="event-month">' + monthShort + '</span>'
+      +   '<span class="event-day">' + dayNum + '</span>'
+      + '</div>'
+      + '<div class="event-body">'
+      +   '<div class="event-type-row">' + typeBadge + (timeStr ? '<span class="event-time">' + _esc(timeStr) + '</span>' : '') + '</div>'
+      +   '<h3>' + _esc(e.title) + '</h3>'
+      +   (e.description ? '<p>' + _esc(e.description) + '</p>' : '')
+      +   (e.location ? '<div class="event-location"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + _esc(e.location) + '</div>' : '')
+      + '</div>'
+      + '<div class="event-actions">'
+      +   linkBtn
+      +   (isAdmin ? '<button class="btn btn-outline btn-sm event-delete-btn" data-id="' + e.id + '">Delete</button>' : '')
+      + '</div>'
+      + '</article>';
+  }).join('');
+  if (isAdmin) {
+    listEl.querySelectorAll('.event-delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('Delete this event?')) return;
+        EVENTS.remove(btn.dataset.id);
+        const activeFilter = document.querySelector('.events-filter.active');
+        renderEventsPage(activeFilter ? activeFilter.dataset.filter : 'upcoming');
+      });
+    });
+  }
+}
+
+if (currentPage === 'events.html') {
+  function initEventsPage() {
+    const filterBtns = document.querySelectorAll('.events-filter');
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderEventsPage(btn.dataset.filter);
+      });
+    });
+    renderEventsPage('upcoming');
+    if (typeof EVENTS !== 'undefined') {
+      EVENTS.fetchRemote().then(() => {
+        const activeFilter = document.querySelector('.events-filter.active');
+        renderEventsPage(activeFilter ? activeFilter.dataset.filter : 'upcoming');
+      }).catch(() => {});
+    }
+  }
+  document.addEventListener('DOMContentLoaded', initEventsPage);
+  if (document.readyState !== 'loading') initEventsPage();
 }
 
 // ============================================================

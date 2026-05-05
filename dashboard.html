@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Sphere Academy</title>
-  <meta name="description" content="Your learning dashboard — progress, next lesson, activity, and reminders.">
+  <title>Home - Sphere Academy</title>
+  <meta name="description" content="Your home — progress, community feed, big wins, and the next lesson.">
   <link rel="icon" type="image/png" href="favicon.png?v=2025-05-05-sorbit">
   <link rel="apple-touch-icon" href="favicon.png?v=2025-05-05-sorbit">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-05-aboutlogo">
+  <link rel="stylesheet" href="styles.css?v=2025-05-05-community">
 </head>
 <body class="page-loaded">
 
@@ -140,6 +140,69 @@
         </ul>
       </div>
 
+      <!-- Two-column: Community Feed + Big Wins -->
+      <div class="dash-community-grid">
+
+        <!-- Community Feed (posting timeline) -->
+        <div class="dash-section community-feed-card">
+          <div class="dash-section-header">
+            <h2>Community Feed</h2>
+            <span class="dash-section-sub" id="feedCount">Share what's on your mind</span>
+          </div>
+
+          <!-- Composer -->
+          <div class="post-composer">
+            <div class="post-composer-avatar" id="composerAvatar">
+              <span id="composerInitials">U</span>
+            </div>
+            <div class="post-composer-body">
+              <textarea id="postText" maxlength="500" placeholder="Share an update, ask a question, or drop a tip…" rows="2"></textarea>
+              <div class="post-composer-footer">
+                <span class="post-char-count" id="postCharCount">0 / 500</span>
+                <button class="btn btn-primary" id="postSubmitBtn" disabled>Post</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Posts list -->
+          <div class="post-list" id="postList">
+            <div class="post-empty" id="postEmpty">
+              <div class="post-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <p>Be the first to post. The community feed is empty.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Big Wins -->
+        <div class="dash-section wins-card">
+          <div class="dash-section-header">
+            <h2>&#127942; Big Wins</h2>
+            <button class="btn btn-outline btn-sm" id="shareWinBtn">Share a win</button>
+          </div>
+
+          <!-- Win composer (collapsed by default, opens on click) -->
+          <div class="win-composer" id="winComposer" style="display:none;">
+            <input type="text" id="winTitle" maxlength="120" placeholder="Your win in one line… (e.g. Closed my first client!)">
+            <textarea id="winDescription" maxlength="400" placeholder="Tell us more about it (optional) — how did you do it, what made it special?" rows="3"></textarea>
+            <div class="win-composer-footer">
+              <button class="btn btn-outline btn-sm" id="winCancelBtn">Cancel</button>
+              <button class="btn btn-primary btn-sm" id="winSubmitBtn" disabled>Celebrate</button>
+            </div>
+          </div>
+
+          <!-- Wins list -->
+          <div class="wins-list" id="winsList">
+            <div class="wins-empty" id="winsEmpty">
+              <div class="wins-empty-icon">&#127881;</div>
+              <p>No wins shared yet. Drop yours and start the celebration.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </section>
 
@@ -171,6 +234,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-04-24-regfix"></script>
+  <script src="script.js?v=2025-05-05-community"></script>
 </body>
 </html>
