@@ -1129,6 +1129,23 @@ const AUTH = {
           email: user.email || ''
         }));
       }
+      // Push a baseline + lastActive update to Firestore right at
+      // login time, so the admin Students tab sees them immediately —
+      // doesn't have to wait for USER_SYNC.save() to fire 1.5s later
+      // on the dashboard (which can race the page load).
+      try {
+        if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && typeof firebase !== 'undefined') {
+          DATA_SYNC.db.collection('sphere_users').doc(user.username).set({
+            username: user.username,
+            displayName: user.fullName || user.username,
+            email: user.email || '',
+            role: user.role || 'student',
+            lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true })
+            .catch(e => console.warn('[LOGIN] Firestore lastActive update failed:', e.message));
+        }
+      } catch (e) { /* non-fatal */ }
       return true;
     }
     return false;
@@ -6885,10 +6902,12 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           email: r.email || ex.email || '',
           role: r.role || ex.role || 'student',
           source: ex.source ? 'local+remote' : 'remote',
+          provider: r.provider || null,
           progress: r.progress || {},
           quizScores: r.quizScores || {},
           assignments: r.assignments || {},
           lastActive: r.lastActive || null,
+          lastLogin: r.lastLogin || null,
           registeredAt: r.registeredAt || null
         };
       });
@@ -6897,9 +6916,17 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       render();
     }
 
+    // Has the user actually logged in? Anyone with a Firestore record
+    // (source includes 'remote') OR any lastActive/lastLogin timestamp
+    // counts as having logged in at least once.
+    function hasLoggedIn(r) {
+      return (r.source || '').indexOf('remote') !== -1 || !!r.lastActive || !!r.lastLogin;
+    }
+
     function render() {
       const q = (studentsSearch && studentsSearch.value || '').trim().toLowerCase();
       const roleFilter = studentsRoleFilter ? studentsRoleFilter.value : '';
+      const statusFilter = document.getElementById('studentsStatusFilter') ? document.getElementById('studentsStatusFilter').value : '';
       const sortBy = studentsSortBy ? studentsSortBy.value : 'recent';
 
       let rows = studentCache.slice();
@@ -6911,6 +6938,8 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         );
       }
       if (roleFilter) rows = rows.filter(r => r.role === roleFilter);
+      if (statusFilter === 'active') rows = rows.filter(r => hasLoggedIn(r));
+      if (statusFilter === 'pending') rows = rows.filter(r => !hasLoggedIn(r));
 
       const tsOf = (v) => {
         if (!v) return 0;
@@ -6935,13 +6964,14 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       });
 
       if (studentsCount) {
+        const loggedInCount = rows.filter(hasLoggedIn).length;
         studentsCount.textContent = rows.length === 0
           ? 'No students match the current filter.'
-          : (rows.length + ' student' + (rows.length === 1 ? '' : 's') + ' shown.');
+          : (rows.length + ' student' + (rows.length === 1 ? '' : 's') + ' shown · ' + loggedInCount + ' logged in · ' + (rows.length - loggedInCount) + ' not yet.');
       }
 
       if (rows.length === 0) {
-        studentsTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-light);">No registered students yet. Once people sign up, they\'ll appear here.</td></tr>';
+        studentsTbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:32px; color:var(--text-light);">No registered students yet. Once people sign up, they\'ll appear here.</td></tr>';
         return;
       }
 
@@ -6951,15 +6981,20 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         const quizVals = r.quizScores ? Object.values(r.quizScores).filter(v => typeof v === 'number') : [];
         const avgQuiz = quizVals.length ? Math.round(quizVals.reduce((a, b) => a + b, 0) / quizVals.length) : null;
         const initials = (r.displayName || r.username || '?').split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
+        const loggedIn = hasLoggedIn(r);
+        const statusBadge = loggedIn
+          ? '<span class="status-badge active"><span class="status-dot"></span>Logged in</span>'
+          : '<span class="status-badge pending"><span class="status-dot"></span>Not yet</span>';
         return '<tr data-username="' + escS(r.username) + '">'
           + '<td><div class="students-avatar">' + escS(initials) + '</div></td>'
           + '<td><strong>' + escS(r.displayName) + '</strong></td>'
           + '<td><code>@' + escS(r.username) + '</code></td>'
           + '<td>' + escS(r.email || '—') + '</td>'
           + '<td><span class="role-badge ' + escS(r.role) + '">' + escS(r.role) + '</span></td>'
+          + '<td>' + statusBadge + '</td>'
           + '<td><div class="students-progress"><div class="students-progress-bar"><div class="students-progress-fill" style="width:' + pct + '%"></div></div><span>' + completed + '/16</span></div></td>'
           + '<td>' + (avgQuiz != null ? avgQuiz + '%' : '—') + '</td>'
-          + '<td>' + fmtDate(r.lastActive || r.registeredAt) + '</td>'
+          + '<td>' + fmtDate(r.lastLogin || r.lastActive || r.registeredAt) + '</td>'
           + '<td>' + (r.role !== 'admin' ? '<button class="students-delete-btn" data-username="' + escS(r.username) + '" title="Remove">Remove</button>' : '') + '</td>'
           + '</tr>';
       }).join('');
@@ -7020,6 +7055,8 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
     if (studentsSearch) studentsSearch.addEventListener('input', render);
     if (studentsRoleFilter) studentsRoleFilter.addEventListener('change', render);
     if (studentsSortBy) studentsSortBy.addEventListener('change', render);
+    const studentsStatusFilter = document.getElementById('studentsStatusFilter');
+    if (studentsStatusFilter) studentsStatusFilter.addEventListener('change', render);
     if (studentsRefreshBtn) studentsRefreshBtn.addEventListener('click', loadStudents);
     if (studentsExportBtn) studentsExportBtn.addEventListener('click', exportCSV);
 
