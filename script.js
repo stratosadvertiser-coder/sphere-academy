@@ -819,6 +819,218 @@ const EVENTS = {
   }
 };
 
+// ===== ANNOUNCEMENTS — Admin-curated announcements =====
+const ANNOUNCEMENTS = {
+  STORAGE_KEY: 'community_announcements',
+  COLLECTION: 'sphere_announcements',
+
+  getAll() {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    return all.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  },
+
+  add(title, body, pinned) {
+    title = (title || '').trim().slice(0, 200);
+    body = (body || '').trim().slice(0, 2000);
+    if (!title) return null;
+    const meta = _commonAuthorMeta();
+    const ann = {
+      id: 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      title: title,
+      body: body,
+      pinned: !!pinned,
+      authorName: meta.displayName,
+      createdAt: Date.now()
+    };
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    all.push(ann);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(ann.id).set(ann)
+          .catch(e => console.warn('[ANNOUNCEMENTS] sync:', e.message));
+      }
+    } catch (e) {}
+    return ann;
+  },
+
+  remove(id) {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all.filter(a => a.id !== id)));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  async fetchRemote() {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
+    try {
+      const snap = await DATA_SYNC.db.collection(this.COLLECTION).get();
+      const remote = [];
+      snap.forEach(d => remote.push(d.data()));
+      const merged = _mergeById(remote, safeGetJSON(this.STORAGE_KEY, []));
+      safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+      return this.getAll();
+    } catch (e) {
+      console.warn('[ANNOUNCEMENTS] fetchRemote:', e.message);
+      return this.getAll();
+    }
+  }
+};
+
+// ===== FAQS — Admin-curated FAQs =====
+const FAQS = {
+  STORAGE_KEY: 'community_faqs',
+  COLLECTION: 'sphere_faqs',
+
+  getAll() {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    return all.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+  },
+
+  add(question, answer) {
+    question = (question || '').trim().slice(0, 200);
+    answer = (answer || '').trim().slice(0, 2000);
+    if (!question) return null;
+    const all = this.getAll();
+    const faq = {
+      id: 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      question: question,
+      answer: answer,
+      order: all.length,
+      createdAt: Date.now()
+    };
+    all.push(faq);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(faq.id).set(faq)
+          .catch(e => console.warn('[FAQS] sync:', e.message));
+      }
+    } catch (e) {}
+    return faq;
+  },
+
+  remove(id) {
+    const all = this.getAll().filter(f => f.id !== id);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  async fetchRemote() {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
+    try {
+      const snap = await DATA_SYNC.db.collection(this.COLLECTION).get();
+      const remote = [];
+      snap.forEach(d => remote.push(d.data()));
+      const merged = _mergeById(remote, this.getAll());
+      safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+      return this.getAll();
+    } catch (e) {
+      console.warn('[FAQS] fetchRemote:', e.message);
+      return this.getAll();
+    }
+  }
+};
+
+// ===== CHAT — Everyone chat for students =====
+const CHAT = {
+  STORAGE_KEY: 'community_chat',
+  COLLECTION: 'sphere_chat',
+  MAX_LENGTH: 1000,
+  _listener: null,
+
+  getAll() {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    return all.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  },
+
+  add(text) {
+    text = (text || '').trim().slice(0, this.MAX_LENGTH);
+    if (!text) return null;
+    const meta = _commonAuthorMeta();
+    const msg = {
+      id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      username: meta.username,
+      displayName: meta.displayName,
+      avatar: meta.avatar,
+      initials: meta.initials,
+      text: text,
+      createdAt: Date.now()
+    };
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    all.push(msg);
+    // Cap local cache to last 200 messages
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all.slice(-200)));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(msg.id).set(msg)
+          .catch(e => console.warn('[CHAT] sync:', e.message));
+      }
+    } catch (e) {}
+    return msg;
+  },
+
+  remove(id) {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all.filter(m => m.id !== id)));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  async fetchRemote() {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
+    try {
+      const snap = await DATA_SYNC.db.collection(this.COLLECTION)
+        .orderBy('createdAt', 'desc').limit(100).get();
+      const remote = [];
+      snap.forEach(d => remote.push(d.data()));
+      const merged = _mergeById(remote, safeGetJSON(this.STORAGE_KEY, []));
+      // Sort ascending and cap
+      merged.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      safeSetItem(this.STORAGE_KEY, JSON.stringify(merged.slice(-200)));
+      return this.getAll();
+    } catch (e) {
+      console.warn('[CHAT] fetchRemote:', e.message);
+      return this.getAll();
+    }
+  },
+
+  // Live listener for real-time chat updates
+  startLiveListener(onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    this.stopLiveListener();
+    try {
+      this._listener = DATA_SYNC.db.collection(this.COLLECTION)
+        .orderBy('createdAt', 'desc').limit(100)
+        .onSnapshot(snap => {
+          const remote = [];
+          snap.forEach(d => remote.push(d.data()));
+          const merged = _mergeById(remote, safeGetJSON(this.STORAGE_KEY, []));
+          merged.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+          safeSetItem(this.STORAGE_KEY, JSON.stringify(merged.slice(-200)));
+          if (typeof onUpdate === 'function') onUpdate(this.getAll());
+        }, err => console.warn('[CHAT] listener:', err.message));
+    } catch (e) { console.warn('[CHAT] startLiveListener:', e.message); }
+  },
+
+  stopLiveListener() {
+    if (this._listener) {
+      try { this._listener(); } catch (e) {}
+      this._listener = null;
+    }
+  }
+};
+
 function timeAgo(ts) {
   if (!ts) return 'just now';
   const diff = Math.max(0, Date.now() - ts);
@@ -5991,10 +6203,281 @@ function bindCommunityComposers() {
   }
 }
 
+// ===== Announcements / FAQ / Chat renderers =====
+function renderAnnouncements() {
+  const listEl = document.getElementById('annList');
+  if (!listEl || typeof ANNOUNCEMENTS === 'undefined') return;
+  const items = ANNOUNCEMENTS.getAll().sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="dash-empty"><p>No announcements yet. Check back soon.</p></div>';
+    return;
+  }
+  listEl.innerHTML = items.map(a => {
+    return '<article class="ann-item' + (a.pinned ? ' pinned' : '') + '" data-id="' + a.id + '">'
+      + (a.pinned ? '<span class="ann-pin-badge">&#128204; Pinned</span>' : '')
+      + '<h3>' + _esc(a.title) + '</h3>'
+      + (a.body ? '<p>' + _esc(a.body).replace(/\n/g, '<br>') + '</p>' : '')
+      + '<div class="ann-meta"><span>' + _esc(a.authorName || 'Admin') + '</span><time>' + timeAgo(a.createdAt) + '</time></div>'
+      + (isAdmin ? '<button class="ann-delete-btn" data-id="' + a.id + '" title="Delete">&times;</button>' : '')
+      + '</article>';
+  }).join('');
+  if (isAdmin) {
+    listEl.querySelectorAll('.ann-delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('Delete this announcement?')) return;
+        ANNOUNCEMENTS.remove(btn.dataset.id);
+        renderAnnouncements();
+      });
+    });
+  }
+}
+
+function renderFAQs() {
+  const listEl = document.getElementById('faqList');
+  if (!listEl || typeof FAQS === 'undefined') return;
+  const items = FAQS.getAll();
+  const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="dash-empty"><p>No FAQs yet. Check back soon.</p></div>';
+    return;
+  }
+  listEl.innerHTML = items.map(f => {
+    return '<details class="faq-item" data-id="' + f.id + '">'
+      + '<summary>' + _esc(f.question) + '</summary>'
+      + (f.answer ? '<div class="faq-answer">' + _esc(f.answer).replace(/\n/g, '<br>') + '</div>' : '')
+      + (isAdmin ? '<button class="faq-delete-btn" data-id="' + f.id + '" title="Delete">&times;</button>' : '')
+      + '</details>';
+  }).join('');
+  if (isAdmin) {
+    listEl.querySelectorAll('.faq-delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!confirm('Delete this FAQ?')) return;
+        FAQS.remove(btn.dataset.id);
+        renderFAQs();
+      });
+    });
+  }
+}
+
+function renderChat(messages) {
+  const messagesEl = document.getElementById('chatMessages');
+  const emptyEl = document.getElementById('chatEmpty');
+  if (!messagesEl || typeof CHAT === 'undefined') return;
+  const items = messages || CHAT.getAll();
+  const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+  const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+  if (items.length === 0) {
+    messagesEl.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'flex';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  // Group consecutive same-author messages within 5 min
+  const grouped = [];
+  items.forEach(m => {
+    const last = grouped[grouped.length - 1];
+    if (last && last.username === m.username && (m.createdAt - last.lastTs) < 300000) {
+      last.texts.push({ text: m.text, id: m.id, ts: m.createdAt });
+      last.lastTs = m.createdAt;
+    } else {
+      grouped.push({
+        username: m.username, displayName: m.displayName, avatar: m.avatar, initials: m.initials,
+        texts: [{ text: m.text, id: m.id, ts: m.createdAt }],
+        firstTs: m.createdAt, lastTs: m.createdAt,
+        isMine: me && m.username === me
+      });
+    }
+  });
+  messagesEl.innerHTML = grouped.map(g => {
+    return '<div class="chat-group' + (g.isMine ? ' mine' : '') + '">'
+      + '<div class="chat-avatar">' + (g.avatar ? '<img src="' + g.avatar + '" alt="">' : '<span>' + (g.initials || 'U') + '</span>') + '</div>'
+      + '<div class="chat-bubbles">'
+      +   '<div class="chat-name">' + _esc(g.displayName) + ' <time>' + timeAgo(g.firstTs) + '</time></div>'
+      +   g.texts.map(t => '<div class="chat-bubble" data-id="' + t.id + '">' + _esc(t.text) + (g.isMine || isAdmin ? '<button class="chat-delete-btn" data-id="' + t.id + '" title="Delete">&times;</button>' : '') + '</div>').join('')
+      + '</div>'
+      + '</div>';
+  }).join('');
+  // Wire delete
+  messagesEl.querySelectorAll('.chat-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!confirm('Delete this message?')) return;
+      CHAT.remove(btn.dataset.id);
+      renderChat();
+    });
+  });
+  // Auto-scroll to bottom
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function bindAnnComposer() {
+  const newAnnBtn = document.getElementById('newAnnBtn');
+  const annComposer = document.getElementById('annComposer');
+  const annTitle = document.getElementById('annTitle');
+  const annBody = document.getElementById('annBody');
+  const annPinned = document.getElementById('annPinned');
+  const annSubmit = document.getElementById('annSubmitBtn');
+  const annCancel = document.getElementById('annCancelBtn');
+  const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+  if (newAnnBtn) newAnnBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+  if (!isAdmin || !newAnnBtn) return;
+  const updateAnnState = () => {
+    if (annSubmit && annTitle) annSubmit.disabled = annTitle.value.trim().length === 0;
+  };
+  newAnnBtn.addEventListener('click', () => {
+    if (annComposer) annComposer.style.display = 'block';
+    if (annTitle) annTitle.focus();
+  });
+  if (annTitle) annTitle.addEventListener('input', updateAnnState);
+  if (annCancel) annCancel.addEventListener('click', () => {
+    if (annComposer) annComposer.style.display = 'none';
+    if (annTitle) annTitle.value = '';
+    if (annBody) annBody.value = '';
+    if (annPinned) annPinned.checked = false;
+    updateAnnState();
+  });
+  if (annSubmit) annSubmit.addEventListener('click', () => {
+    if (!annTitle || !annTitle.value.trim()) return;
+    ANNOUNCEMENTS.add(annTitle.value, annBody ? annBody.value : '', annPinned ? annPinned.checked : false);
+    annTitle.value = '';
+    if (annBody) annBody.value = '';
+    if (annPinned) annPinned.checked = false;
+    if (annComposer) annComposer.style.display = 'none';
+    updateAnnState();
+    renderAnnouncements();
+  });
+}
+
+function bindFaqComposer() {
+  const newFaqBtn = document.getElementById('newFaqBtn');
+  const faqComposer = document.getElementById('faqComposer');
+  const faqQuestion = document.getElementById('faqQuestion');
+  const faqAnswer = document.getElementById('faqAnswer');
+  const faqSubmit = document.getElementById('faqSubmitBtn');
+  const faqCancel = document.getElementById('faqCancelBtn');
+  const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+  if (newFaqBtn) newFaqBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+  if (!isAdmin || !newFaqBtn) return;
+  const updateFaqState = () => {
+    if (faqSubmit && faqQuestion) faqSubmit.disabled = faqQuestion.value.trim().length === 0;
+  };
+  newFaqBtn.addEventListener('click', () => {
+    if (faqComposer) faqComposer.style.display = 'block';
+    if (faqQuestion) faqQuestion.focus();
+  });
+  if (faqQuestion) faqQuestion.addEventListener('input', updateFaqState);
+  if (faqCancel) faqCancel.addEventListener('click', () => {
+    if (faqComposer) faqComposer.style.display = 'none';
+    if (faqQuestion) faqQuestion.value = '';
+    if (faqAnswer) faqAnswer.value = '';
+    updateFaqState();
+  });
+  if (faqSubmit) faqSubmit.addEventListener('click', () => {
+    if (!faqQuestion || !faqQuestion.value.trim()) return;
+    FAQS.add(faqQuestion.value, faqAnswer ? faqAnswer.value : '');
+    faqQuestion.value = '';
+    if (faqAnswer) faqAnswer.value = '';
+    if (faqComposer) faqComposer.style.display = 'none';
+    updateFaqState();
+    renderFAQs();
+  });
+}
+
+function bindChatComposer() {
+  const chatInput = document.getElementById('chatInput');
+  const chatSend = document.getElementById('chatSendBtn');
+  if (!chatInput || !chatSend) return;
+  const updateChatState = () => { chatSend.disabled = chatInput.value.trim().length === 0; };
+  chatInput.addEventListener('input', updateChatState);
+  const send = () => {
+    if (!chatInput.value.trim()) return;
+    CHAT.add(chatInput.value);
+    chatInput.value = '';
+    updateChatState();
+    renderChat();
+  };
+  chatSend.addEventListener('click', send);
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+  updateChatState();
+}
+
+function bindDashboardSidebar() {
+  const sidebar = document.getElementById('dashSidebar');
+  const toggleBtn = document.getElementById('dashSidebarToggle');
+  const closeBtn = document.getElementById('dashSidebarClose');
+  const toggleLabel = document.getElementById('dashSidebarToggleLabel');
+  const links = document.querySelectorAll('.dash-sidebar-link');
+  const panels = document.querySelectorAll('.dash-panel');
+
+  function openSidebar()  { if (sidebar) sidebar.classList.add('is-open'); }
+  function closeSidebar() { if (sidebar) sidebar.classList.remove('is-open'); }
+
+  if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+  if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+
+  function activate(tab) {
+    links.forEach(l => l.classList.toggle('active', l.dataset.tab === tab));
+    panels.forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+    if (toggleLabel) {
+      const link = Array.from(links).find(l => l.dataset.tab === tab);
+      if (link) toggleLabel.textContent = link.querySelector('span').textContent;
+    }
+    closeSidebar();
+    // Lazy-render the panel's content
+    if (tab === 'announcements') renderAnnouncements();
+    if (tab === 'faq') renderFAQs();
+    if (tab === 'wins') renderWins();
+    if (tab === 'chat') {
+      renderChat();
+      if (typeof CHAT !== 'undefined') {
+        CHAT.fetchRemote().then(renderChat).catch(() => {});
+        CHAT.startLiveListener(renderChat);
+      }
+    } else if (typeof CHAT !== 'undefined') {
+      CHAT.stopLiveListener();
+    }
+  }
+
+  links.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      activate(link.dataset.tab);
+    });
+  });
+}
+
 if (currentPage === 'dashboard.html') {
-  document.addEventListener('DOMContentLoaded', bindCommunityComposers);
-  // Also bind immediately if DOMContentLoaded already fired
-  if (document.readyState !== 'loading') bindCommunityComposers();
+  function initDashboardCommunity() {
+    bindCommunityComposers();
+    bindAnnComposer();
+    bindFaqComposer();
+    bindChatComposer();
+    bindDashboardSidebar();
+    // Initial fetches for cross-browser sync
+    if (typeof ANNOUNCEMENTS !== 'undefined') ANNOUNCEMENTS.fetchRemote().then(() => {
+      const ann = ANNOUNCEMENTS.getAll();
+      const badge = document.getElementById('annBadge');
+      if (badge) {
+        badge.textContent = ann.length;
+        badge.style.display = ann.length > 0 ? 'inline-flex' : 'none';
+      }
+      renderAnnouncements();
+    }).catch(() => {});
+    if (typeof FAQS !== 'undefined') FAQS.fetchRemote().then(renderFAQs).catch(() => {});
+  }
+  document.addEventListener('DOMContentLoaded', initDashboardCommunity);
+  if (document.readyState !== 'loading') initDashboardCommunity();
 }
 
 // ============================================================
