@@ -6809,3 +6809,217 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
   }
 }
 
+// ============================================================
+// ADMIN STUDENTS PANEL — registered users from localStorage + Firestore
+// ============================================================
+if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin()) {
+  const studentsTbody = document.getElementById('studentsTbody');
+  const studentsCount = document.getElementById('studentsCount');
+  const studentsSearch = document.getElementById('studentsSearch');
+  const studentsRoleFilter = document.getElementById('studentsRoleFilter');
+  const studentsSortBy = document.getElementById('studentsSortBy');
+  const studentsRefreshBtn = document.getElementById('studentsRefreshBtn');
+  const studentsExportBtn = document.getElementById('studentsExportBtn');
+
+  if (studentsTbody) {
+    let studentCache = [];
+    const escS = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    function fmtDate(ts) {
+      if (!ts) return '—';
+      const d = ts && ts.toDate ? ts.toDate() : new Date(ts);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    // Merge localStorage `auth_users` + Firestore `sphere_users` so the
+    // table shows everyone — even students who signed up locally and
+    // haven't logged in yet (Firestore-only) or vice versa.
+    async function loadStudents() {
+      const local = AUTH.getAllUsers ? AUTH.getAllUsers() : [];
+      let remote = [];
+      try {
+        if (typeof USER_SYNC !== 'undefined' && USER_SYNC.fetchAll) {
+          remote = await USER_SYNC.fetchAll();
+        }
+      } catch (e) { console.warn('[STUDENTS] fetchAll failed:', e.message); }
+
+      // Merge by username (lowercased)
+      const byUser = {};
+      local.forEach(u => {
+        const key = (u.username || '').toLowerCase();
+        if (!key) return;
+        byUser[key] = {
+          username: u.username,
+          displayName: u.fullName || u.username,
+          email: u.email || '',
+          role: u.role || 'student',
+          source: 'local',
+          progress: {},
+          quizScores: {},
+          assignments: {},
+          lastActive: null,
+          registeredAt: null
+        };
+      });
+      remote.forEach(r => {
+        const key = (r.username || r.id || '').toLowerCase();
+        if (!key) return;
+        const ex = byUser[key] || {};
+        byUser[key] = {
+          username: r.username || r.id,
+          displayName: r.displayName || ex.displayName || r.username || r.id,
+          email: r.email || ex.email || '',
+          role: r.role || ex.role || 'student',
+          source: ex.source ? 'local+remote' : 'remote',
+          progress: r.progress || {},
+          quizScores: r.quizScores || {},
+          assignments: r.assignments || {},
+          lastActive: r.lastActive || null,
+          registeredAt: r.registeredAt || null
+        };
+      });
+
+      studentCache = Object.values(byUser);
+      render();
+    }
+
+    function render() {
+      const q = (studentsSearch && studentsSearch.value || '').trim().toLowerCase();
+      const roleFilter = studentsRoleFilter ? studentsRoleFilter.value : '';
+      const sortBy = studentsSortBy ? studentsSortBy.value : 'recent';
+
+      let rows = studentCache.slice();
+      if (q) {
+        rows = rows.filter(r =>
+          (r.displayName || '').toLowerCase().includes(q) ||
+          (r.username || '').toLowerCase().includes(q) ||
+          (r.email || '').toLowerCase().includes(q)
+        );
+      }
+      if (roleFilter) rows = rows.filter(r => r.role === roleFilter);
+
+      const tsOf = (v) => {
+        if (!v) return 0;
+        if (v.toDate) return v.toDate().getTime();
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      };
+      rows.sort((a, b) => {
+        if (sortBy === 'name') {
+          return (a.displayName || '').localeCompare(b.displayName || '');
+        }
+        if (sortBy === 'progress') {
+          const pa = a.progress ? Object.values(a.progress).filter(Boolean).length : 0;
+          const pb = b.progress ? Object.values(b.progress).filter(Boolean).length : 0;
+          return pb - pa;
+        }
+        if (sortBy === 'active') {
+          return tsOf(b.lastActive) - tsOf(a.lastActive);
+        }
+        // recent (default) → registeredAt desc
+        return tsOf(b.registeredAt) - tsOf(a.registeredAt);
+      });
+
+      if (studentsCount) {
+        studentsCount.textContent = rows.length === 0
+          ? 'No students match the current filter.'
+          : (rows.length + ' student' + (rows.length === 1 ? '' : 's') + ' shown.');
+      }
+
+      if (rows.length === 0) {
+        studentsTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-light);">No registered students yet. Once people sign up, they\'ll appear here.</td></tr>';
+        return;
+      }
+
+      studentsTbody.innerHTML = rows.map(r => {
+        const completed = r.progress ? Object.values(r.progress).filter(Boolean).length : 0;
+        const pct = Math.round((completed / 16) * 100);
+        const quizVals = r.quizScores ? Object.values(r.quizScores).filter(v => typeof v === 'number') : [];
+        const avgQuiz = quizVals.length ? Math.round(quizVals.reduce((a, b) => a + b, 0) / quizVals.length) : null;
+        const initials = (r.displayName || r.username || '?').split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
+        return '<tr data-username="' + escS(r.username) + '">'
+          + '<td><div class="students-avatar">' + escS(initials) + '</div></td>'
+          + '<td><strong>' + escS(r.displayName) + '</strong></td>'
+          + '<td><code>@' + escS(r.username) + '</code></td>'
+          + '<td>' + escS(r.email || '—') + '</td>'
+          + '<td><span class="role-badge ' + escS(r.role) + '">' + escS(r.role) + '</span></td>'
+          + '<td><div class="students-progress"><div class="students-progress-bar"><div class="students-progress-fill" style="width:' + pct + '%"></div></div><span>' + completed + '/16</span></div></td>'
+          + '<td>' + (avgQuiz != null ? avgQuiz + '%' : '—') + '</td>'
+          + '<td>' + fmtDate(r.lastActive || r.registeredAt) + '</td>'
+          + '<td>' + (r.role !== 'admin' ? '<button class="students-delete-btn" data-username="' + escS(r.username) + '" title="Remove">Remove</button>' : '') + '</td>'
+          + '</tr>';
+      }).join('');
+
+      // Wire delete buttons
+      studentsTbody.querySelectorAll('.students-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const username = btn.dataset.username;
+          if (!username) return;
+          if (!confirm('Remove ' + username + '? They will lose access on next login.\n\nNote: this only removes them from this admin\'s view + Firestore. Their browser localStorage record is untouched.')) return;
+          // Remove from Firestore
+          try {
+            if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+              DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(username).delete().catch(() => {});
+            }
+          } catch (e) {}
+          // Remove from this browser's localStorage user list
+          try {
+            const users = AUTH.getAllUsers().filter(u => u.username !== username);
+            safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+          } catch (e) {}
+          // Refresh
+          loadStudents();
+        });
+      });
+    }
+
+    function exportCSV() {
+      if (!studentCache.length) { alert('No students to export.'); return; }
+      const headers = ['Username', 'Name', 'Email', 'Role', 'Progress (of 16)', 'Quiz Avg %', 'Source', 'Last Active', 'Registered At'];
+      const escCSV = (v) => {
+        const s = String(v == null ? '' : v).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? '"' + s + '"' : s;
+      };
+      const lines = [headers.join(',')];
+      studentCache.forEach(r => {
+        const completed = r.progress ? Object.values(r.progress).filter(Boolean).length : 0;
+        const quizVals = r.quizScores ? Object.values(r.quizScores).filter(v => typeof v === 'number') : [];
+        const avgQuiz = quizVals.length ? Math.round(quizVals.reduce((a, b) => a + b, 0) / quizVals.length) : '';
+        lines.push([
+          r.username, r.displayName, r.email, r.role, completed, avgQuiz, r.source,
+          fmtDate(r.lastActive), fmtDate(r.registeredAt)
+        ].map(escCSV).join(','));
+      });
+      const csv = lines.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sphere-students-' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Wire controls
+    if (studentsSearch) studentsSearch.addEventListener('input', render);
+    if (studentsRoleFilter) studentsRoleFilter.addEventListener('change', render);
+    if (studentsSortBy) studentsSortBy.addEventListener('change', render);
+    if (studentsRefreshBtn) studentsRefreshBtn.addEventListener('click', loadStudents);
+    if (studentsExportBtn) studentsExportBtn.addEventListener('click', exportCSV);
+
+    // Lazy-load when Students tab is first clicked
+    const studentsTab = document.querySelector('.admin-tab[data-tab="students"]');
+    if (studentsTab) {
+      let loaded = false;
+      studentsTab.addEventListener('click', () => {
+        if (loaded) return;
+        loaded = true;
+        setTimeout(loadStudents, 300);
+      });
+    }
+  }
+}
+
