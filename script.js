@@ -1990,9 +1990,9 @@ if (currentPage === 'course.html' || currentPage === 'index.html') {
           const img = document.createElement('img');
           img.src = imgData;
           img.alt = 'Month ' + month;
-          const savedPos = safeGetItem('card_image_pos_' + month);
-          const topVal = savedPos ? savedPos + 'px' : '0px';
-          img.style.cssText = 'width:100%;height:auto;min-height:100%;object-fit:cover;position:absolute;left:0;top:' + topVal + ';z-index:0;';
+          // Same fill-and-cover sizing as the admin preview so the
+          // uploaded image lands identically in both views.
+          img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;';
           cardImg.appendChild(img);
         }
       });
