@@ -8396,3 +8396,122 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
     flashToast(faqToast);
   });
 }
+
+// ============================================================
+// MEDIA LIGHTBOX — full-size viewer for post / win images
+// One global overlay injected on first use; click any .post-media
+// img to open it, ESC / click-outside / × to close, ← / → to walk
+// through the post's images when there's more than one.
+// ============================================================
+const MEDIA_LIGHTBOX = {
+  el: null,
+  imgEl: null,
+  counterEl: null,
+  prevBtn: null,
+  nextBtn: null,
+  current: { sources: [], index: 0 },
+
+  ensure() {
+    if (this.el) return this.el;
+    const wrap = document.createElement('div');
+    wrap.className = 'lightbox';
+    wrap.setAttribute('hidden', '');
+    wrap.innerHTML = ''
+      + '<button type="button" class="lightbox-close" aria-label="Close">&times;</button>'
+      + '<button type="button" class="lightbox-nav lightbox-prev" aria-label="Previous">'
+      +   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
+      + '</button>'
+      + '<button type="button" class="lightbox-nav lightbox-next" aria-label="Next">'
+      +   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+      + '</button>'
+      + '<div class="lightbox-stage"><img class="lightbox-img" alt=""></div>'
+      + '<div class="lightbox-counter"></div>';
+    document.body.appendChild(wrap);
+    this.el = wrap;
+    this.imgEl = wrap.querySelector('.lightbox-img');
+    this.counterEl = wrap.querySelector('.lightbox-counter');
+    this.prevBtn = wrap.querySelector('.lightbox-prev');
+    this.nextBtn = wrap.querySelector('.lightbox-next');
+
+    wrap.querySelector('.lightbox-close').addEventListener('click', () => this.close());
+    this.prevBtn.addEventListener('click', (e) => { e.stopPropagation(); this.show(-1); });
+    this.nextBtn.addEventListener('click', (e) => { e.stopPropagation(); this.show(1); });
+    // Click outside the image closes
+    wrap.addEventListener('click', (e) => {
+      if (e.target === wrap || e.target.classList.contains('lightbox-stage')) this.close();
+    });
+    // Keyboard
+    document.addEventListener('keydown', (e) => {
+      if (this.el.hasAttribute('hidden')) return;
+      if (e.key === 'Escape') this.close();
+      else if (e.key === 'ArrowLeft') this.show(-1);
+      else if (e.key === 'ArrowRight') this.show(1);
+    });
+    return wrap;
+  },
+
+  open(sources, index) {
+    if (!sources || !sources.length) return;
+    this.ensure();
+    this.current.sources = sources.slice();
+    this.current.index = Math.max(0, Math.min(index || 0, sources.length - 1));
+    this._render();
+    this.el.removeAttribute('hidden');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => this.el.classList.add('is-open'));
+  },
+
+  close() {
+    if (!this.el) return;
+    this.el.classList.remove('is-open');
+    document.body.style.overflow = '';
+    setTimeout(() => { if (this.el) this.el.setAttribute('hidden', ''); }, 200);
+  },
+
+  show(delta) {
+    const len = this.current.sources.length;
+    if (!len) return;
+    this.current.index = (this.current.index + delta + len) % len;
+    this._render();
+  },
+
+  _render() {
+    if (!this.imgEl) return;
+    const src = this.current.sources[this.current.index];
+    this.imgEl.src = src;
+    const len = this.current.sources.length;
+    if (this.counterEl) {
+      if (len <= 1) {
+        this.counterEl.style.display = 'none';
+      } else {
+        this.counterEl.style.display = 'block';
+        this.counterEl.textContent = (this.current.index + 1) + ' / ' + len;
+      }
+    }
+    if (this.prevBtn) this.prevBtn.style.display = len > 1 ? 'flex' : 'none';
+    if (this.nextBtn) this.nextBtn.style.display = len > 1 ? 'flex' : 'none';
+  }
+};
+
+// Delegated click — turns every .post-media img into a clickable
+// thumbnail without re-binding on every render. Works for posts,
+// wins, and any future surface that uses .post-media.
+document.addEventListener('click', (e) => {
+  const img = e.target.closest && e.target.closest('.post-media img');
+  if (!img) return;
+  // Walk up to the post-media container so we can collect all
+  // sibling images and open the lightbox at the clicked index.
+  const container = img.closest('.post-media');
+  if (!container) return;
+  const imgs = Array.from(container.querySelectorAll('img'));
+  const sources = imgs.map(i => i.src);
+  const index = imgs.indexOf(img);
+  e.preventDefault();
+  MEDIA_LIGHTBOX.open(sources, index);
+});
+
+// Cursor cue: any image inside a post-media block is clickable
+document.addEventListener('mouseover', (e) => {
+  const img = e.target && e.target.closest && e.target.closest('.post-media img');
+  if (img && img.style.cursor !== 'zoom-in') img.style.cursor = 'zoom-in';
+}, true);
