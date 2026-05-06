@@ -7577,6 +7577,89 @@ if (currentPage === 'events.html') {
         renderEventsPage(activeFilter ? activeFilter.dataset.filter : 'upcoming');
       }).catch(() => {});
     }
+
+    // ===== Admin event composer =====
+    const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+    const adminBar = document.getElementById('eventsAdminBar');
+    const newEventBtn = document.getElementById('newEventBtn');
+    const composer = document.getElementById('eventComposer');
+    const titleInput = document.getElementById('eventTitleInput');
+    const dateInput = document.getElementById('eventDateInput');
+    const typeInput = document.getElementById('eventTypeInput');
+    const locationInput = document.getElementById('eventLocationInput');
+    const linkInput = document.getElementById('eventLinkInput');
+    const descInput = document.getElementById('eventDescInput');
+    const submitBtn = document.getElementById('eventSubmitBtn');
+    const cancelBtn = document.getElementById('eventCancelBtn');
+    const toast = document.getElementById('eventComposerToast');
+
+    if (!adminBar) return;
+    if (!isAdmin) { adminBar.style.display = 'none'; return; }
+    adminBar.style.display = 'block';
+
+    const refreshSubmitState = () => {
+      if (!submitBtn) return;
+      const ok = titleInput && titleInput.value.trim().length > 0
+        && dateInput && dateInput.value;
+      submitBtn.disabled = !ok;
+    };
+    [titleInput, dateInput, typeInput, locationInput, linkInput, descInput].forEach(el => {
+      if (el) el.addEventListener('input', refreshSubmitState);
+    });
+    refreshSubmitState();
+
+    if (newEventBtn && composer) {
+      newEventBtn.addEventListener('click', () => {
+        const open = composer.style.display !== 'none';
+        composer.style.display = open ? 'none' : 'block';
+        if (!open && titleInput) setTimeout(() => titleInput.focus(), 50);
+      });
+    }
+    if (cancelBtn && composer) {
+      cancelBtn.addEventListener('click', () => {
+        composer.style.display = 'none';
+        if (titleInput) titleInput.value = '';
+        if (dateInput) dateInput.value = '';
+        if (typeInput) typeInput.value = 'workshop';
+        if (locationInput) locationInput.value = '';
+        if (linkInput) linkInput.value = '';
+        if (descInput) descInput.value = '';
+        refreshSubmitState();
+      });
+    }
+    if (composer) {
+      composer.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!titleInput || !dateInput) return;
+        if (!titleInput.value.trim() || !dateInput.value) return;
+        // datetime-local inputs are local-tz; store as ISO so the
+        // upcoming/past filter compares cleanly against Date.now().
+        const dateISO = new Date(dateInput.value).toISOString();
+        EVENTS.add({
+          title: titleInput.value,
+          description: descInput ? descInput.value : '',
+          date: dateISO,
+          location: locationInput ? locationInput.value : '',
+          link: linkInput ? linkInput.value : '',
+          type: typeInput ? typeInput.value : 'workshop'
+        });
+        // Reset
+        titleInput.value = '';
+        dateInput.value = '';
+        if (typeInput) typeInput.value = 'workshop';
+        if (locationInput) locationInput.value = '';
+        if (linkInput) linkInput.value = '';
+        if (descInput) descInput.value = '';
+        refreshSubmitState();
+        if (composer) composer.style.display = 'none';
+        if (toast) {
+          toast.style.display = 'block';
+          setTimeout(() => { toast.style.display = 'none'; }, 3500);
+        }
+        const activeFilter = document.querySelector('.events-filter.active');
+        renderEventsPage(activeFilter ? activeFilter.dataset.filter : 'upcoming');
+      });
+    }
   }
   document.addEventListener('DOMContentLoaded', initEventsPage);
   if (document.readyState !== 'loading') initEventsPage();
