@@ -693,6 +693,51 @@ const POSTS = {
     } catch (e) {}
   },
 
+  // Comment helpers — comments live as an array on the post doc
+  // itself, so they sync via the same Firestore listener as posts.
+  addComment(postId, text) {
+    text = (text || '').trim().slice(0, 500);
+    if (!text || !postId) return null;
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    const idx = all.findIndex(p => p.id === postId);
+    if (idx === -1) return null;
+    const meta = _commonAuthorMeta();
+    const comment = {
+      id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      username: meta.username,
+      displayName: meta.displayName,
+      avatar: meta.avatar,
+      initials: meta.initials,
+      text: text,
+      createdAt: Date.now()
+    };
+    all[idx].comments = (all[idx].comments || []).concat(comment);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(postId).set(
+          { comments: all[idx].comments }, { merge: true }
+        ).catch(e => console.warn('[POSTS] comment sync:', e.message));
+      }
+    } catch (e) {}
+    return comment;
+  },
+
+  removeComment(postId, commentId) {
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    const idx = all.findIndex(p => p.id === postId);
+    if (idx === -1) return;
+    all[idx].comments = (all[idx].comments || []).filter(c => c.id !== commentId);
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(postId).set(
+          { comments: all[idx].comments }, { merge: true }
+        ).catch(() => {});
+      }
+    } catch (e) {}
+  },
+
   async fetchRemote() {
     if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
     try {
@@ -6632,6 +6677,10 @@ function renderPosts() {
     if (video) {
       mediaHTML += '<div class="post-media video"><video src="' + video.dataUrl + '" controls preload="metadata" playsinline></video></div>';
     }
+    const comments = Array.isArray(p.comments) ? p.comments.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)) : [];
+    const commentToggleLabel = comments.length === 0
+      ? 'Comment'
+      : 'View ' + comments.length + ' comment' + (comments.length === 1 ? '' : 's');
     return '<article class="post-item" data-id="' + p.id + '">'
       + '<div class="post-avatar">' + _avatarHTML(p) + '</div>'
       + '<div class="post-body">'
@@ -6639,6 +6688,39 @@ function renderPosts() {
       +   (p.text ? '<p class="post-text">' + _esc(p.text) + '</p>' : '')
       +   mediaHTML
       +   renderReactionsRow(p, 'posts')
+      +   '<div class="post-actions-row">'
+      +     '<button type="button" class="post-comment-toggle" data-id="' + p.id + '">'
+      +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+      +       '<span>' + commentToggleLabel + '</span>'
+      +     '</button>'
+      +   '</div>'
+      +   '<div class="post-comments" id="post-comments-' + p.id + '" hidden>'
+      +     '<div class="comments-list">'
+      +       comments.map(c => {
+              const cMine = me && c.username === me;
+              const cCanDelete = isAdmin || cMine;
+              return '<div class="comment-item" data-id="' + c.id + '">'
+                + '<div class="comment-avatar">' + _avatarHTML(c) + '</div>'
+                + '<div class="comment-body">'
+                +   '<div class="comment-bubble">'
+                +     '<strong>' + _esc(c.displayName) + '</strong>'
+                +     '<p>' + _esc(c.text) + '</p>'
+                +   '</div>'
+                +   '<div class="comment-meta"><time>' + timeAgo(c.createdAt) + '</time>'
+                +     (cCanDelete ? '<button type="button" class="comment-delete-btn" data-post-id="' + p.id + '" data-comment-id="' + c.id + '">Delete</button>' : '')
+                +   '</div>'
+                + '</div>'
+                + '</div>';
+            }).join('')
+      +     '</div>'
+      +     '<form class="comment-composer" data-post-id="' + p.id + '">'
+      +       '<div class="comment-avatar comment-avatar-me">' + _avatarHTML({ avatar: (typeof AUTH !== "undefined" && AUTH.getAvatarImage) ? AUTH.getAvatarImage() : null, initials: (typeof AUTH !== "undefined" && AUTH.getInitials) ? AUTH.getInitials() : "U" }) + '</div>'
+      +       '<input type="text" class="comment-input" maxlength="500" placeholder="Write a comment…" autocomplete="off">'
+      +       '<button type="submit" class="comment-send-btn" disabled aria-label="Post comment">'
+      +         '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+      +       '</button>'
+      +     '</form>'
+      +   '</div>'
       + '</div>'
       + (canDelete ? '<button class="post-delete-btn" data-id="' + p.id + '" aria-label="Delete post" title="Delete">&times;</button>' : '')
       + '</article>';
@@ -6649,6 +6731,45 @@ function renderPosts() {
     btn.addEventListener('click', () => {
       if (!confirm('Delete this post?')) return;
       POSTS.remove(btn.dataset.id);
+      renderPosts();
+    });
+  });
+  // Wire comment toggle (open/close the comments panel)
+  listEl.querySelectorAll('.post-comment-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const panel = document.getElementById('post-comments-' + id);
+      if (!panel) return;
+      const willOpen = panel.hasAttribute('hidden');
+      if (willOpen) {
+        panel.removeAttribute('hidden');
+        const input = panel.querySelector('.comment-input');
+        if (input) setTimeout(() => input.focus(), 50);
+      } else {
+        panel.setAttribute('hidden', '');
+      }
+    });
+  });
+  // Wire comment composer submit
+  listEl.querySelectorAll('.comment-composer').forEach(form => {
+    const input = form.querySelector('.comment-input');
+    const sendBtn = form.querySelector('.comment-send-btn');
+    const updateState = () => { if (sendBtn) sendBtn.disabled = !(input && input.value.trim().length > 0); };
+    if (input) input.addEventListener('input', updateState);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!input || !input.value.trim()) return;
+      POSTS.addComment(form.dataset.postId, input.value);
+      input.value = '';
+      updateState();
+      renderPosts();
+    });
+  });
+  // Wire comment delete
+  listEl.querySelectorAll('.comment-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Delete this comment?')) return;
+      POSTS.removeComment(btn.dataset.postId, btn.dataset.commentId);
       renderPosts();
     });
   });
