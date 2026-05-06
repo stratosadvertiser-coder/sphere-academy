@@ -1618,9 +1618,11 @@ const AUTH = {
     if (this.isLoggedIn()) {
       // ===== Inject persistent tabs: Home / Course / Events =====
       // Profile remains accessible via the avatar in the right-hand nav-cta.
-      // Skip on login/signup (public pages) and admin.html (admin has its own nav).
+      // Skip on login/signup (public pages) only — admin needs the same
+      // tabs so they can jump to the student-facing surfaces while
+      // keeping access to Admin Panel via the right-hand button.
       const navLinksEl = document.querySelector('.nav-links');
-      const tabPages = ['dashboard.html', 'course.html', 'lesson.html', 'profile.html', 'events.html'];
+      const tabPages = ['dashboard.html', 'course.html', 'lesson.html', 'profile.html', 'events.html', 'admin.html'];
       if (navLinksEl && tabPages.indexOf(pathname) !== -1 && !navLinksEl.querySelector('.nav-tab-link')) {
         const tabs = [
           { href: 'dashboard.html', label: 'Home',   pages: ['dashboard.html'] },
