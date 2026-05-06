@@ -280,8 +280,8 @@ img {
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.25rem;
+  gap: 9px;
+  font-size: 1.08rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   cursor: pointer;
