@@ -8408,3 +8408,22 @@ img {
   max-height: 480px;
   background: #000;
 }
+
+/* Footer logo — smaller icon + non-interactive (it isn't a link) */
+.footer-brand .logo {
+  cursor: default;
+  pointer-events: none;
+  font-size: 1.05rem;
+  gap: 8px;
+}
+.footer-brand .logo:hover {
+  transform: none;
+}
+.footer-brand .logo:hover .logo-icon,
+.footer-brand .logo:hover .logo-icon img {
+  transform: none;
+}
+.footer-brand .logo .logo-icon {
+  width: 28px;
+  height: 28px;
+}
