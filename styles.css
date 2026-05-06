@@ -3522,6 +3522,12 @@ img {
   padding: 60px 0 100px;
 }
 
+/* When the course-hero is removed, push content down past the
+   72px fixed navbar instead of relying on hero spacing. */
+.course-content.course-content-top {
+  padding-top: 110px;
+}
+
 .course-tabs {
   display: flex;
   border-bottom: 2px solid var(--border);
