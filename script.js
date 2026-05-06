@@ -949,6 +949,32 @@ const ANNOUNCEMENTS = {
       console.warn('[ANNOUNCEMENTS] fetchRemote:', e.message);
       return this.getAll();
     }
+  },
+
+  _listener: null,
+
+  // Real-time: any new announcement from admin surfaces on every
+  // student's screen within seconds, no manual refresh.
+  startLiveListener(onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    this.stopLiveListener();
+    try {
+      this._listener = DATA_SYNC.db.collection(this.COLLECTION)
+        .onSnapshot(snap => {
+          const remote = [];
+          snap.forEach(d => remote.push(d.data()));
+          const merged = _mergeById(remote, safeGetJSON(this.STORAGE_KEY, []));
+          safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+          if (typeof onUpdate === 'function') onUpdate(this.getAll());
+        }, err => console.warn('[ANNOUNCEMENTS] listener:', err.message));
+    } catch (e) { console.warn('[ANNOUNCEMENTS] startLiveListener:', e.message); }
+  },
+
+  stopLiveListener() {
+    if (this._listener) {
+      try { this._listener(); } catch (e) {}
+      this._listener = null;
+    }
   }
 };
 
@@ -1007,6 +1033,30 @@ const FAQS = {
     } catch (e) {
       console.warn('[FAQS] fetchRemote:', e.message);
       return this.getAll();
+    }
+  },
+
+  _listener: null,
+
+  startLiveListener(onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    this.stopLiveListener();
+    try {
+      this._listener = DATA_SYNC.db.collection(this.COLLECTION)
+        .onSnapshot(snap => {
+          const remote = [];
+          snap.forEach(d => remote.push(d.data()));
+          const merged = _mergeById(remote, this.getAll());
+          safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
+          if (typeof onUpdate === 'function') onUpdate(this.getAll());
+        }, err => console.warn('[FAQS] listener:', err.message));
+    } catch (e) { console.warn('[FAQS] startLiveListener:', e.message); }
+  },
+
+  stopLiveListener() {
+    if (this._listener) {
+      try { this._listener(); } catch (e) {}
+      this._listener = null;
     }
   }
 };
@@ -6791,6 +6841,22 @@ function bindDashboardSidebar() {
         WINS.stopLiveListener();
       }
     }
+    if (typeof ANNOUNCEMENTS !== 'undefined') {
+      if (tab === 'announcements') {
+        ANNOUNCEMENTS.fetchRemote().then(renderAnnouncements).catch(() => {});
+        ANNOUNCEMENTS.startLiveListener(renderAnnouncements);
+      } else {
+        ANNOUNCEMENTS.stopLiveListener();
+      }
+    }
+    if (typeof FAQS !== 'undefined') {
+      if (tab === 'faq') {
+        FAQS.fetchRemote().then(renderFAQs).catch(() => {});
+        FAQS.startLiveListener(renderFAQs);
+      } else {
+        FAQS.stopLiveListener();
+      }
+    }
     if (typeof CHAT !== 'undefined') {
       if (tab === 'chat') {
         renderChat();
@@ -7320,3 +7386,68 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
   }
 }
 
+
+// ============================================================
+// ADMIN COMMUNITY PANEL — quick post composers for admin
+// (announcement / feed / FAQ — same data as Home Feed sidebar)
+// ============================================================
+if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin()) {
+  function flashToast(el) {
+    if (!el) return;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 3500);
+  }
+
+  // ----- Announcement composer -----
+  const annTitle = document.getElementById('adminAnnTitle');
+  const annBody = document.getElementById('adminAnnBody');
+  const annPinned = document.getElementById('adminAnnPinned');
+  const annSubmit = document.getElementById('adminAnnSubmitBtn');
+  const annToast = document.getElementById('adminAnnToast');
+  const updateAnnState = () => { if (annSubmit && annTitle) annSubmit.disabled = annTitle.value.trim().length === 0; };
+  if (annTitle) annTitle.addEventListener('input', updateAnnState);
+  if (annSubmit) annSubmit.addEventListener('click', () => {
+    if (!annTitle || !annTitle.value.trim() || typeof ANNOUNCEMENTS === 'undefined') return;
+    ANNOUNCEMENTS.add(annTitle.value, annBody ? annBody.value : '', annPinned ? annPinned.checked : false);
+    annTitle.value = '';
+    if (annBody) annBody.value = '';
+    if (annPinned) annPinned.checked = false;
+    updateAnnState();
+    flashToast(annToast);
+  });
+
+  // ----- Feed post composer -----
+  const feedText = document.getElementById('adminFeedText');
+  const feedSubmit = document.getElementById('adminFeedSubmitBtn');
+  const feedCount = document.getElementById('adminFeedCharCount');
+  const feedToast = document.getElementById('adminFeedToast');
+  const updateFeedState = () => {
+    if (!feedText || !feedSubmit) return;
+    if (feedCount) feedCount.textContent = feedText.value.length + ' / 500';
+    feedSubmit.disabled = feedText.value.trim().length === 0;
+  };
+  if (feedText) feedText.addEventListener('input', updateFeedState);
+  if (feedSubmit) feedSubmit.addEventListener('click', () => {
+    if (!feedText || !feedText.value.trim() || typeof POSTS === 'undefined') return;
+    POSTS.add(feedText.value, []);
+    feedText.value = '';
+    updateFeedState();
+    flashToast(feedToast);
+  });
+
+  // ----- FAQ composer -----
+  const faqQ = document.getElementById('adminFaqQ');
+  const faqA = document.getElementById('adminFaqA');
+  const faqSubmit = document.getElementById('adminFaqSubmitBtn');
+  const faqToast = document.getElementById('adminFaqToast');
+  const updateFaqState = () => { if (faqSubmit && faqQ) faqSubmit.disabled = faqQ.value.trim().length === 0; };
+  if (faqQ) faqQ.addEventListener('input', updateFaqState);
+  if (faqSubmit) faqSubmit.addEventListener('click', () => {
+    if (!faqQ || !faqQ.value.trim() || typeof FAQS === 'undefined') return;
+    FAQS.add(faqQ.value, faqA ? faqA.value : '');
+    faqQ.value = '';
+    if (faqA) faqA.value = '';
+    updateFaqState();
+    flashToast(faqToast);
+  });
+}
