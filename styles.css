@@ -4534,19 +4534,27 @@ img {
   display: flex;
   flex-direction: column;
   background: var(--bg-alt);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   text-decoration: none;
   color: inherit;
   position: relative;
+  box-shadow: 0 1px 3px rgba(11, 15, 28, 0.06);
+}
+[data-theme="dark"] .course-card-link {
+  border-color: rgba(255, 255, 255, 0.10);
 }
 
 .course-card-link:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.18);
-  border-color: rgba(91, 110, 232, 0.4);
+  box-shadow: 0 10px 24px -10px rgba(91, 110, 232, 0.35);
+  border-color: var(--primary);
+}
+[data-theme="dark"] .course-card-link:hover {
+  border-color: var(--primary);
+  box-shadow: 0 10px 24px -10px rgba(139, 158, 255, 0.45);
 }
 
 .course-card-link:hover .course-card-arrow {
