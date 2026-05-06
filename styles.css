@@ -406,7 +406,18 @@ img {
 .nav-cta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+/* Compact navbar buttons — the global .btn padding (14px 30px) sits
+   too tall in the 72px navbar; tighten to fit cleanly. */
+.nav-cta .btn {
+  padding: 9px 18px;
+  font-size: 0.85rem;
+  border-radius: 9px;
+}
+.nav-cta .btn-outline {
+  border-width: 1.5px;
 }
 
 .theme-toggle {
