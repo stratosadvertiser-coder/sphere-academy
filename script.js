@@ -4150,37 +4150,47 @@ const SEEN_NOTIF_IDS = {
 // Wire the community listeners (POSTS / WINS / ANNOUNCEMENTS) to fire
 // NOTIFS.add when a NEW item from someone OTHER than the current user
 // lands via the live snapshot.
+//
+// Strategy: use Firestore docChanges() to react to per-doc add/modify
+// events. Anything created within the last GRACE_MS counts as "fresh"
+// and triggers a notification; older items are silently marked seen.
+// This survives the 1.5s setup window so a post landing just before
+// the listener attaches still pings the user.
 function startCommunityNotifListeners() {
   if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
   const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
-  const seenInit = { posts: false, wins: false, announcements: false };
+  const startTime = Date.now();
+  const GRACE_MS = 5 * 60 * 1000; // 5-minute "fresh" window
 
   function wire(kind, collection, buildText, icon, link) {
     try {
       DATA_SYNC.db.collection(collection)
         .orderBy('createdAt', 'desc').limit(50)
         .onSnapshot(snap => {
-          const ids = [];
-          const items = [];
-          snap.forEach(d => {
-            const data = d.data();
-            ids.push(data.id || d.id);
-            items.push(data);
-          });
-          // First time we see the collection → seed everything as
-          // already-seen, no spam. Subsequent snapshots are deltas.
-          if (!seenInit[kind]) {
-            SEEN_NOTIF_IDS.seed(kind, ids);
-            seenInit[kind] = true;
-            return;
-          }
-          items.forEach(it => {
-            const id = it.id;
-            if (!id || SEEN_NOTIF_IDS.has(kind, id)) return;
+          snap.docChanges().forEach(change => {
+            if (change.type !== 'added') return; // only fire on inserts
+            const data = change.doc.data() || {};
+            const id = data.id || change.doc.id;
+            if (!id) return;
+
+            // Already notified this user about this item across sessions
+            if (SEEN_NOTIF_IDS.has(kind, id)) return;
+
+            const createdAt = typeof data.createdAt === 'number' ? data.createdAt : 0;
+            // Old item — seed as seen, no notif
+            if (createdAt && createdAt < startTime - GRACE_MS) {
+              SEEN_NOTIF_IDS.mark(kind, id);
+              return;
+            }
+
+            // It's fresh — record + maybe notify
             SEEN_NOTIF_IDS.mark(kind, id);
-            // Skip notifications for items the current user posted.
-            if (it.username && me && it.username === me) return;
-            if (typeof NOTIFS !== 'undefined') NOTIFS.add(buildText(it), icon, link);
+            // Skip the current user's own posts
+            if (data.username && me && data.username === me) return;
+            if (typeof NOTIFS !== 'undefined') {
+              NOTIFS.add(buildText(data), icon, link);
+              console.log('[NOTIFY ' + kind + '] fired for', id);
+            }
           });
         }, err => console.warn('[NOTIFY ' + kind + '] listener:', err.message));
     } catch (e) { console.warn('[NOTIFY ' + kind + '] start:', e.message); }
