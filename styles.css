@@ -8444,3 +8444,40 @@ img {
   width: 28px;
   height: 28px;
 }
+
+/* Bell pulse animation when a new notification arrives */
+.notif-btn.notif-pulse {
+  animation: notif-bell-pulse 0.9s cubic-bezier(.36, .07, .19, .97) both;
+}
+@keyframes notif-bell-pulse {
+  0%   { transform: rotate(0deg); }
+  15%  { transform: rotate(-12deg) scale(1.08); }
+  30%  { transform: rotate(10deg) scale(1.08); }
+  45%  { transform: rotate(-8deg); }
+  60%  { transform: rotate(6deg); }
+  75%  { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
+}
+.notif-btn.notif-pulse .notif-badge {
+  animation: notif-badge-flash 0.9s ease-out both;
+}
+@keyframes notif-badge-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(99, 91, 255, 0.6); }
+  60%  { box-shadow: 0 0 0 8px rgba(99, 91, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(99, 91, 255, 0); }
+}
+
+/* Small "Announcement / Feed / Win" chip in front of notif text */
+.notif-kind {
+  display: inline-block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  margin-right: 6px;
+  border-radius: 50px;
+  background: var(--primary-light);
+  color: var(--primary);
+  vertical-align: middle;
+}

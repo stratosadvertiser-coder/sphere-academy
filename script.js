@@ -3947,11 +3947,22 @@ if (searchBtn && searchOverlay) {
 const NOTIFS = {
   STORAGE_KEY: 'notifications',
   getAll() { return safeGetJSON(this.STORAGE_KEY, []); },
-  add(text, icon) {
+  add(text, icon, link) {
     const all = this.getAll();
-    all.unshift({ text, icon: icon || '&#128276;', time: new Date().toISOString(), read: false });
-    if (all.length > 20) all.pop();
+    all.unshift({
+      text,
+      icon: icon || '&#128276;',
+      time: new Date().toISOString(),
+      read: false,
+      link: link || ''
+    });
+    if (all.length > 30) all.pop();
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    // Re-render the bell badge + dropdown immediately so new alerts
+    // surface without waiting for a manual refresh.
+    if (typeof renderNotifications === 'function') {
+      try { renderNotifications(); pulseBell(); } catch (e) {}
+    }
   },
   markAllRead() {
     const all = this.getAll();
@@ -3960,6 +3971,108 @@ const NOTIFS = {
   },
   getUnreadCount() { return this.getAll().filter(n => !n.read).length; }
 };
+
+// Brief shake-and-glow animation on the bell when a new notif lands.
+function pulseBell() {
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  btn.classList.remove('notif-pulse');
+  // Force reflow so re-adding the class restarts the animation
+  void btn.offsetWidth;
+  btn.classList.add('notif-pulse');
+}
+
+// Track which Firestore-synced item IDs we've already turned into a
+// local notification, so the bell doesn't re-fire for the same item
+// every time the listener replays the snapshot or the page reloads.
+const SEEN_NOTIF_IDS = {
+  KEY: 'seen_notif_ids',
+  load() { return safeGetJSON(this.KEY, { posts: [], wins: [], announcements: [] }); },
+  save(s) { safeSetItem(this.KEY, JSON.stringify(s)); },
+  has(kind, id) {
+    const s = this.load();
+    return (s[kind] || []).indexOf(id) !== -1;
+  },
+  mark(kind, id) {
+    const s = this.load();
+    if (!s[kind]) s[kind] = [];
+    if (s[kind].indexOf(id) === -1) {
+      s[kind].push(id);
+      // Cap each kind at the last 200 ids
+      if (s[kind].length > 200) s[kind] = s[kind].slice(-200);
+      this.save(s);
+    }
+  },
+  // Seed every currently-known id as "seen" without firing notifs.
+  // Used on first page load so users don't get blasted with N alerts
+  // for posts that were already there before they showed up.
+  seed(kind, ids) {
+    const s = this.load();
+    s[kind] = ids.slice();
+    this.save(s);
+  }
+};
+
+// Wire the community listeners (POSTS / WINS / ANNOUNCEMENTS) to fire
+// NOTIFS.add when a NEW item from someone OTHER than the current user
+// lands via the live snapshot.
+function startCommunityNotifListeners() {
+  if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+  const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+  const seenInit = { posts: false, wins: false, announcements: false };
+
+  function wire(kind, collection, buildText, icon, link) {
+    try {
+      DATA_SYNC.db.collection(collection)
+        .orderBy('createdAt', 'desc').limit(50)
+        .onSnapshot(snap => {
+          const ids = [];
+          const items = [];
+          snap.forEach(d => {
+            const data = d.data();
+            ids.push(data.id || d.id);
+            items.push(data);
+          });
+          // First time we see the collection → seed everything as
+          // already-seen, no spam. Subsequent snapshots are deltas.
+          if (!seenInit[kind]) {
+            SEEN_NOTIF_IDS.seed(kind, ids);
+            seenInit[kind] = true;
+            return;
+          }
+          items.forEach(it => {
+            const id = it.id;
+            if (!id || SEEN_NOTIF_IDS.has(kind, id)) return;
+            SEEN_NOTIF_IDS.mark(kind, id);
+            // Skip notifications for items the current user posted.
+            if (it.username && me && it.username === me) return;
+            if (typeof NOTIFS !== 'undefined') NOTIFS.add(buildText(it), icon, link);
+          });
+        }, err => console.warn('[NOTIFY ' + kind + '] listener:', err.message));
+    } catch (e) { console.warn('[NOTIFY ' + kind + '] start:', e.message); }
+  }
+
+  wire('announcements', 'sphere_announcements',
+    (a) => '<span class="notif-kind">Announcement</span> ' + (a.title || 'New announcement'),
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M3 11l18-8v18l-18-8z"/><path d="M11 13v8"/></svg>',
+    'dashboard.html');
+
+  wire('posts', 'sphere_posts',
+    (p) => '<span class="notif-kind">Feed</span> ' + (p.displayName || 'Someone') + ' posted',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    'dashboard.html');
+
+  wire('wins', 'sphere_wins',
+    (w) => '<span class="notif-kind">Win</span> ' + (w.displayName || 'Someone') + ' celebrated: ' + (w.title || ''),
+    '&#127942;',
+    'dashboard.html');
+}
+
+if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn()) {
+  // Give Firebase anon auth a moment to settle before we attach
+  // listeners — otherwise reads can fail silently.
+  setTimeout(startCommunityNotifListeners, 1500);
+}
 
 // Seed default notifications if empty
 if (NOTIFS.getAll().length === 0) {
