@@ -8221,46 +8221,100 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
     if (studentsRefreshBtn) studentsRefreshBtn.addEventListener('click', loadStudents);
     if (studentsExportBtn) studentsExportBtn.addEventListener('click', exportCSV);
 
-    // Reset all student accounts — keeps the admin entry only
+    // Reset all student accounts — keeps the admin entry only.
+    // Also wipes any community content authored by non-admin users
+    // (posts, wins, chat messages) so the slate is truly fresh.
     const studentsResetBtn = document.getElementById('studentsResetBtn');
     if (studentsResetBtn) {
       studentsResetBtn.addEventListener('click', async () => {
         const studentCount = studentCache.filter(r => r.role !== 'admin').length;
-        if (studentCount === 0) {
-          alert('No student accounts to reset.');
-          return;
-        }
         const phrase = prompt(
-          'This will permanently delete ALL ' + studentCount + ' student account(s) from Firestore and from this admin browser. The admin account stays intact.\n\nType DELETE to confirm.'
+          'This will permanently delete:\n\n'
+          + '  • ALL ' + studentCount + ' non-admin account(s) — including Google sign-ins\n'
+          + '  • Every Feed post, Big Win, and Chat message authored by them\n\n'
+          + 'The admin account, announcements, FAQs, and events stay intact.\n\n'
+          + 'Type DELETE to confirm.'
         );
         if (phrase !== 'DELETE') return;
         studentsResetBtn.disabled = true;
         studentsResetBtn.textContent = 'Resetting…';
         try {
-          // 1) Delete every non-admin doc in sphere_users
-          if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
-            const snap = await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).get();
-            const deletes = [];
-            snap.forEach(d => {
-              const data = d.data() || {};
-              if ((data.role || 'student') !== 'admin') {
-                deletes.push(DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(d.id).delete());
+          if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) throw new Error('Firestore not connected');
+
+          // 1) Collect every non-admin username in sphere_users so we
+          //    can scrub their community content in step 3.
+          const userSnap = await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).get();
+          const nonAdminUsernames = new Set();
+          const userDeletes = [];
+          userSnap.forEach(d => {
+            const data = d.data() || {};
+            if ((data.role || 'student') !== 'admin') {
+              nonAdminUsernames.add((data.username || d.id || '').toLowerCase());
+              userDeletes.push(DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(d.id).delete());
+            }
+          });
+          await Promise.all(userDeletes);
+
+          // 2) Strip non-admin entries from this browser's localStorage,
+          //    wiping any saved per-user avatars too.
+          try {
+            const localUsers = AUTH.getAllUsers();
+            localUsers.forEach(u => {
+              if (u.role !== 'admin' && u.username) {
+                localStorage.removeItem('avatar_' + u.username);
+                nonAdminUsernames.add(u.username.toLowerCase());
               }
             });
-            await Promise.all(deletes);
+            const adminsOnly = localUsers.filter(u => u.role === 'admin');
+            safeSetItem(AUTH.USERS_KEY, JSON.stringify(adminsOnly));
+          } catch (e) {}
+
+          // 3) For each community collection, delete every doc whose
+          //    author is in the non-admin set. We pull each collection
+          //    once and Promise.all the deletes — small content volume,
+          //    fine for client-side.
+          async function wipeAuthored(collection) {
+            const snap = await DATA_SYNC.db.collection(collection).get();
+            const dels = [];
+            snap.forEach(d => {
+              const data = d.data() || {};
+              const owner = (data.username || '').toLowerCase();
+              if (owner && nonAdminUsernames.has(owner)) {
+                dels.push(DATA_SYNC.db.collection(collection).doc(d.id).delete());
+              }
+            });
+            await Promise.all(dels);
           }
-          // 2) Strip non-admin entries from this browser's localStorage
+          await Promise.all([
+            wipeAuthored('sphere_posts'),
+            wipeAuthored('sphere_wins'),
+            wipeAuthored('sphere_chat')
+          ]);
+
+          // 4) Mirror the wipe in localStorage caches so the admin's
+          //    own UI doesn't show ghost entries until next reload.
           try {
-            const users = AUTH.getAllUsers().filter(u => u.role === 'admin');
-            safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+            const stripByUser = (key) => {
+              const arr = safeGetJSON(key, []);
+              if (!Array.isArray(arr)) return;
+              safeSetItem(key, JSON.stringify(
+                arr.filter(it => !it || !it.username || !nonAdminUsernames.has((it.username || '').toLowerCase()))
+              ));
+            };
+            stripByUser('community_posts');
+            stripByUser('community_wins');
+            stripByUser('community_chat');
           } catch (e) {}
         } catch (e) {
-          alert('Some deletions failed: ' + (e && e.message ? e.message : e));
+          alert('Reset failed: ' + (e && e.message ? e.message : e));
+          studentsResetBtn.disabled = false;
+          studentsResetBtn.textContent = 'Reset all students';
+          return;
         }
         studentsResetBtn.disabled = false;
         studentsResetBtn.textContent = 'Reset all students';
         await loadStudents();
-        alert('All student accounts have been reset. Only the admin remains.');
+        alert('Done — only the admin remains.\nFeed, Wins, and Chat from removed students are also wiped.');
       });
     }
 
