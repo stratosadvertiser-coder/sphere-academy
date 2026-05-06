@@ -1385,6 +1385,28 @@ const AUTH = {
           email: user.email || ''
         }));
       }
+      // Restore the user's saved avatar (per-username key persisted
+      // through logout). Also pulls from Firestore in the background
+      // so a fresh device picks up the photo too.
+      const savedAvatar = safeGetItem('avatar_' + user.username);
+      if (savedAvatar) {
+        safeSetItem('auth_avatar', savedAvatar);
+      } else {
+        safeSetItem('auth_avatar', '');
+      }
+      try {
+        if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+          DATA_SYNC.db.collection('sphere_users').doc(user.username).get()
+            .then(snap => {
+              if (!snap.exists) return;
+              const remoteAvatar = (snap.data() || {}).avatar;
+              if (remoteAvatar) {
+                safeSetItem('auth_avatar', remoteAvatar);
+                safeSetItem('avatar_' + user.username, remoteAvatar);
+              }
+            }).catch(() => {});
+        }
+      } catch (e) {}
       // Push a baseline + lastActive update to Firestore right at
       // login time, so the admin Students tab sees them immediately —
       // doesn't have to wait for USER_SYNC.save() to fire 1.5s later
@@ -3856,7 +3878,20 @@ if (avatarUpload) {
         ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        // Persist BOTH the active session key AND a per-username key
+        // so logging out → logging back in keeps the same picture.
         safeSetItem('auth_avatar', dataUrl);
+        const _user = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+        if (_user) safeSetItem('avatar_' + _user, dataUrl);
+        // Push to Firestore so the avatar follows the user across
+        // browsers / devices (lives on the same sphere_users doc).
+        try {
+          if (_user && typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+            DATA_SYNC.db.collection('sphere_users').doc(_user).set(
+              { avatar: dataUrl }, { merge: true }
+            ).catch(e => console.warn('[AVATAR] sync:', e.message));
+          }
+        } catch (e) {}
 
         // Update display
         const avatarImgEl = document.getElementById('avatarImg');
@@ -3877,6 +3912,16 @@ if (avatarUpload) {
 if (avatarRemove) {
   avatarRemove.addEventListener('click', () => {
     localStorage.removeItem('auth_avatar');
+    const _user = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+    if (_user) localStorage.removeItem('avatar_' + _user);
+    // Strip from Firestore too so it doesn't come back on next login
+    try {
+      if (_user && typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && typeof firebase !== 'undefined') {
+        DATA_SYNC.db.collection('sphere_users').doc(_user).set(
+          { avatar: firebase.firestore.FieldValue.delete() }, { merge: true }
+        ).catch(() => {});
+      }
+    } catch (e) {}
     const avatarImgEl = document.getElementById('avatarImg');
     if (avatarImgEl) {
       avatarImgEl.src = '';
@@ -4594,9 +4639,15 @@ if (currentPage === 'login.html') {
       lastName: nameParts.slice(1).join(' ') || '',
       email: email
     }));
-    // Use photoURL if available
+    // Use photoURL if available — store under both session and
+    // per-username keys so logout doesn't lose the picture.
     if (user.photoURL) {
       safeSetItem('auth_avatar', user.photoURL);
+      safeSetItem('avatar_' + username, user.photoURL);
+    } else {
+      // Restore previously-saved avatar for this Google account
+      const saved = safeGetItem('avatar_' + username);
+      if (saved) safeSetItem('auth_avatar', saved);
     }
 
     // AWAIT the Firestore baseline write so it actually finishes
