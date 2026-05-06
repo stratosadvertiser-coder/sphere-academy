@@ -1976,27 +1976,34 @@ if (currentPage === 'course.html' || currentPage === 'index.html') {
 
 if (currentPage === 'course.html' || currentPage === 'index.html') {
   const cardMonths = [
-    { month: 1, selector: '.course-card-link[href*="week=w1"] .course-card-img, .course-card-link:nth-child(1) .course-card-img' },
-    { month: 2, selector: '.course-card-link[href*="week=w5"] .course-card-img, .course-card-link:nth-child(2) .course-card-img' },
-    { month: 3, selector: '.course-card-link[href*="week=w9"] .course-card-img, .course-card-link:nth-child(3) .course-card-img' },
-    { month: 4, selector: '.course-card-link[href*="week=w13"] .course-card-img, .course-card-link:nth-child(4) .course-card-img' }
+    { month: 1, weekHref: 'week=w1', linkSelector: '.course-card-link[href*="week=w1"]' },
+    { month: 2, weekHref: 'week=w5', linkSelector: '.course-card-link[href*="week=w5"]' },
+    { month: 3, weekHref: 'week=w9', linkSelector: '.course-card-link[href*="week=w9"]' },
+    { month: 4, weekHref: 'week=w13', linkSelector: '.course-card-link[href*="week=w13"]' }
   ];
-  cardMonths.forEach(({ month, selector }) => {
-    const imgData = safeGetItem('card_image_' + month);
-    if (imgData) {
-      const cardImgs = document.querySelectorAll(selector);
-      cardImgs.forEach(cardImg => {
-        if (cardImg) {
-          const img = document.createElement('img');
-          img.src = imgData;
-          img.alt = 'Month ' + month;
-          // Same fill-and-cover sizing as the admin preview so the
-          // uploaded image lands identically in both views.
-          img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;';
-          cardImg.appendChild(img);
-        }
-      });
-    }
+  cardMonths.forEach(({ month, linkSelector }) => {
+    const links = document.querySelectorAll(linkSelector);
+    links.forEach(link => {
+      // 1) Inject uploaded image (admin → student)
+      const cardImg = link.querySelector('.course-card-img');
+      const imgData = safeGetItem('card_image_' + month);
+      if (cardImg && imgData && !cardImg.querySelector('img')) {
+        const img = document.createElement('img');
+        img.src = imgData;
+        img.alt = 'Month ' + month;
+        img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;';
+        cardImg.appendChild(img);
+      }
+      // 2) Sync the phase title from admin's saved month names so the
+      //    student sees what the admin set under Site Settings → Month
+      //    Names (e.g. "Basic Product Branding" instead of the
+      //    hard-coded "Basic Fundamentals").
+      const titleEl = link.querySelector('.course-card-body h3');
+      if (titleEl && typeof LESSONS !== 'undefined' && LESSONS.getMonthName) {
+        const customName = LESSONS.getMonthName(month);
+        if (customName) titleEl.textContent = customName;
+      }
+    });
   });
 }
 
