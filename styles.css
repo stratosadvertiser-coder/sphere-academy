@@ -9030,3 +9030,254 @@ img {
   }
   .event-field-full { grid-column: 1; }
 }
+
+/* ============================================================
+   CHAT — replies + reactions + hover actions
+   ============================================================ */
+/* Each message is its own row now (no more grouping into one
+   chat-bubbles wrapper) so replies and reactions can render per
+   message. Visual grouping comes from hiding the avatar on
+   non-head messages. */
+.chat-message {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 1px 0;
+}
+.chat-message.group-head {
+  margin-top: 10px;
+}
+.chat-message.mine {
+  flex-direction: row-reverse;
+}
+.chat-message .chat-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 0.78rem;
+  overflow: hidden;
+}
+[data-theme="dark"] .chat-message .chat-avatar { color: #0a2540; }
+.chat-message .chat-avatar.hidden {
+  visibility: hidden;
+}
+.chat-message .chat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.chat-message-body {
+  display: flex;
+  flex-direction: column;
+  max-width: 75%;
+  min-width: 0;
+}
+.chat-message.mine .chat-message-body {
+  align-items: flex-end;
+}
+
+/* Reply quote sitting above the bubble */
+.chat-reply-quote {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 10px 18px 10px;
+  margin-bottom: -10px;
+  font-size: 0.74rem;
+  color: var(--text-light);
+  background: var(--bg-alt);
+  border-left: 2px solid var(--primary);
+  border-radius: 10px 10px 0 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.chat-reply-quote:hover { background: var(--border); }
+.chat-reply-quote svg { flex-shrink: 0; opacity: 0.7; }
+.chat-reply-name { font-weight: 700; color: var(--primary); flex-shrink: 0; }
+.chat-reply-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Bubble row: bubble + hover action buttons + per-message palette */
+.chat-bubble-row {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.chat-message.mine .chat-bubble-row {
+  flex-direction: row-reverse;
+}
+.chat-bubble {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 9px 14px;
+  border-radius: 14px;
+  border-top-left-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  position: relative;
+  max-width: 100%;
+  z-index: 1;
+}
+.chat-message.mine .chat-bubble {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border: none;
+  border-top-right-radius: 6px;
+  border-top-left-radius: 14px;
+}
+[data-theme="dark"] .chat-message.mine .chat-bubble { color: #0a2540; }
+
+/* Flash highlight when scrolled-to via reply quote click */
+.chat-message.flash .chat-bubble {
+  animation: chat-msg-flash 1.4s ease-out;
+}
+@keyframes chat-msg-flash {
+  0%, 60% { box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.4); }
+  100%    { box-shadow: 0 0 0 0 rgba(99, 91, 255, 0); }
+}
+
+/* Hover actions next to each bubble (React / Reply / Delete) */
+.chat-msg-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.chat-bubble-row:hover .chat-msg-actions,
+.chat-bubble-row:focus-within .chat-msg-actions {
+  opacity: 1;
+}
+.chat-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+.chat-action-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--bg-alt);
+  transform: translateY(-1px);
+}
+.chat-action-btn.chat-delete-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Per-message reaction palette popup */
+.chat-react-palette {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(11, 15, 28, 0.18);
+  z-index: 20;
+  white-space: nowrap;
+  animation: react-palette-pop 0.18s ease-out;
+}
+.chat-message.mine .chat-react-palette {
+  left: auto;
+  right: 0;
+}
+.chat-react-palette[hidden] { display: none; }
+
+/* Existing chat reactions — rendered as a row of pills below the bubble */
+.chat-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  margin-left: 6px;
+}
+.chat-message.mine .chat-reactions {
+  justify-content: flex-end;
+  margin-left: 0;
+  margin-right: 6px;
+}
+.chat-react-pill {
+  padding: 2px 8px;
+  font-size: 0.74rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+/* "Replying to [name]" preview chip above the chat input */
+.chat-reply-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-top: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: 12px;
+  font-size: 0.82rem;
+}
+.chat-reply-preview-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-reply-preview-label {
+  color: var(--text-light);
+}
+.chat-reply-preview-text {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-reply-preview-cancel {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.chat-reply-preview-cancel:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}

@@ -1129,7 +1129,7 @@ const CHAT = {
     return all.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   },
 
-  add(text) {
+  add(text, replyTo) {
     text = (text || '').trim().slice(0, this.MAX_LENGTH);
     if (!text) return null;
     const meta = _commonAuthorMeta();
@@ -1142,6 +1142,15 @@ const CHAT = {
       text: text,
       createdAt: Date.now()
     };
+    if (replyTo && replyTo.id) {
+      // Snapshot the parent message at reply time so the quote stays
+      // accurate even if the original is later edited or deleted.
+      msg.replyTo = {
+        id: replyTo.id,
+        displayName: replyTo.displayName || '',
+        text: (replyTo.text || '').slice(0, 200)
+      };
+    }
     const all = safeGetJSON(this.STORAGE_KEY, []);
     all.push(msg);
     // Cap local cache to last 200 messages
@@ -1161,6 +1170,26 @@ const CHAT = {
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
         DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  // Toggle a reaction on a chat message. Same pattern POSTS uses but
+  // talks to sphere_chat instead.
+  react(messageId, emoji) {
+    const username = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+    if (!username || !messageId) return;
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    const idx = all.findIndex(m => m.id === messageId);
+    if (idx === -1) return;
+    const msg = _toggleReaction(all[idx], emoji, username);
+    all[idx] = msg;
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all.slice(-200)));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(messageId).set(
+          { reactions: msg.reactions || {} }, { merge: true }
+        ).catch(e => console.warn('[CHAT] react sync:', e.message));
       }
     } catch (e) {}
   },
@@ -7235,32 +7264,108 @@ function renderChat(messages) {
     return;
   }
   if (emptyEl) emptyEl.style.display = 'none';
-  // Group consecutive same-author messages within 5 min
-  const grouped = [];
-  items.forEach(m => {
-    const last = grouped[grouped.length - 1];
-    if (last && last.username === m.username && (m.createdAt - last.lastTs) < 300000) {
-      last.texts.push({ text: m.text, id: m.id, ts: m.createdAt });
-      last.lastTs = m.createdAt;
-    } else {
-      grouped.push({
-        username: m.username, displayName: m.displayName, avatar: m.avatar, initials: m.initials,
-        texts: [{ text: m.text, id: m.id, ts: m.createdAt }],
-        firstTs: m.createdAt, lastTs: m.createdAt,
-        isMine: me && m.username === me
-      });
-    }
-  });
-  messagesEl.innerHTML = grouped.map(g => {
-    return '<div class="chat-group' + (g.isMine ? ' mine' : '') + '">'
-      + '<div class="chat-avatar">' + (g.avatar ? '<img src="' + g.avatar + '" alt="">' : '<span>' + (g.initials || 'U') + '</span>') + '</div>'
-      + '<div class="chat-bubbles">'
-      +   '<div class="chat-name">' + _esc(g.displayName) + ' <time>' + timeAgo(g.firstTs) + '</time></div>'
-      +   g.texts.map(t => '<div class="chat-bubble" data-id="' + t.id + '">' + _esc(t.text) + (g.isMine || isAdmin ? '<button class="chat-delete-btn" data-id="' + t.id + '" title="Delete">&times;</button>' : '') + '</div>').join('')
+
+  // Helper to render a tiny version of the reactions row tuned for
+  // chat bubbles (no border-top, smaller pills).
+  function chatReactionsHTML(m) {
+    const reactions = m.reactions || {};
+    const entries = Object.keys(reactions).map(e => ({
+      emoji: e, users: reactions[e] || [], mine: me && (reactions[e] || []).indexOf(me) !== -1
+    })).filter(r => r.users.length > 0);
+    if (entries.length === 0) return '';
+    return '<div class="chat-reactions">'
+      + entries.map(r =>
+          '<button type="button" class="react-pill chat-react-pill' + (r.mine ? ' mine' : '') + '" data-kind="chat" data-id="' + m.id + '" data-emoji="' + r.emoji + '">'
+          + '<span class="react-emoji">' + r.emoji + '</span>'
+          + '<span class="react-count">' + r.users.length + '</span>'
+          + '</button>'
+        ).join('')
+      + '</div>';
+  }
+
+  messagesEl.innerHTML = items.map((m, i) => {
+    const prev = items[i - 1];
+    const isMine = me && m.username === me;
+    // Show avatar + name only at the start of a 5-min cluster from same author
+    const groupHead = !prev
+      || prev.username !== m.username
+      || (m.createdAt - (prev.createdAt || 0)) >= 300000
+      || m.replyTo; // always head if it's a reply (visual context break)
+
+    const avatarHTML = '<div class="chat-avatar' + (groupHead ? '' : ' hidden') + '">'
+      + (m.avatar ? '<img src="' + _esc(m.avatar) + '" alt="">' : '<span>' + _esc(m.initials || 'U') + '</span>')
+      + '</div>';
+
+    const replyQuote = m.replyTo
+      ? '<a class="chat-reply-quote" href="#chat-msg-' + _esc(m.replyTo.id || '') + '" data-target="' + _esc(m.replyTo.id || '') + '">'
+        + '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>'
+        + '<span class="chat-reply-name">' + _esc(m.replyTo.displayName || 'Someone') + '</span>'
+        + '<span class="chat-reply-text">' + _esc(m.replyTo.text || '') + '</span>'
+        + '</a>'
+      : '';
+
+    const nameHeader = groupHead
+      ? '<div class="chat-name">' + _esc(m.displayName) + ' <time>' + timeAgo(m.createdAt) + '</time></div>'
+      : '';
+
+    const canDelete = isMine || isAdmin;
+
+    return '<div class="chat-message' + (isMine ? ' mine' : '') + (groupHead ? ' group-head' : '') + '" id="chat-msg-' + _esc(m.id) + '" data-id="' + _esc(m.id) + '">'
+      + avatarHTML
+      + '<div class="chat-message-body">'
+      +   nameHeader
+      +   replyQuote
+      +   '<div class="chat-bubble-row">'
+      +     '<div class="chat-bubble" data-id="' + _esc(m.id) + '">' + _esc(m.text) + '</div>'
+      +     '<div class="chat-msg-actions">'
+      +       '<button type="button" class="chat-action-btn chat-react-btn" data-id="' + _esc(m.id) + '" title="React"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>'
+      +       '<button type="button" class="chat-action-btn chat-reply-btn" data-id="' + _esc(m.id) + '" data-name="' + _esc(m.displayName) + '" data-text="' + _esc(m.text) + '" title="Reply"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>'
+      +       (canDelete ? '<button type="button" class="chat-action-btn chat-delete-btn" data-id="' + _esc(m.id) + '" title="Delete">&times;</button>' : '')
+      +     '</div>'
+      +     '<div class="react-palette chat-react-palette" hidden>'
+      +       REACTION_EMOJIS.map(e => '<button type="button" class="react-palette-btn" data-kind="chat" data-id="' + _esc(m.id) + '" data-emoji="' + e + '">' + e + '</button>').join('')
+      +     '</div>'
+      +   '</div>'
+      +   chatReactionsHTML(m)
       + '</div>'
       + '</div>';
   }).join('');
-  // Wire delete
+
+  // Wire reactions (existing pills + emoji palette buttons)
+  // applyReaction with kind='chat' falls through to the helper below.
+  messagesEl.querySelectorAll('.chat-react-pill, .chat-react-palette .react-palette-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const emoji = btn.dataset.emoji;
+      if (typeof CHAT.react === 'function') CHAT.react(id, emoji);
+      // Close any open palette
+      const palette = btn.closest('.react-palette');
+      if (palette) palette.hidden = true;
+      renderChat();
+    });
+  });
+  // Hover-action React button toggles the per-message palette
+  messagesEl.querySelectorAll('.chat-react-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const message = btn.closest('.chat-message');
+      const palette = message ? message.querySelector('.chat-react-palette') : null;
+      // Close all other palettes first
+      messagesEl.querySelectorAll('.chat-react-palette').forEach(p => { if (p !== palette) p.hidden = true; });
+      if (palette) palette.hidden = !palette.hidden;
+    });
+  });
+  // Reply button → fills the composer state
+  messagesEl.querySelectorAll('.chat-reply-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof setChatReplyTarget === 'function') {
+        setChatReplyTarget({ id: btn.dataset.id, displayName: btn.dataset.name, text: btn.dataset.text });
+      }
+    });
+  });
+  // Delete
   messagesEl.querySelectorAll('.chat-delete-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -7269,6 +7374,26 @@ function renderChat(messages) {
       renderChat();
     });
   });
+  // Reply quote click → scroll to & flash the original message
+  messagesEl.querySelectorAll('.chat-reply-quote').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.getElementById('chat-msg-' + a.dataset.target);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.remove('flash');
+      void target.offsetWidth;
+      target.classList.add('flash');
+    });
+  });
+  // Click outside any palette closes it
+  if (!messagesEl._chatPaletteWired) {
+    messagesEl._chatPaletteWired = true;
+    document.addEventListener('click', () => {
+      messagesEl.querySelectorAll('.chat-react-palette').forEach(p => p.hidden = true);
+    });
+  }
+
   // Auto-scroll to bottom
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -7346,16 +7471,59 @@ function bindFaqComposer() {
   });
 }
 
+// Reply target state — set by clicking Reply on any chat message.
+// renderChat exposes a helper that updates this and surfaces a
+// "Replying to [name]" preview chip above the composer input.
+let _chatReplyTarget = null;
+
+function setChatReplyTarget(target) {
+  _chatReplyTarget = target;
+  const chip = document.getElementById('chatReplyPreview');
+  const input = document.getElementById('chatInput');
+  if (!chip) return;
+  if (!target) {
+    chip.style.display = 'none';
+    chip.innerHTML = '';
+    return;
+  }
+  chip.style.display = 'flex';
+  chip.innerHTML = '<div class="chat-reply-preview-content">'
+    + '<span class="chat-reply-preview-label">Replying to <strong>' + _esc(target.displayName || 'someone') + '</strong></span>'
+    + '<span class="chat-reply-preview-text">' + _esc(target.text || '') + '</span>'
+    + '</div>'
+    + '<button type="button" class="chat-reply-preview-cancel" aria-label="Cancel reply">&times;</button>';
+  const cancel = chip.querySelector('.chat-reply-preview-cancel');
+  if (cancel) cancel.addEventListener('click', () => setChatReplyTarget(null));
+  if (input) input.focus();
+}
+
 function bindChatComposer() {
   const chatInput = document.getElementById('chatInput');
   const chatSend = document.getElementById('chatSendBtn');
   if (!chatInput || !chatSend) return;
+
+  // Inject the reply-preview chip above the input if it's not there.
+  // Cleaner than touching dashboard.html directly — keeps the bindings
+  // in one place.
+  let replyChip = document.getElementById('chatReplyPreview');
+  if (!replyChip) {
+    const composer = chatInput.closest('.chat-composer');
+    if (composer) {
+      replyChip = document.createElement('div');
+      replyChip.id = 'chatReplyPreview';
+      replyChip.className = 'chat-reply-preview';
+      replyChip.style.display = 'none';
+      composer.parentNode.insertBefore(replyChip, composer);
+    }
+  }
+
   const updateChatState = () => { chatSend.disabled = chatInput.value.trim().length === 0; };
   chatInput.addEventListener('input', updateChatState);
   const send = () => {
     if (!chatInput.value.trim()) return;
-    CHAT.add(chatInput.value);
+    CHAT.add(chatInput.value, _chatReplyTarget);
     chatInput.value = '';
+    setChatReplyTarget(null);
     updateChatState();
     renderChat();
   };
@@ -7364,6 +7532,8 @@ function bindChatComposer() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       send();
+    } else if (e.key === 'Escape' && _chatReplyTarget) {
+      setChatReplyTarget(null);
     }
   });
   updateChatState();
