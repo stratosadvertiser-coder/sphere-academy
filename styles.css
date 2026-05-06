@@ -4391,10 +4391,27 @@ img {
 }
 
 .admin-card-upload {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  border: 2px solid rgba(99, 91, 255, 0.35);
+  border-radius: 14px;
   overflow: hidden;
   background: var(--bg-alt);
+  box-shadow: 0 1px 3px rgba(11, 15, 28, 0.08), 0 0 0 1px rgba(99, 91, 255, 0.10);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+[data-theme="dark"] .admin-card-upload {
+  border-color: rgba(139, 158, 255, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 158, 255, 0.18);
+}
+.admin-card-upload:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px -8px rgba(99, 91, 255, 0.55), 0 0 0 1px rgba(99, 91, 255, 0.40);
+  border-color: var(--primary);
+}
+[data-theme="dark"] .admin-card-upload:hover {
+  border-color: rgba(139, 158, 255, 0.85);
+  box-shadow: 0 10px 28px -8px rgba(139, 158, 255, 0.65), 0 0 0 1px rgba(139, 158, 255, 0.55);
 }
 
 .admin-card-preview {
@@ -4406,6 +4423,24 @@ img {
   justify-content: center;
   position: relative;
   overflow: hidden;
+}
+
+/* Body section under the image — mirrors student-side .course-card-body */
+.admin-card-body {
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+.admin-card-body h3 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text);
 }
 
 .admin-card-preview.blue { background: linear-gradient(135deg, #161b30 0%, #5b6ee8 100%); }
@@ -4540,15 +4575,21 @@ img {
 }
 
 .admin-card-upload-info {
-  padding: 16px;
+  padding: 12px 16px 14px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .admin-card-upload-info strong {
   font-size: 0.88rem;
+}
+
+.admin-card-upload-info .profile-avatar-upload {
+  justify-content: center;
 }
 
 /* ===== COURSE CARDS — Skool-style compact grid ===== */
