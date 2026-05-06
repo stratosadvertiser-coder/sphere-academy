@@ -749,9 +749,10 @@ const WINS = {
     return all.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   },
 
-  add(title, description) {
+  add(title, description, media) {
     title = (title || '').trim().slice(0, 120);
     description = (description || '').trim().slice(0, 400);
+    media = Array.isArray(media) ? media.slice(0, 5) : [];
     if (!title) return null;
     const meta = _commonAuthorMeta();
     const win = {
@@ -762,15 +763,25 @@ const WINS = {
       initials: meta.initials,
       title: title,
       description: description,
+      media: media,
       createdAt: Date.now()
     };
     const all = safeGetJSON(this.STORAGE_KEY, []);
     all.push(win);
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    // Sync to Firestore — strip videos (too big for 1 MB doc cap)
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
-        DATA_SYNC.db.collection(this.COLLECTION).doc(win.id).set(win)
-          .catch(e => console.warn('[WINS] sync failed:', e.message));
+        const remoteCopy = Object.assign({}, win, {
+          media: media.filter(m => m && m.type === 'image')
+        });
+        const sizeApprox = JSON.stringify(remoteCopy).length;
+        if (sizeApprox <= 900 * 1024) {
+          DATA_SYNC.db.collection(this.COLLECTION).doc(win.id).set(remoteCopy)
+            .catch(e => console.warn('[WINS] sync failed:', e.message));
+        } else {
+          console.warn('[WINS] payload too large (' + sizeApprox + 'B) — saved locally only');
+        }
       }
     } catch (e) {}
     return win;
@@ -6655,16 +6666,39 @@ function renderWins() {
   }
   listEl.innerHTML = wins.slice(0, 20).map(w => {
     const canDelete = isAdmin || (me && w.username === me);
+    const media = Array.isArray(w.media) ? w.media : [];
+    const images = media.filter(m => m && m.type === 'image');
+    const video = media.find(m => m && m.type === 'video');
+    let mediaHTML = '';
+    if (images.length === 1) {
+      mediaHTML = '<div class="post-media single"><img src="' + images[0].dataUrl + '" alt="" loading="lazy"></div>';
+    } else if (images.length === 2) {
+      mediaHTML = '<div class="post-media grid-2">' + images.map(im => '<img src="' + im.dataUrl + '" alt="" loading="lazy">').join('') + '</div>';
+    } else if (images.length === 3) {
+      mediaHTML = '<div class="post-media grid-3">'
+        + '<img class="span-2" src="' + images[0].dataUrl + '" alt="" loading="lazy">'
+        + '<img src="' + images[1].dataUrl + '" alt="" loading="lazy">'
+        + '<img src="' + images[2].dataUrl + '" alt="" loading="lazy">'
+        + '</div>';
+    } else if (images.length >= 4) {
+      mediaHTML = '<div class="post-media grid-4">' + images.slice(0, 4).map(im => '<img src="' + im.dataUrl + '" alt="" loading="lazy">').join('') + '</div>';
+    }
+    if (video) {
+      mediaHTML += '<div class="post-media video"><video src="' + video.dataUrl + '" controls preload="metadata" playsinline></video></div>';
+    }
     return '<article class="win-item" data-id="' + w.id + '">'
       + '<div class="win-trophy">&#127942;</div>'
       + '<div class="win-body">'
       +   '<h4>' + _esc(w.title) + '</h4>'
       +   (w.description ? '<p>' + _esc(w.description) + '</p>' : '')
+      +   mediaHTML
       +   '<div class="win-meta"><span class="win-author">' + _esc(w.displayName) + '</span><time>' + timeAgo(w.createdAt) + '</time></div>'
+      +   renderReactionsRow(w, 'wins')
       + '</div>'
       + (canDelete ? '<button class="win-delete-btn" data-id="' + w.id + '" aria-label="Delete win" title="Delete">&times;</button>' : '')
       + '</article>';
   }).join('');
+  bindReactions(listEl, renderWins);
   listEl.querySelectorAll('.win-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (!confirm('Delete this win?')) return;
@@ -6855,28 +6889,119 @@ function bindCommunityComposers() {
     });
   }
 
-  // Win composer (collapsed by default)
-  const shareWinBtn = document.getElementById('shareWinBtn');
-  const winComposer = document.getElementById('winComposer');
+  // Win composer (always visible card with media uploads)
   const winTitle = document.getElementById('winTitle');
   const winDescription = document.getElementById('winDescription');
   const winSubmit = document.getElementById('winSubmitBtn');
-  const winCancel = document.getElementById('winCancelBtn');
-  const updateWinState = () => {
-    if (!winSubmit || !winTitle) return;
-    winSubmit.disabled = winTitle.value.trim().length === 0;
-  };
-  if (shareWinBtn && winComposer) {
-    shareWinBtn.addEventListener('click', () => {
-      winComposer.style.display = winComposer.style.display === 'none' ? 'block' : 'none';
-      if (winComposer.style.display === 'block' && winTitle) winTitle.focus();
+  const winClear = document.getElementById('winClearBtn');
+  const winMediaPreview = document.getElementById('winMediaPreview');
+  const winImageInput = document.getElementById('winImageInput');
+  const winVideoInput = document.getElementById('winVideoInput');
+  const winAddImageBtn = document.getElementById('winAddImageBtn');
+  const winAddVideoBtn = document.getElementById('winAddVideoBtn');
+  let winMedia = []; // [{type, dataUrl, name}]
+
+  function renderWinMedia() {
+    if (!winMediaPreview) return;
+    if (winMedia.length === 0) {
+      winMediaPreview.innerHTML = '';
+      winMediaPreview.style.display = 'none';
+      return;
+    }
+    winMediaPreview.style.display = 'flex';
+    winMediaPreview.innerHTML = winMedia.map((m, i) => {
+      if (m.type === 'image') {
+        return '<div class="composer-media-item">'
+          + '<img src="' + m.dataUrl + '" alt="">'
+          + '<button type="button" class="composer-media-remove" data-idx="' + i + '" aria-label="Remove">&times;</button>'
+          + '</div>';
+      }
+      return '<div class="composer-media-item video">'
+        + '<video src="' + m.dataUrl + '" muted preload="metadata"></video>'
+        + '<span class="composer-media-vidlabel"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg>Video</span>'
+        + '<button type="button" class="composer-media-remove" data-idx="' + i + '" aria-label="Remove">&times;</button>'
+        + '</div>';
+    }).join('');
+    winMediaPreview.querySelectorAll('.composer-media-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        winMedia.splice(parseInt(btn.dataset.idx), 1);
+        renderWinMedia();
+        if (typeof updateWinState === 'function') updateWinState();
+      });
     });
   }
-  if (winCancel && winComposer) {
-    winCancel.addEventListener('click', () => {
-      winComposer.style.display = 'none';
+
+  if (winAddImageBtn && winImageInput) {
+    winAddImageBtn.addEventListener('click', () => winImageInput.click());
+    winImageInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      const imageCount = winMedia.filter(m => m.type === 'image').length;
+      const room = 4 - imageCount;
+      if (room <= 0) {
+        alert('Up to 4 photos per win.');
+        winImageInput.value = '';
+        return;
+      }
+      const toCompress = files.slice(0, room);
+      for (const file of toCompress) {
+        if (!file.type.startsWith('image/')) continue;
+        try {
+          const dataUrl = (typeof OUTCOME_CAROUSEL !== 'undefined' && OUTCOME_CAROUSEL.compressFile)
+            ? await OUTCOME_CAROUSEL.compressFile(file)
+            : await new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = () => res(r.result);
+                r.onerror = () => rej(new Error('read failed'));
+                r.readAsDataURL(file);
+              });
+          winMedia.push({ type: 'image', dataUrl: dataUrl, name: file.name });
+        } catch (err) {
+          console.error('[WINS] image compress failed:', err);
+        }
+      }
+      winImageInput.value = '';
+      renderWinMedia();
+      updateWinState();
+    });
+  }
+
+  if (winAddVideoBtn && winVideoInput) {
+    winAddVideoBtn.addEventListener('click', () => winVideoInput.click());
+    winVideoInput.addEventListener('change', (e) => {
+      const file = (e.target.files || [])[0];
+      winVideoInput.value = '';
+      if (!file) return;
+      if (!file.type.startsWith('video/')) { alert('Please pick a video file.'); return; }
+      const MAX_VIDEO = 8 * 1024 * 1024;
+      if (file.size > MAX_VIDEO) {
+        alert('Video is ' + Math.round(file.size / 1024 / 1024) + ' MB. Max is 8 MB.');
+        return;
+      }
+      winMedia = winMedia.filter(m => m.type !== 'video');
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        winMedia.push({ type: 'video', dataUrl: ev.target.result, name: file.name });
+        renderWinMedia();
+        updateWinState();
+      };
+      reader.onerror = () => alert('Failed to read video.');
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function updateWinState() {
+    if (!winSubmit || !winTitle) return;
+    // Allow celebrate when there's a title (media optional)
+    winSubmit.disabled = winTitle.value.trim().length === 0;
+  }
+
+  if (winClear) {
+    winClear.addEventListener('click', () => {
       if (winTitle) winTitle.value = '';
       if (winDescription) winDescription.value = '';
+      winMedia = [];
+      renderWinMedia();
       updateWinState();
     });
   }
@@ -6884,10 +7009,11 @@ function bindCommunityComposers() {
   if (winSubmit) {
     winSubmit.addEventListener('click', () => {
       if (!winTitle || !winTitle.value.trim()) return;
-      WINS.add(winTitle.value, winDescription ? winDescription.value : '');
+      WINS.add(winTitle.value, winDescription ? winDescription.value : '', winMedia);
       winTitle.value = '';
       if (winDescription) winDescription.value = '';
-      if (winComposer) winComposer.style.display = 'none';
+      winMedia = [];
+      renderWinMedia();
       updateWinState();
       renderWins();
     });
