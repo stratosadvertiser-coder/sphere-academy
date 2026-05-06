@@ -2268,11 +2268,12 @@ if (currentPage === 'course.html' || currentPage === 'index.html') {
 }
 
 if (currentPage === 'course.html' || currentPage === 'index.html') {
+  // Use $= (ends-with) so "week=w1" doesn't accidentally match "week=w13".
   const cardMonths = [
-    { month: 1, weekHref: 'week=w1', linkSelector: '.course-card-link[href*="week=w1"]' },
-    { month: 2, weekHref: 'week=w5', linkSelector: '.course-card-link[href*="week=w5"]' },
-    { month: 3, weekHref: 'week=w9', linkSelector: '.course-card-link[href*="week=w9"]' },
-    { month: 4, weekHref: 'week=w13', linkSelector: '.course-card-link[href*="week=w13"]' }
+    { month: 1, weekHref: 'week=w1', linkSelector: '.course-card-link[href$="week=w1"]' },
+    { month: 2, weekHref: 'week=w5', linkSelector: '.course-card-link[href$="week=w5"]' },
+    { month: 3, weekHref: 'week=w9', linkSelector: '.course-card-link[href$="week=w9"]' },
+    { month: 4, weekHref: 'week=w13', linkSelector: '.course-card-link[href$="week=w13"]' }
   ];
   cardMonths.forEach(({ month, linkSelector }) => {
     const links = document.querySelectorAll(linkSelector);

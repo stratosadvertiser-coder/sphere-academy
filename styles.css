@@ -4446,7 +4446,7 @@ img {
 .admin-card-preview.blue { background: linear-gradient(135deg, #161b30 0%, #5b6ee8 100%); }
 .admin-card-preview.amber { background: linear-gradient(135deg, #161b30 0%, #b45309 100%); }
 .admin-card-preview.green { background: linear-gradient(135deg, #161b30 0%, #047857 100%); }
-.admin-card-preview.purple { background: linear-gradient(135deg, #161b30 0%, #161b30 100%); }
+.admin-card-preview.purple { background: linear-gradient(135deg, #161b30 0%, #6d28d9 100%); }
 
 .admin-card-preview-icon {
   position: absolute;
@@ -4667,7 +4667,7 @@ img {
 }
 
 .course-card-img.purple {
-  background: linear-gradient(135deg, #161b30 0%, #161b30 100%);
+  background: linear-gradient(135deg, #161b30 0%, #6d28d9 100%);
 }
 
 .course-card-icon {
