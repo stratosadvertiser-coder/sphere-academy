@@ -1153,6 +1153,140 @@ const CHAT = {
   }
 };
 
+// Shared reaction palette + per-user "mark as read" tracker.
+// Used by POSTS, ANNOUNCEMENTS (and easily by WINS later).
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏', '🙌', '💯'];
+
+function _toggleReaction(item, emoji, username) {
+  if (!username) return item;
+  const reactions = (item && item.reactions) ? Object.assign({}, item.reactions) : {};
+  const usersFor = (reactions[emoji] || []).slice();
+  const idx = usersFor.indexOf(username);
+  if (idx === -1) usersFor.push(username);
+  else usersFor.splice(idx, 1);
+  if (usersFor.length === 0) delete reactions[emoji];
+  else reactions[emoji] = usersFor;
+  item.reactions = reactions;
+  return item;
+}
+
+// Apply a reaction toggle to whatever community module backs this id.
+// Single helper so the renderers don't need to care which collection
+// the item lives in.
+function applyReaction(kind, id, emoji) {
+  const username = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+  if (!username) return;
+  const moduleByKind = {
+    posts: typeof POSTS !== 'undefined' ? POSTS : null,
+    announcements: typeof ANNOUNCEMENTS !== 'undefined' ? ANNOUNCEMENTS : null,
+    wins: typeof WINS !== 'undefined' ? WINS : null
+  };
+  const mod = moduleByKind[kind];
+  if (!mod) return;
+  const all = safeGetJSON(mod.STORAGE_KEY, []);
+  const idx = all.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const item = _toggleReaction(all[idx], emoji, username);
+  all[idx] = item;
+  safeSetItem(mod.STORAGE_KEY, JSON.stringify(all));
+  // Sync to Firestore so other students see the same counts
+  try {
+    if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+      DATA_SYNC.db.collection(mod.COLLECTION).doc(id).set(
+        { reactions: item.reactions || {} }, { merge: true }
+      ).catch(e => console.warn('[REACT ' + kind + '] sync:', e.message));
+    }
+  } catch (e) {}
+}
+
+// Per-user "this announcement was acknowledged" tracker. Stored locally —
+// each student sees their own read/unread state regardless of who else
+// has acknowledged the same announcement.
+const READ_ANNOUNCEMENTS = {
+  KEY: 'read_announcements',
+  load() { return safeGetJSON(this.KEY, []); },
+  has(id) { return this.load().indexOf(id) !== -1; },
+  mark(id) {
+    const ids = this.load();
+    if (ids.indexOf(id) === -1) {
+      ids.push(id);
+      safeSetItem(this.KEY, JSON.stringify(ids));
+    }
+  },
+  unmark(id) {
+    const ids = this.load().filter(x => x !== id);
+    safeSetItem(this.KEY, JSON.stringify(ids));
+  }
+};
+
+// Render a reactions row: existing reaction pills + an "Add reaction"
+// button that toggles a popup palette of REACTION_EMOJIS.
+function renderReactionsRow(item, kind) {
+  const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+  const reactions = item.reactions || {};
+  const entries = Object.keys(reactions).map(e => ({
+    emoji: e,
+    users: reactions[e] || [],
+    mine: me && (reactions[e] || []).indexOf(me) !== -1
+  })).filter(r => r.users.length > 0);
+
+  const pills = entries.map(r =>
+    '<button type="button" class="react-pill' + (r.mine ? ' mine' : '') + '" data-kind="' + kind + '" data-id="' + (item.id || '') + '" data-emoji="' + r.emoji + '">'
+    + '<span class="react-emoji">' + r.emoji + '</span>'
+    + '<span class="react-count">' + r.users.length + '</span>'
+    + '</button>'
+  ).join('');
+
+  return '<div class="reactions-row">'
+    + pills
+    + '<div class="react-picker-wrap">'
+    +   '<button type="button" class="react-add-btn" data-kind="' + kind + '" data-id="' + (item.id || '') + '" aria-label="Add reaction" title="React">'
+    +     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>'
+    +     '<span>React</span>'
+    +   '</button>'
+    +   '<div class="react-palette" hidden>'
+    +     REACTION_EMOJIS.map(e =>
+            '<button type="button" class="react-palette-btn" data-kind="' + kind + '" data-id="' + (item.id || '') + '" data-emoji="' + e + '">' + e + '</button>'
+          ).join('')
+    +   '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+// Wire all reaction pills + add-reaction buttons inside a container.
+// Toggles the user's reaction on click; closes any open palette.
+function bindReactions(containerEl, rerender) {
+  if (!containerEl) return;
+  containerEl.querySelectorAll('.react-pill, .react-palette-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyReaction(btn.dataset.kind, btn.dataset.id, btn.dataset.emoji);
+      // Close the palette if open
+      const palette = btn.closest('.react-palette');
+      if (palette) palette.hidden = true;
+      if (typeof rerender === 'function') rerender();
+    });
+  });
+  containerEl.querySelectorAll('.react-add-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Close any other open palettes
+      containerEl.querySelectorAll('.react-palette').forEach(p => {
+        if (p !== btn.nextElementSibling) p.hidden = true;
+      });
+      const palette = btn.nextElementSibling;
+      if (palette) palette.hidden = !palette.hidden;
+    });
+  });
+  // Click outside any palette to close it
+  if (!containerEl._reactDocClickWired) {
+    containerEl._reactDocClickWired = true;
+    document.addEventListener('click', () => {
+      containerEl.querySelectorAll('.react-palette').forEach(p => p.hidden = true);
+    });
+  }
+}
+
 function timeAgo(ts) {
   if (!ts) return 'just now';
   const diff = Math.max(0, Date.now() - ts);
@@ -6432,10 +6566,12 @@ function renderPosts() {
       +   '<div class="post-meta"><strong>' + _esc(p.displayName) + '</strong><time>' + timeAgo(p.createdAt) + '</time></div>'
       +   (p.text ? '<p class="post-text">' + _esc(p.text) + '</p>' : '')
       +   mediaHTML
+      +   renderReactionsRow(p, 'posts')
       + '</div>'
       + (canDelete ? '<button class="post-delete-btn" data-id="' + p.id + '" aria-label="Delete post" title="Delete">&times;</button>' : '')
       + '</article>';
   }).join('');
+  bindReactions(listEl, renderPosts);
   // Wire delete buttons
   listEl.querySelectorAll('.post-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -6712,14 +6848,31 @@ function renderAnnouncements() {
     return;
   }
   listEl.innerHTML = items.map(a => {
-    return '<article class="ann-item' + (a.pinned ? ' pinned' : '') + '" data-id="' + a.id + '">'
+    const isRead = READ_ANNOUNCEMENTS.has(a.id);
+    const stateClass = (a.pinned ? ' pinned' : '') + (isRead ? ' read' : ' unread');
+    const readBtn = isRead
+      ? '<button type="button" class="ann-read-btn read" data-id="' + a.id + '" data-state="read"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Read</button>'
+      : '<button type="button" class="ann-read-btn" data-id="' + a.id + '" data-state="unread">Mark as read</button>';
+    return '<article class="ann-item' + stateClass + '" data-id="' + a.id + '">'
       + (a.pinned ? '<span class="ann-pin-badge">&#128204; Pinned</span>' : '')
       + '<h3>' + _esc(a.title) + '</h3>'
       + (a.body ? '<p>' + _esc(a.body).replace(/\n/g, '<br>') + '</p>' : '')
       + '<div class="ann-meta"><span>' + _esc(a.authorName || 'Admin') + '</span><time>' + timeAgo(a.createdAt) + '</time></div>'
+      + renderReactionsRow(a, 'announcements')
+      + '<div class="ann-actions">' + readBtn + '</div>'
       + (isAdmin ? '<button class="ann-delete-btn" data-id="' + a.id + '" title="Delete">&times;</button>' : '')
       + '</article>';
   }).join('');
+  bindReactions(listEl, renderAnnouncements);
+  // Mark as read / undo
+  listEl.querySelectorAll('.ann-read-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      if (btn.dataset.state === 'read') READ_ANNOUNCEMENTS.unmark(id);
+      else READ_ANNOUNCEMENTS.mark(id);
+      renderAnnouncements();
+    });
+  });
   if (isAdmin) {
     listEl.querySelectorAll('.ann-delete-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -6996,16 +7149,35 @@ if (currentPage === 'dashboard.html') {
     bindFaqComposer();
     bindChatComposer();
     bindDashboardSidebar();
-    // Initial fetches for cross-browser sync
-    if (typeof ANNOUNCEMENTS !== 'undefined') ANNOUNCEMENTS.fetchRemote().then(() => {
+    // Initial fetches for cross-browser sync.
+    // Sidebar badge counts ONLY unread announcements per user — once
+    // the student clicks Mark as read on each one, the badge clears.
+    function updateAnnBadge() {
       const ann = ANNOUNCEMENTS.getAll();
+      const unread = ann.filter(a => !READ_ANNOUNCEMENTS.has(a.id)).length;
       const badge = document.getElementById('annBadge');
-      if (badge) {
-        badge.textContent = ann.length;
-        badge.style.display = ann.length > 0 ? 'inline-flex' : 'none';
-      }
-      renderAnnouncements();
-    }).catch(() => {});
+      if (!badge) return;
+      badge.textContent = unread;
+      badge.style.display = unread > 0 ? 'inline-flex' : 'none';
+    }
+    if (typeof ANNOUNCEMENTS !== 'undefined') {
+      ANNOUNCEMENTS.fetchRemote().then(() => {
+        updateAnnBadge();
+        renderAnnouncements();
+      }).catch(() => {});
+      // Live listener also keeps the badge in sync as new announcements
+      // arrive in real time, AND when local read state changes.
+      ANNOUNCEMENTS.startLiveListener(() => {
+        updateAnnBadge();
+        // Only re-render if announcements panel is currently visible
+        const annPanel = document.querySelector('.dash-panel[data-panel="announcements"]');
+        if (annPanel && annPanel.classList.contains('active')) renderAnnouncements();
+      });
+      // Recount whenever the user toggles a read state (renderAnnouncements rebinds buttons)
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('.ann-read-btn')) setTimeout(updateAnnBadge, 0);
+      });
+    }
     if (typeof FAQS !== 'undefined') FAQS.fetchRemote().then(renderFAQs).catch(() => {});
   }
   document.addEventListener('DOMContentLoaded', initDashboardCommunity);

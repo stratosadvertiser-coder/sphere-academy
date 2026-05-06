@@ -8481,3 +8481,162 @@ img {
   color: var(--primary);
   vertical-align: middle;
 }
+
+/* ============================================================
+   REACTIONS — emoji pills + add-reaction palette
+   Used on Feed posts and Announcements
+   ============================================================ */
+.reactions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.react-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+.react-pill:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.react-pill.mine {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.react-emoji { font-size: 0.95rem; line-height: 1; }
+.react-count { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.react-picker-wrap { position: relative; display: inline-block; }
+.react-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 50px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-light);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+  transition: all 0.15s ease;
+}
+.react-add-btn:hover {
+  border-style: solid;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.react-add-btn svg { flex-shrink: 0; }
+
+.react-palette {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(11, 15, 28, 0.18);
+  z-index: 10;
+  white-space: nowrap;
+  animation: react-palette-pop 0.18s ease-out;
+}
+@keyframes react-palette-pop {
+  from { opacity: 0; transform: translateY(4px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.react-palette[hidden] { display: none; }
+.react-palette-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.react-palette-btn:hover {
+  transform: scale(1.25);
+  background: var(--bg-alt);
+}
+
+/* Mark as read button on announcement cards */
+.ann-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+.ann-read-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 50px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--bg);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+[data-theme="dark"] .ann-read-btn { color: #0a2540; }
+.ann-read-btn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.ann-read-btn.read {
+  background: transparent;
+  color: var(--text-light);
+  border-color: var(--border);
+}
+.ann-read-btn.read:hover {
+  border-color: var(--text-light);
+  color: var(--text);
+}
+
+/* Read announcements get a faded look so the unread ones stand out */
+.ann-item.read {
+  opacity: 0.65;
+  border-left-color: var(--border);
+}
+.ann-item.read:hover { opacity: 0.95; }
+.ann-item.unread {
+  position: relative;
+}
+.ann-item.unread::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.18);
+  pointer-events: none;
+}
+.ann-item.pinned.unread::after { right: 14px; top: 14px; }
