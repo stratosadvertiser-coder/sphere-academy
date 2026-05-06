@@ -8221,6 +8221,49 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
     if (studentsRefreshBtn) studentsRefreshBtn.addEventListener('click', loadStudents);
     if (studentsExportBtn) studentsExportBtn.addEventListener('click', exportCSV);
 
+    // Reset all student accounts — keeps the admin entry only
+    const studentsResetBtn = document.getElementById('studentsResetBtn');
+    if (studentsResetBtn) {
+      studentsResetBtn.addEventListener('click', async () => {
+        const studentCount = studentCache.filter(r => r.role !== 'admin').length;
+        if (studentCount === 0) {
+          alert('No student accounts to reset.');
+          return;
+        }
+        const phrase = prompt(
+          'This will permanently delete ALL ' + studentCount + ' student account(s) from Firestore and from this admin browser. The admin account stays intact.\n\nType DELETE to confirm.'
+        );
+        if (phrase !== 'DELETE') return;
+        studentsResetBtn.disabled = true;
+        studentsResetBtn.textContent = 'Resetting…';
+        try {
+          // 1) Delete every non-admin doc in sphere_users
+          if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+            const snap = await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).get();
+            const deletes = [];
+            snap.forEach(d => {
+              const data = d.data() || {};
+              if ((data.role || 'student') !== 'admin') {
+                deletes.push(DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(d.id).delete());
+              }
+            });
+            await Promise.all(deletes);
+          }
+          // 2) Strip non-admin entries from this browser's localStorage
+          try {
+            const users = AUTH.getAllUsers().filter(u => u.role === 'admin');
+            safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+          } catch (e) {}
+        } catch (e) {
+          alert('Some deletions failed: ' + (e && e.message ? e.message : e));
+        }
+        studentsResetBtn.disabled = false;
+        studentsResetBtn.textContent = 'Reset all students';
+        await loadStudents();
+        alert('All student accounts have been reset. Only the admin remains.');
+      });
+    }
+
     // Lazy-load when Students tab is first clicked
     const studentsTab = document.querySelector('.admin-tab[data-tab="students"]');
     if (studentsTab) {
