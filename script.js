@@ -7900,12 +7900,70 @@ function bindDashboardSidebar() {
 }
 
 if (currentPage === 'dashboard.html') {
+  // ============================================================
+  // MOTIVATIONAL QUOTES — rotating quote on dashboard feed
+  // ============================================================
+  const MOTIVATIONAL_QUOTES = [
+    { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+    { text: "The best marketing doesn't feel like marketing.", author: "Tom Fishburne" },
+    { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+    { text: "Your brand is what people say about you when you're not in the room.", author: "Jeff Bezos" },
+    { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+    { text: "Marketing is no longer about the stuff that you make, but about the stories you tell.", author: "Seth Godin" },
+    { text: "Either write something worth reading or do something worth writing.", author: "Benjamin Franklin" },
+    { text: "Quality is more important than quantity. One home run is much better than two doubles.", author: "Steve Jobs" },
+    { text: "If you're not embarrassed by the first version of your product, you've launched too late.", author: "Reid Hoffman" },
+    { text: "People don't buy what you do; they buy why you do it.", author: "Simon Sinek" },
+    { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+    { text: "Content is fire, social media is gasoline.", author: "Jay Baer" },
+    { text: "Make it simple. Make it memorable. Make it inviting to look at.", author: "Leo Burnett" },
+    { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn" },
+    { text: "If you are not willing to risk the usual, you will have to settle for the ordinary.", author: "Jim Rohn" },
+    { text: "Done is better than perfect.", author: "Sheryl Sandberg" },
+    { text: "Hard work beats talent when talent doesn't work hard.", author: "Tim Notke" },
+    { text: "Creativity is intelligence having fun.", author: "Albert Einstein" },
+    { text: "Stop selling. Start helping.", author: "Zig Ziglar" },
+    { text: "Great things in business are never done by one person; they're done by a team of people.", author: "Steve Jobs" },
+    { text: "The biggest risk is not taking any risk.", author: "Mark Zuckerberg" },
+    { text: "Build something 100 people love, not something 1 million people kind of like.", author: "Brian Chesky" },
+    { text: "Your most unhappy customers are your greatest source of learning.", author: "Bill Gates" },
+    { text: "Action is the foundational key to all success.", author: "Pablo Picasso" },
+    { text: "Be so good they can't ignore you.", author: "Steve Martin" }
+  ];
+
+  function _pickQuoteForToday() {
+    const today = new Date();
+    const dayKey = today.getFullYear() * 1000 + (today.getMonth() + 1) * 50 + today.getDate();
+    return MOTIVATIONAL_QUOTES[dayKey % MOTIVATIONAL_QUOTES.length];
+  }
+
+  function renderMotivationalQuote(quote) {
+    const textEl = document.getElementById('quoteText');
+    const authorEl = document.getElementById('quoteAuthor');
+    if (!textEl || !authorEl) return;
+    const q = quote || _pickQuoteForToday();
+    textEl.textContent = '"' + q.text + '"';
+    authorEl.textContent = '— ' + q.author;
+  }
+
+  function bindQuoteCard() {
+    const refreshBtn = document.getElementById('quoteRefresh');
+    renderMotivationalQuote();
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        const next = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+        renderMotivationalQuote(next);
+      });
+    }
+  }
+
   function initDashboardCommunity() {
     bindCommunityComposers();
     bindAnnComposer();
     bindFaqComposer();
     bindChatComposer();
     bindDashboardSidebar();
+    bindQuoteCard();
     // Initial fetches for cross-browser sync.
     // Sidebar badge counts ONLY unread announcements per user — once
     // the student clicks Mark as read on each one, the badge clears.

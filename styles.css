@@ -7620,6 +7620,109 @@ img {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
 
+/* Motivational quote card — sits above the composer on Feed */
+.quote-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #635bff 0%, #8b9eff 60%, #00d4a8 100%);
+  color: #fff;
+  box-shadow: 0 12px 32px -10px rgba(99, 91, 255, 0.45);
+  overflow: hidden;
+}
+.quote-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 50%);
+  pointer-events: none;
+}
+.quote-card-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+.quote-card-body {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+.quote-card-eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.quote-card-text {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #fff;
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+.quote-card-author {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+.quote-card-refresh {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), transform var(--transition);
+  position: relative;
+  z-index: 1;
+}
+.quote-card-refresh:hover {
+  background: rgba(255, 255, 255, 0.32);
+  transform: rotate(120deg);
+}
+.quote-card-refresh:active {
+  transform: rotate(180deg);
+}
+
+/* Mobile — slightly tighter padding on small screens */
+@media (max-width: 600px) {
+  .quote-card {
+    padding: 16px 18px;
+    gap: 12px;
+  }
+  .quote-card-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .quote-card-text {
+    font-size: 0.98rem;
+  }
+}
+
 /* Facebook-style composer card */
 .fb-composer-card {
   background: var(--bg);
