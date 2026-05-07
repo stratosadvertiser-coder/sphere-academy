@@ -383,6 +383,94 @@ const USER_SYNC = {
 };
 
 // ============================================================
+// PRESENCE — Lightweight heartbeat so students see who's online
+// Writes a `lastSeen` timestamp to sphere_users/{username} every
+// HEARTBEAT_MS. A user is considered "online" if their lastSeen
+// is within ONLINE_WINDOW_MS of the current time.
+// ============================================================
+const PRESENCE = {
+  HEARTBEAT_MS: 30000,    // 30s — write heartbeat every half-minute
+  ONLINE_WINDOW_MS: 90000, // 90s — anyone whose lastSeen is older is "offline"
+  _heartbeatTimer: null,
+  _unsub: null,
+  _started: false,
+
+  start() {
+    if (this._started) return;
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    if (typeof AUTH === 'undefined' || !AUTH.isLoggedIn || !AUTH.isLoggedIn()) return;
+    this._started = true;
+    this._writeHeartbeat();
+    this._heartbeatTimer = setInterval(() => this._writeHeartbeat(), this.HEARTBEAT_MS);
+
+    // When tab regains focus, push a fresh heartbeat right away
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) this._writeHeartbeat();
+    });
+  },
+
+  stop() {
+    if (this._heartbeatTimer) clearInterval(this._heartbeatTimer);
+    this._heartbeatTimer = null;
+    if (typeof this._unsub === 'function') { try { this._unsub(); } catch (e) {} }
+    this._unsub = null;
+    this._started = false;
+  },
+
+  _writeHeartbeat() {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    if (typeof AUTH === 'undefined' || !AUTH.getUser) return;
+    const username = AUTH.getUser();
+    if (!username) return;
+    const displayName = (AUTH.getDisplayName && AUTH.getDisplayName()) || username;
+    const role = (AUTH.isAdmin && AUTH.isAdmin()) ? 'admin' : 'student';
+    const avatar = (AUTH.getAvatarImage && AUTH.getAvatarImage()) || null;
+    try {
+      DATA_SYNC.db.collection('sphere_users').doc(username).set({
+        username,
+        displayName,
+        role,
+        avatar,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(() => {});
+    } catch (e) { /* non-fatal */ }
+  },
+
+  // Real-time listener — calls onUpdate(usersArray) whenever any user doc changes.
+  startLiveListener(onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return null;
+    if (typeof this._unsub === 'function') { try { this._unsub(); } catch (e) {} }
+    this._unsub = DATA_SYNC.db.collection('sphere_users').onSnapshot(snap => {
+      const users = [];
+      snap.forEach(doc => {
+        const data = doc.data() || {};
+        users.push({
+          username: doc.id,
+          displayName: data.displayName || doc.id,
+          avatar: data.avatar || null,
+          role: data.role || 'student',
+          lastSeenMs: this._toMs(data.lastSeen) || this._toMs(data.lastActive) || 0
+        });
+      });
+      onUpdate(users);
+    }, err => console.warn('[PRESENCE] listener error:', err.message));
+    return this._unsub;
+  },
+
+  _toMs(ts) {
+    if (!ts) return 0;
+    if (typeof ts.toMillis === 'function') return ts.toMillis();
+    if (typeof ts.seconds === 'number') return ts.seconds * 1000;
+    return 0;
+  },
+
+  isOnline(user) {
+    if (!user || !user.lastSeenMs) return false;
+    return (Date.now() - user.lastSeenMs) < this.ONLINE_WINDOW_MS;
+  }
+};
+
+// ============================================================
 // ANALYTICS — Aggregate all student data for admin dashboard
 // ============================================================
 const ANALYTICS = {
@@ -7339,6 +7427,100 @@ function renderFAQs() {
   }
 }
 
+// ============================================================
+// MEMBERS — Render online + all registered users
+// ============================================================
+let _MEMBERS_CACHE = [];
+
+function _initialsFromName(name) {
+  if (!name) return 'U';
+  const parts = String(name).trim().split(/\s+/);
+  if (parts.length === 0) return 'U';
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function _memberCardHTML(u, isOnline) {
+  const initials = _initialsFromName(u.displayName || u.username);
+  const avatarHtml = u.avatar
+    ? '<img src="' + u.avatar.replace(/"/g, '&quot;') + '" alt="">'
+    : '<span class="member-initials">' + initials + '</span>';
+  const safeName = String(u.displayName || u.username).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const roleBadge = u.role === 'admin' ? '<span class="member-role-badge">Admin</span>' : '';
+  const statusText = isOnline
+    ? 'Online'
+    : (u.lastSeenMs ? 'Last seen ' + _relativeTime(u.lastSeenMs) : 'Offline');
+  return '<div class="member-card' + (isOnline ? ' is-online' : '') + '">'
+    + '<div class="member-avatar">'
+    + avatarHtml
+    + (isOnline ? '<span class="member-online-indicator" title="Online"></span>' : '')
+    + '</div>'
+    + '<div class="member-info">'
+    + '<div class="member-name">' + safeName + roleBadge + '</div>'
+    + '<div class="member-status">' + statusText + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function _relativeTime(ms) {
+  const diff = Date.now() - ms;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  if (diff < 7 * 86400000) return Math.floor(diff / 86400000) + 'd ago';
+  const date = new Date(ms);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function renderMembers(users) {
+  if (Array.isArray(users)) _MEMBERS_CACHE = users;
+  const data = _MEMBERS_CACHE.slice();
+
+  const onlineList = document.getElementById('membersOnlineList');
+  const allList = document.getElementById('membersAllList');
+  const onlineEmpty = document.getElementById('membersOnlineEmpty');
+  const allEmpty = document.getElementById('membersAllEmpty');
+  const onlineCountEl = document.getElementById('membersOnlineCount');
+  const allCountEl = document.getElementById('membersAllCount');
+  const onlineBadge = document.getElementById('onlineBadge');
+  if (!onlineList || !allList) return;
+
+  // Sort: admin first, then alphabetical by displayName
+  data.sort((a, b) => {
+    if ((a.role === 'admin') !== (b.role === 'admin')) return a.role === 'admin' ? -1 : 1;
+    return String(a.displayName || a.username).localeCompare(String(b.displayName || b.username));
+  });
+
+  const online = data.filter(u => PRESENCE.isOnline(u));
+  const all = data;
+
+  if (onlineCountEl) onlineCountEl.textContent = online.length;
+  if (allCountEl) allCountEl.textContent = all.length;
+
+  // Sidebar live online badge — only count students (exclude self & admin? include all)
+  if (onlineBadge) {
+    const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+    const others = online.filter(u => u.username !== me).length;
+    onlineBadge.textContent = others;
+    onlineBadge.style.display = others > 0 ? 'inline-flex' : 'none';
+  }
+
+  // Online section
+  if (online.length === 0) {
+    if (onlineEmpty) onlineEmpty.style.display = 'block';
+    onlineList.innerHTML = '<div class="dash-empty members-empty"><p>No one\'s online right now.</p></div>';
+  } else {
+    onlineList.innerHTML = online.map(u => _memberCardHTML(u, true)).join('');
+  }
+
+  // All section
+  if (all.length === 0) {
+    allList.innerHTML = '<div class="dash-empty members-empty"><p>No registered members yet.</p></div>';
+  } else {
+    allList.innerHTML = all.map(u => _memberCardHTML(u, PRESENCE.isOnline(u))).join('');
+  }
+}
+
 function renderChat(messages) {
   const messagesEl = document.getElementById('chatMessages');
   const emptyEl = document.getElementById('chatEmpty');
@@ -7700,6 +7882,13 @@ function bindDashboardSidebar() {
         CHAT.stopLiveListener();
       }
     }
+
+    // Members panel: re-render from the cached presence list when opened.
+    // The PRESENCE listener is started on dashboard init, so the data is
+    // already kept fresh in the background.
+    if (tab === 'members') {
+      renderMembers();
+    }
   }
 
   links.forEach(link => {
@@ -7747,6 +7936,18 @@ if (currentPage === 'dashboard.html') {
       });
     }
     if (typeof FAQS !== 'undefined') FAQS.fetchRemote().then(renderFAQs).catch(() => {});
+
+    // Presence — start heartbeat + global listener so the Members panel
+    // and the sidebar online badge always reflect live activity.
+    if (typeof PRESENCE !== 'undefined') {
+      PRESENCE.start();
+      PRESENCE.startLiveListener((users) => {
+        renderMembers(users);
+      });
+      // Re-tick every 30s so "Last seen X ago" labels stay current and
+      // anyone who silently went offline drops out of the Online list.
+      setInterval(() => renderMembers(), 30000);
+    }
   }
   document.addEventListener('DOMContentLoaded', initDashboardCommunity);
   if (document.readyState !== 'loading') initDashboardCommunity();
