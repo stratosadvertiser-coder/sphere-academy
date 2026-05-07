@@ -7678,6 +7678,11 @@ img {
   min-width: 0;
   position: relative;
   z-index: 1;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.quote-card.is-swapping .quote-card-body {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 .quote-card-eyebrow {
   margin: 0 0 8px;

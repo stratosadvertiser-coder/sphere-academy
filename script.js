@@ -7948,11 +7948,52 @@ if (currentPage === 'dashboard.html') {
 
   function bindQuoteCard() {
     const refreshBtn = document.getElementById('quoteRefresh');
+    const card = document.getElementById('quoteCard');
+    let currentIdx = -1;
+
+    function showRandomQuote() {
+      // Pick a different quote than the one currently shown so we never
+      // appear to "skip" a tick by repeating the same line.
+      let nextIdx;
+      do {
+        nextIdx = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+      } while (nextIdx === currentIdx && MOTIVATIONAL_QUOTES.length > 1);
+      currentIdx = nextIdx;
+      const q = MOTIVATIONAL_QUOTES[nextIdx];
+      // Quick fade transition so the swap doesn't feel jarring
+      if (card) {
+        card.classList.add('is-swapping');
+        setTimeout(() => {
+          renderMotivationalQuote(q);
+          card.classList.remove('is-swapping');
+        }, 180);
+      } else {
+        renderMotivationalQuote(q);
+      }
+    }
+
+    // Seed with today's deterministic quote so the first render matches
+    // what we had before the auto-rotate landed.
     renderMotivationalQuote();
+    currentIdx = MOTIVATIONAL_QUOTES.indexOf(_pickQuoteForToday());
+
+    // Auto-rotate every 6 seconds. Pause when the tab is hidden so we
+    // don't burn cycles in the background.
+    let rotateTimer = setInterval(showRandomQuote, 6000);
+    document.addEventListener('visibilitychange', () => {
+      clearInterval(rotateTimer);
+      if (!document.hidden) {
+        rotateTimer = setInterval(showRandomQuote, 6000);
+      }
+    });
+
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => {
-        const next = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
-        renderMotivationalQuote(next);
+        // Manual refresh resets the rotation timer so the user gets a
+        // full 6 seconds with the quote they just rolled.
+        clearInterval(rotateTimer);
+        showRandomQuote();
+        rotateTimer = setInterval(showRandomQuote, 6000);
       });
     }
   }
