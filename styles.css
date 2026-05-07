@@ -4393,19 +4393,17 @@ img {
 .admin-card-upload {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(15, 23, 42, 0.10);
+  border: 2px solid rgba(15, 23, 42, 0.85);
   border-radius: 14px;
   overflow: hidden;
   background: var(--bg-alt);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 [data-theme="dark"] .admin-card-upload {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.85);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
-/* Hover lift handled by the per-phase :has() rules further below — they
-   layer the phase colour into both the border and the glow. */
 
 .admin-card-preview {
   /* Match the public course card's aspect ratio so what the admin
@@ -4596,70 +4594,24 @@ img {
   display: flex;
   flex-direction: column;
   background: var(--bg-alt);
-  border: 2px solid rgba(15, 23, 42, 0.10);
+  border: 2px solid rgba(15, 23, 42, 0.85);
   border-radius: 14px;
   overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   text-decoration: none;
   color: inherit;
   position: relative;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 [data-theme="dark"] .course-card-link {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.85);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
-/* Phase-coloured outlines — every card stands out with its own
-   identity. Uses :has() so we don't need to retag the HTML. */
-.course-card-link:has(.course-card-img.blue),
-.admin-card-upload:has(.admin-card-preview.blue) {
-  border-color: rgba(99, 91, 255, 0.55);
-  box-shadow: 0 0 0 1px rgba(99, 91, 255, 0.18), 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-.course-card-link:has(.course-card-img.amber),
-.admin-card-upload:has(.admin-card-preview.amber) {
-  border-color: rgba(217, 119, 6, 0.60);
-  box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.18), 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-.course-card-link:has(.course-card-img.green),
-.admin-card-upload:has(.admin-card-preview.green) {
-  border-color: rgba(16, 185, 129, 0.55);
-  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.18), 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-.course-card-link:has(.course-card-img.purple),
-.admin-card-upload:has(.admin-card-preview.purple) {
-  border-color: rgba(139, 92, 246, 0.60);
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.18), 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-
-/* Per-phase hover — same colour but ramped up so the lift feels intentional */
-.course-card-link:has(.course-card-img.blue):hover,
-.admin-card-upload:has(.admin-card-preview.blue):hover {
-  border-color: rgba(99, 91, 255, 0.95);
-  box-shadow: 0 0 0 2px rgba(99, 91, 255, 0.40), 0 14px 28px -10px rgba(99, 91, 255, 0.45);
-}
-.course-card-link:has(.course-card-img.amber):hover,
-.admin-card-upload:has(.admin-card-preview.amber):hover {
-  border-color: rgba(217, 119, 6, 0.95);
-  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.40), 0 14px 28px -10px rgba(217, 119, 6, 0.45);
-}
-.course-card-link:has(.course-card-img.green):hover,
-.admin-card-upload:has(.admin-card-preview.green):hover {
-  border-color: rgba(16, 185, 129, 0.95);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.40), 0 14px 28px -10px rgba(16, 185, 129, 0.45);
-}
-.course-card-link:has(.course-card-img.purple):hover,
-.admin-card-upload:has(.admin-card-preview.purple):hover {
-  border-color: rgba(139, 92, 246, 0.95);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.40), 0 14px 28px -10px rgba(139, 92, 246, 0.45);
-}
-
-.course-card-link:hover {
-  transform: translateY(-3px);
-}
+.course-card-link:hover,
 .admin-card-upload:hover {
   transform: translateY(-3px);
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.30);
 }
 
 .course-card-link:hover .course-card-arrow {
