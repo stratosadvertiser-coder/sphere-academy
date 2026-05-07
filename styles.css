@@ -19,9 +19,12 @@
   --accent-light: #fce7f0;
   --text: #0b0f1c;
   --text-light: #5a6178;
-  --bg: #ffffff;
-  --bg-alt: #f7f8fc;
-  --border: #e1e4f0;
+  /* Warm off-white instead of pure #fff — easier on the eyes for long
+     reading sessions. Subtle cream tint, still reads as "white" but
+     drops the cold blue-white glare. */
+  --bg: #fbf9f5;
+  --bg-alt: #f4f1ea;
+  --border: #e6e2d6;
   --success: #5b6ee8;
   --radius: 12px;
   --radius-lg: 20px;
