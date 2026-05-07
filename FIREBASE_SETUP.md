@@ -77,6 +77,9 @@ service cloud.firestore {
     match /sphere_chat/{docId}          { allow read: if true; allow write: if request.auth != null; }
     match /sphere_users/{docId}         { allow read: if true; allow write: if request.auth != null; }
     match /sphere_events/{docId}        { allow read: if true; allow write: if request.auth != null; }
+    match /sphere_dms/{convId}          { allow read: if true; allow write: if request.auth != null;
+      match /messages/{msgId}           { allow read: if true; allow write: if request.auth != null; }
+    }
   }
 }
 ```

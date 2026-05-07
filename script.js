@@ -349,6 +349,14 @@ const USER_SYNC = {
         const day = e.date.slice(0, 10); // YYYY-MM-DD
         activityByDay[day] = (activityByDay[day] || 0) + 1;
       });
+      // Earned badges — sync so other students can see this user's
+      // achievements in the Members panel.
+      let earnedBadges = [];
+      try {
+        if (typeof BADGES !== 'undefined' && BADGES.evaluate) {
+          earnedBadges = Array.from(BADGES.evaluate());
+        }
+      } catch (e) { /* non-fatal */ }
       return {
         username,
         displayName: (AUTH.getDisplayName && AUTH.getDisplayName()) || username,
@@ -358,6 +366,7 @@ const USER_SYNC = {
         quizAttempts,
         assignments,
         activityByDay,
+        earnedBadges,
         lastActive: firebase.firestore.FieldValue.serverTimestamp()
       };
     } catch (e) {
@@ -463,6 +472,7 @@ const PRESENCE = {
           displayName: data.displayName || doc.id,
           avatar: data.avatar || null,
           role: data.role || 'student',
+          earnedBadges: Array.isArray(data.earnedBadges) ? data.earnedBadges : [],
           lastSeenMs: this._toMs(data.lastSeen) || this._toMs(data.lastActive) || 0
         });
       });
@@ -713,6 +723,186 @@ const QUIZ_RESULTS = {
     try { if (typeof USER_SYNC !== 'undefined') USER_SYNC.save(); } catch (e) {}
   }
 };
+
+// ============================================================
+// BADGES — Achievement system. Each badge has a condition function
+// that runs against the current student's local data. evaluate()
+// returns the full set of earned badge IDs; checkAndCelebrate()
+// detects newly-earned ones since the last check and pops a toast.
+// ============================================================
+const BADGES = {
+  STORAGE_KEY: 'earned_badges',
+
+  catalog: [
+    { id: 'first_lesson',  icon: '📚', name: 'First Lesson',         desc: 'Completed your first lesson.',
+      condition: () => (typeof PROGRESS !== 'undefined') && PROGRESS.getCompletedCount() >= 1 },
+    { id: 'phase_1',       icon: '🎯', name: 'Phase 1 Champion',    desc: 'Completed all 4 lessons of Phase 1.',
+      condition: () => (typeof PROGRESS !== 'undefined') && [1,2,3,4].every(n => PROGRESS.isCompleted('w'+n)) },
+    { id: 'phase_2',       icon: '🎯', name: 'Phase 2 Champion',    desc: 'Completed all 4 lessons of Phase 2.',
+      condition: () => (typeof PROGRESS !== 'undefined') && [5,6,7,8].every(n => PROGRESS.isCompleted('w'+n)) },
+    { id: 'phase_3',       icon: '🎯', name: 'Phase 3 Champion',    desc: 'Completed all 4 lessons of Phase 3.',
+      condition: () => (typeof PROGRESS !== 'undefined') && [9,10,11,12].every(n => PROGRESS.isCompleted('w'+n)) },
+    { id: 'phase_4',       icon: '🎯', name: 'Phase 4 Champion',    desc: 'Completed all 4 lessons of Phase 4.',
+      condition: () => (typeof PROGRESS !== 'undefined') && [13,14,15,16].every(n => PROGRESS.isCompleted('w'+n)) },
+    { id: 'graduate',      icon: '🎓', name: 'Marketing Intern Graduate', desc: 'Completed all 16 lessons.',
+      condition: () => (typeof PROGRESS !== 'undefined') && PROGRESS.getCompletedCount() >= 16 },
+    { id: 'first_post',    icon: '✍️', name: 'First Post',           desc: 'Made your first post on the Feed.',
+      condition: () => {
+        const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+        const posts = safeGetJSON('community_posts', []);
+        return Array.isArray(posts) && posts.some(p => p && p.username === me);
+      } },
+    { id: 'first_win',     icon: '🏆', name: 'First Win',            desc: 'Shared your first Win.',
+      condition: () => {
+        const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+        const wins = safeGetJSON('community_wins', []);
+        return Array.isArray(wins) && wins.some(w => w && w.username === me);
+      } },
+    { id: 'first_chat',    icon: '💬', name: 'First Chat',           desc: 'Sent your first message in Everyone Chat.',
+      condition: () => {
+        const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+        const msgs = safeGetJSON('community_chat', []);
+        return Array.isArray(msgs) && msgs.some(m => m && m.username === me);
+      } },
+    { id: 'commenter_10',  icon: '🗣️', name: 'Engaged Commenter', desc: 'Left 10 comments across the community.',
+      condition: () => {
+        const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+        if (!me) return false;
+        const posts = safeGetJSON('community_posts', []);
+        let count = 0;
+        if (Array.isArray(posts)) {
+          posts.forEach(p => {
+            if (Array.isArray(p && p.comments)) p.comments.forEach(c => { if (c && c.username === me) count++; });
+          });
+        }
+        return count >= 10;
+      } },
+    { id: 'first_quiz',    icon: '💯', name: 'Quiz Passed',          desc: 'Passed your first quiz.',
+      condition: () => {
+        const all = (typeof QUIZ_RESULTS !== 'undefined') ? QUIZ_RESULTS.getAll() : {};
+        return Object.values(all).some(r => r && r.passed === true);
+      } },
+    { id: 'first_assign',  icon: '📤', name: 'Assignment Submitted', desc: 'Submitted your first assignment.',
+      condition: () => {
+        const all = (typeof ASSIGNMENTS !== 'undefined') ? ASSIGNMENTS.getAll() : {};
+        return Object.values(all).some(s => s && s.submitted === true);
+      } },
+    { id: 'streak_7',      icon: '🔥', name: '7-Day Streak',         desc: 'Stayed active 7 days in a row.',
+      condition: () => BADGES._currentStreakDays() >= 7 },
+    { id: 'top_engager',   icon: '⭐',       name: 'Top Engager',          desc: 'Received 25+ reactions on your content.',
+      condition: () => BADGES._reactionsReceived() >= 25 }
+  ],
+
+  // Calculate the user's current consecutive-day streak from ACTIVITY log.
+  _currentStreakDays() {
+    if (typeof ACTIVITY === 'undefined') return 0;
+    const events = ACTIVITY.getAll() || [];
+    const days = new Set();
+    events.forEach(e => { if (e && e.date) days.add(e.date.slice(0, 10)); });
+    if (days.size === 0) return 0;
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const ymd = d.getFullYear() + '-'
+        + String(d.getMonth() + 1).padStart(2, '0') + '-'
+        + String(d.getDate()).padStart(2, '0');
+      if (days.has(ymd)) streak++;
+      else if (i > 0) break; // missed yesterday → streak ends
+    }
+    return streak;
+  },
+
+  // Sum up reactions on this user's posts + wins.
+  _reactionsReceived() {
+    const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+    if (!me) return 0;
+    let total = 0;
+    const tally = (items) => {
+      if (!Array.isArray(items)) return;
+      items.forEach(item => {
+        if (!item || item.username !== me || !item.reactions) return;
+        Object.values(item.reactions).forEach(arr => { total += (arr && arr.length) || 0; });
+      });
+    };
+    tally(safeGetJSON('community_posts', []));
+    tally(safeGetJSON('community_wins', []));
+    return total;
+  },
+
+  // Set of badge IDs the user has currently earned (re-evaluated each call).
+  evaluate() {
+    const earned = new Set();
+    this.catalog.forEach(b => {
+      try { if (b.condition()) earned.add(b.id); } catch (e) {}
+    });
+    return earned;
+  },
+
+  // Set previously seen + saved.
+  _getSeen() {
+    const arr = safeGetJSON(this.STORAGE_KEY, []);
+    return new Set(Array.isArray(arr) ? arr : []);
+  },
+  _saveSeen(set) {
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(Array.from(set)));
+  },
+
+  // Returns the array of badges newly earned since last check, and
+  // marks them as seen so we don't re-celebrate.
+  checkAndCelebrate() {
+    const earned = this.evaluate();
+    const seen = this._getSeen();
+    const newlyEarned = [];
+    earned.forEach(id => {
+      if (!seen.has(id)) {
+        const meta = this.catalog.find(b => b.id === id);
+        if (meta) newlyEarned.push(meta);
+        seen.add(id);
+      }
+    });
+    if (newlyEarned.length > 0) this._saveSeen(seen);
+    return newlyEarned;
+  },
+
+  // For display: full catalog with earned/locked state.
+  catalogWithStatus() {
+    const earned = this.evaluate();
+    return this.catalog.map(b => ({ ...b, earned: earned.has(b.id) }));
+  }
+};
+
+// Toast helper — fires from any page where document is ready.
+function showBadgeToast(badge) {
+  if (!badge || !document.body) return;
+  const t = document.createElement('div');
+  t.className = 'badge-toast';
+  t.innerHTML =
+    '<span class="badge-toast-icon">' + badge.icon + '</span>'
+    + '<div class="badge-toast-body">'
+    +   '<div class="badge-toast-eyebrow">Achievement unlocked</div>'
+    +   '<div class="badge-toast-title">' + badge.name + '</div>'
+    +   '<div class="badge-toast-desc">' + badge.desc + '</div>'
+    + '</div>';
+  document.body.appendChild(t);
+  // Trigger CSS slide-in
+  requestAnimationFrame(() => t.classList.add('is-visible'));
+  // Auto-dismiss after 6s
+  setTimeout(() => {
+    t.classList.remove('is-visible');
+    setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 350);
+  }, 6000);
+}
+
+// Run a celebration check — call after any action that might earn a badge.
+function checkBadges() {
+  if (typeof BADGES === 'undefined') return;
+  if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && !AUTH.isLoggedIn()) return;
+  const fresh = BADGES.checkAndCelebrate();
+  // Stagger toasts so multiple unlocks don't stack on top of each other.
+  fresh.forEach((b, i) => setTimeout(() => showBadgeToast(b), i * 700));
+}
 
 // ============================================================
 // COMMUNITY MODULES — POSTS (timeline) + WINS (celebrations) + EVENTS
@@ -1457,6 +1647,215 @@ const CHAT = {
       try { this._listener(); } catch (e) {}
       this._listener = null;
     }
+  }
+};
+
+// ============================================================
+// DMS — Direct messages (1-on-1 chat).
+//
+// Conversation id is the two usernames sorted + joined with "__"
+// (so alice <-> bob always resolves to alice__bob, regardless of
+// who initiated). Messages live as a subcollection under the
+// conversation doc:
+//
+//   sphere_dms/{convId}                     — metadata
+//   sphere_dms/{convId}/messages/{msgId}    — message docs
+//
+// localStorage caches each conversation's messages so they survive
+// reloads, and an unreadByMe map gives the sidebar badge.
+// ============================================================
+const DMS = {
+  COLLECTION: 'sphere_dms',
+  STORAGE_KEY_PREFIX: 'dm_',           // dm_<convId>  -> messages array
+  CONV_LIST_KEY: 'dm_conversations',   // list of {convId, peer*, lastMessage, lastMessageAt, unread}
+  MAX_LEN: 1000,
+  _convListener: null,
+  _messageListener: null,
+  _activeConv: null,
+
+  convIdFor(userA, userB) {
+    if (!userA || !userB) return null;
+    return [String(userA), String(userB)].sort().join('__');
+  },
+
+  peerOf(convId, me) {
+    if (!convId || !me) return null;
+    const parts = convId.split('__');
+    return parts.find(p => p !== me) || null;
+  },
+
+  // ----- Conversation list -----
+  getConversations() {
+    const arr = safeGetJSON(this.CONV_LIST_KEY, []);
+    return Array.isArray(arr) ? arr.slice().sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)) : [];
+  },
+
+  _saveConversations(list) {
+    safeSetItem(this.CONV_LIST_KEY, JSON.stringify(list || []));
+  },
+
+  upsertConversation(convId, patch) {
+    if (!convId) return;
+    const list = safeGetJSON(this.CONV_LIST_KEY, []);
+    const arr = Array.isArray(list) ? list : [];
+    const idx = arr.findIndex(c => c && c.convId === convId);
+    if (idx === -1) arr.push(Object.assign({ convId }, patch));
+    else arr[idx] = Object.assign({}, arr[idx], patch);
+    this._saveConversations(arr);
+  },
+
+  // ----- Messages per conversation -----
+  _msgKey(convId) { return this.STORAGE_KEY_PREFIX + convId; },
+
+  getMessages(convId) {
+    if (!convId) return [];
+    const arr = safeGetJSON(this._msgKey(convId), []);
+    return Array.isArray(arr) ? arr.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)) : [];
+  },
+
+  _saveMessages(convId, msgs) {
+    if (!convId) return;
+    safeSetItem(this._msgKey(convId), JSON.stringify(msgs || []));
+  },
+
+  // ----- Send -----
+  send(peerUsername, peerDisplayName, peerAvatar, text) {
+    text = (text || '').trim().slice(0, this.MAX_LEN);
+    if (!text) return null;
+    const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+    if (!me || !peerUsername) return null;
+    const convId = this.convIdFor(me, peerUsername);
+    const meta = (typeof _commonAuthorMeta === 'function') ? _commonAuthorMeta() : { username: me, displayName: me, avatar: null, initials: 'U' };
+    const msg = {
+      id: 'dm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      convId,
+      from: me,
+      fromDisplay: meta.displayName,
+      fromAvatar: meta.avatar,
+      to: peerUsername,
+      text,
+      createdAt: Date.now()
+    };
+
+    // Local: append + bump conversation
+    const all = this.getMessages(convId);
+    all.push(msg);
+    this._saveMessages(convId, all);
+    this.upsertConversation(convId, {
+      peerUsername,
+      peerDisplayName: peerDisplayName || peerUsername,
+      peerAvatar: peerAvatar || null,
+      lastMessage: text,
+      lastMessageAt: msg.createdAt,
+      lastFrom: me,
+      unread: 0
+    });
+
+    // Firestore: write the message and the conversation metadata.
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        const convRef = DATA_SYNC.db.collection(this.COLLECTION).doc(convId);
+        convRef.collection('messages').doc(msg.id).set(msg)
+          .catch(e => _handleSyncError('DMS', e));
+        convRef.set({
+          convId,
+          participants: [me, peerUsername].sort(),
+          lastMessage: text,
+          lastMessageAt: msg.createdAt,
+          lastFrom: me,
+          updatedAt: msg.createdAt
+        }, { merge: true }).catch(e => _handleSyncError('DMS', e));
+      }
+    } catch (e) {}
+    return msg;
+  },
+
+  markRead(convId) {
+    if (!convId) return;
+    this.upsertConversation(convId, { unread: 0 });
+  },
+
+  totalUnread() {
+    return this.getConversations().reduce((sum, c) => sum + (c && c.unread ? c.unread : 0), 0);
+  },
+
+  // ----- Live listeners -----
+  startConvListener(onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    if (typeof AUTH === 'undefined' || !AUTH.getUser) return;
+    const me = AUTH.getUser();
+    if (!me) return;
+    this.stopConvListener();
+    try {
+      this._convListener = DATA_SYNC.db.collection(this.COLLECTION)
+        .where('participants', 'array-contains', me)
+        .onSnapshot(snap => {
+          const localList = safeGetJSON(this.CONV_LIST_KEY, []);
+          const localArr = Array.isArray(localList) ? localList : [];
+          snap.forEach(doc => {
+            const data = doc.data() || {};
+            const convId = data.convId || doc.id;
+            const peer = (Array.isArray(data.participants) ? data.participants : []).find(p => p !== me);
+            if (!peer) return;
+            const existing = localArr.find(c => c && c.convId === convId);
+            const prevAt = existing ? (existing.lastMessageAt || 0) : 0;
+            const newAt = data.lastMessageAt || 0;
+            // Increment unread if the new last-message is from peer and is newer
+            const becameNew = newAt > prevAt && data.lastFrom && data.lastFrom !== me;
+            const next = Object.assign({}, existing || {}, {
+              convId,
+              peerUsername: peer,
+              peerDisplayName: existing ? existing.peerDisplayName : peer,
+              peerAvatar: existing ? existing.peerAvatar : null,
+              lastMessage: data.lastMessage || (existing && existing.lastMessage) || '',
+              lastMessageAt: newAt || prevAt,
+              lastFrom: data.lastFrom || (existing && existing.lastFrom) || null,
+              unread: (existing && existing.unread ? existing.unread : 0) + (becameNew ? 1 : 0)
+            });
+            const idx = localArr.findIndex(c => c && c.convId === convId);
+            if (idx === -1) localArr.push(next); else localArr[idx] = next;
+          });
+          this._saveConversations(localArr);
+          if (typeof onUpdate === 'function') onUpdate(this.getConversations());
+        }, err => _handleSyncError('DMS', err));
+    } catch (e) { console.warn('[DMS] convListener:', e.message); }
+  },
+
+  stopConvListener() {
+    if (this._convListener) {
+      try { this._convListener(); } catch (e) {}
+      this._convListener = null;
+    }
+  },
+
+  startMessageListener(convId, onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    if (!convId) return;
+    this.stopMessageListener();
+    this._activeConv = convId;
+    try {
+      this._messageListener = DATA_SYNC.db.collection(this.COLLECTION).doc(convId)
+        .collection('messages')
+        .orderBy('createdAt', 'asc')
+        .limit(200)
+        .onSnapshot(snap => {
+          const remote = [];
+          snap.forEach(d => remote.push(d.data()));
+          // Merge with local
+          const local = this.getMessages(convId);
+          const merged = _mergeById(remote, local);
+          this._saveMessages(convId, merged);
+          if (typeof onUpdate === 'function') onUpdate(this.getMessages(convId));
+        }, err => _handleSyncError('DMS', err));
+    } catch (e) { console.warn('[DMS] messageListener:', e.message); }
+  },
+
+  stopMessageListener() {
+    if (this._messageListener) {
+      try { this._messageListener(); } catch (e) {}
+      this._messageListener = null;
+    }
+    this._activeConv = null;
   }
 };
 
@@ -3078,6 +3477,7 @@ if (currentPage === 'lesson.html') {
           const passed = percentage >= quiz.passScore;
 
           QUIZ_RESULTS.save(weekId, correct, total, passed);
+          if (passed && typeof checkBadges === 'function') checkBadges();
 
           // Disable submit
           quizSubmitBtn.disabled = true;
@@ -3368,6 +3768,7 @@ if (currentPage === 'lesson.html') {
               date: new Date().toISOString()
             }));
             ASSIGNMENTS.submit(weekId, fileData, linkData);
+            if (typeof checkBadges === 'function') checkBadges();
             // Reload to show submitted state
             window.location.reload();
           });
@@ -3398,6 +3799,7 @@ if (currentPage === 'lesson.html') {
         const nowComplete = PROGRESS.toggle(weekId);
         if (!wasComplete && nowComplete) {
           try { if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('lesson_completed', weekId, 'W' + lesson.week + ': ' + lesson.title); } catch (e) {}
+          if (typeof checkBadges === 'function') checkBadges();
         }
         this.classList.toggle('completed', nowComplete);
         this.innerHTML = nowComplete
@@ -4422,6 +4824,29 @@ if (accountCancelBtn) {
 if (currentPage === 'profile.html') {
   loadProfile();
 
+  // Render the Achievements grid (full catalog with earned/locked states)
+  function renderAchievements() {
+    const grid = document.getElementById('achievementsGrid');
+    const summary = document.getElementById('achievementsSummary');
+    if (!grid || typeof BADGES === 'undefined') return;
+    const all = BADGES.catalogWithStatus();
+    const earnedCount = all.filter(b => b.earned).length;
+    if (summary) summary.textContent = '(' + earnedCount + ' / ' + all.length + ' unlocked)';
+    grid.innerHTML = all.map(b => {
+      return '<div class="achievement-card' + (b.earned ? ' is-earned' : '') + '" title="' + b.desc.replace(/"/g, '&quot;') + '">'
+        + '<div class="achievement-icon">' + b.icon + '</div>'
+        + '<div class="achievement-meta">'
+        +   '<div class="achievement-name">' + b.name + '</div>'
+        +   '<div class="achievement-desc">' + b.desc + '</div>'
+        + '</div>'
+        + (b.earned ? '<div class="achievement-status">Unlocked</div>' : '<div class="achievement-status locked">Locked</div>')
+        + '</div>';
+    }).join('');
+  }
+  renderAchievements();
+  // Run badge celebration check (catches anything earned passively)
+  if (typeof checkBadges === 'function') checkBadges();
+
   // Update progress section with real data
   const completed = PROGRESS.getCompletedCount();
   const pct = PROGRESS.getPercentage();
@@ -4710,6 +5135,38 @@ function startCommunityNotifListeners() {
         });
       }, err => console.warn('[NOTIFY chat_mentions] listener:', err.message));
   } catch (e) { console.warn('[NOTIFY chat_mentions] start:', e.message); }
+
+  // Direct messages — listen on conversations the user participates in
+  // and notify whenever the latest message is from someone else.
+  try {
+    if (!me) return;
+    DATA_SYNC.db.collection('sphere_dms')
+      .where('participants', 'array-contains', me)
+      .onSnapshot(snap => {
+        snap.docChanges().forEach(change => {
+          if (change.type !== 'added' && change.type !== 'modified') return;
+          const data = change.doc.data() || {};
+          const convId = data.convId || change.doc.id;
+          const lastFrom = data.lastFrom;
+          const lastAt = typeof data.lastMessageAt === 'number' ? data.lastMessageAt : 0;
+          if (!lastFrom || lastFrom === me) return;
+          if (!lastAt || lastAt < startTime - GRACE_MS) return;
+          // Dedupe by conversation+timestamp
+          const dedupeId = convId + '_' + lastAt;
+          if (SEEN_NOTIF_IDS.has('dms', dedupeId)) return;
+          SEEN_NOTIF_IDS.mark('dms', dedupeId);
+          if (typeof NOTIFS !== 'undefined') {
+            const peer = (Array.isArray(data.participants) ? data.participants : []).find(p => p !== me) || lastFrom;
+            const preview = String(data.lastMessage || '').slice(0, 80);
+            NOTIFS.add(
+              '<span class="notif-kind">DM</span> ' + peer + ' sent you a message: ' + preview,
+              '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+              'dashboard.html'
+            );
+          }
+        });
+      }, err => console.warn('[NOTIFY dms] listener:', err.message));
+  } catch (e) { console.warn('[NOTIFY dms] start:', e.message); }
 }
 
 if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn()) {
@@ -7162,6 +7619,7 @@ function renderPosts() {
       input.value = '';
       updateState();
       renderPosts();
+      if (typeof checkBadges === 'function') checkBadges();
     });
   });
   // Wire comment delete
@@ -7397,6 +7855,7 @@ function bindCommunityComposers() {
         composerTrigger.style.display = '';
       }
       renderPosts();
+      if (typeof checkBadges === 'function') checkBadges();
     });
     updatePostState();
   }
@@ -7536,6 +7995,7 @@ function bindCommunityComposers() {
       renderWinMedia();
       updateWinState();
       renderWins();
+      if (typeof checkBadges === 'function') checkBadges();
     });
   }
 }
@@ -7642,6 +8102,33 @@ function _memberCardHTML(u, isOnline) {
   const statusText = isOnline
     ? 'Online'
     : (u.lastSeenMs ? 'Last seen ' + _relativeTime(u.lastSeenMs) : 'Offline');
+
+  // Top 3 prestige badges — render the icons inline. Looks up the catalog
+  // so we know each badge's emoji + name (for the tooltip).
+  let badgesHtml = '';
+  if (Array.isArray(u.earnedBadges) && u.earnedBadges.length > 0 && typeof BADGES !== 'undefined') {
+    // Priority order: graduate > phase 4 > 3 > 2 > 1 > everything else.
+    const priority = ['graduate','phase_4','phase_3','phase_2','phase_1','top_engager','streak_7','commenter_10','first_quiz','first_assign','first_win','first_post','first_chat','first_lesson'];
+    const sorted = u.earnedBadges.slice().sort((a, b) => {
+      const ia = priority.indexOf(a); const ib = priority.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+    const top = sorted.slice(0, 3).map(id => {
+      const meta = BADGES.catalog.find(b => b.id === id);
+      if (!meta) return '';
+      const t = (meta.name + ' — ' + meta.desc).replace(/"/g, '&quot;');
+      return '<span class="member-badge" title="' + t + '">' + meta.icon + '</span>';
+    }).filter(Boolean).join('');
+    if (top) badgesHtml = '<div class="member-badges">' + top + '</div>';
+  }
+
+  // DM button — opens a direct message with this user. Skip on self.
+  const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+  const isMe = me && u.username === me;
+  const messageBtn = (!isMe && typeof DMS !== 'undefined')
+    ? '<button class="member-message-btn" type="button" data-username="' + String(u.username).replace(/"/g, '&quot;') + '" data-display="' + String(u.displayName || u.username).replace(/"/g, '&quot;') + '" title="Send a message"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>'
+    : '';
+
   return '<div class="member-card' + (isOnline ? ' is-online' : '') + '">'
     + '<div class="member-avatar">'
     + avatarHtml
@@ -7650,7 +8137,9 @@ function _memberCardHTML(u, isOnline) {
     + '<div class="member-info">'
     + '<div class="member-name">' + safeName + roleBadge + '</div>'
     + '<div class="member-status">' + statusText + '</div>'
+    + badgesHtml
     + '</div>'
+    + messageBtn
     + '</div>';
 }
 
@@ -7662,6 +8151,208 @@ function _relativeTime(ms) {
   if (diff < 7 * 86400000) return Math.floor(diff / 86400000) + 'd ago';
   const date = new Date(ms);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ============================================================
+// DM RENDERERS — conversation list + message thread + composer.
+// ============================================================
+let _DM_ACTIVE_CONV = null;
+
+function _esc2(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderDMConversations() {
+  const listEl = document.getElementById('dmConvList');
+  const emptyEl = document.getElementById('dmConvEmpty');
+  if (!listEl || typeof DMS === 'undefined') return;
+
+  const convs = DMS.getConversations();
+  // Update sidebar unread badge
+  updateDMUnreadBadge();
+
+  if (convs.length === 0) {
+    if (emptyEl) emptyEl.style.display = 'flex';
+    // Wipe any previously-rendered tiles
+    listEl.querySelectorAll('.dm-conv-item').forEach(el => el.remove());
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // Build conversation tiles
+  const html = convs.map(c => {
+    const name = _esc2(c.peerDisplayName || c.peerUsername);
+    const initials = _initialsFromName(c.peerDisplayName || c.peerUsername);
+    const avatar = c.peerAvatar
+      ? '<img src="' + _esc2(c.peerAvatar) + '" alt="">'
+      : '<span>' + initials + '</span>';
+    const last = _esc2(c.lastMessage || '').slice(0, 60);
+    const time = c.lastMessageAt ? _relativeTime(c.lastMessageAt) : '';
+    const unread = c.unread && c.unread > 0
+      ? '<span class="dm-conv-unread">' + c.unread + '</span>'
+      : '';
+    const active = _DM_ACTIVE_CONV === c.convId ? ' is-active' : '';
+    return '<button type="button" class="dm-conv-item' + active + '" data-conv="' + _esc2(c.convId) + '" data-username="' + _esc2(c.peerUsername) + '" data-display="' + _esc2(c.peerDisplayName || c.peerUsername) + '" data-avatar="' + _esc2(c.peerAvatar || '') + '">'
+      + '<span class="dm-conv-avatar">' + avatar + '</span>'
+      + '<span class="dm-conv-body">'
+      +   '<span class="dm-conv-row">'
+      +     '<span class="dm-conv-name">' + name + '</span>'
+      +     '<span class="dm-conv-time">' + time + '</span>'
+      +   '</span>'
+      +   '<span class="dm-conv-row">'
+      +     '<span class="dm-conv-last">' + (last || '<em>(no messages yet)</em>') + '</span>'
+      +     unread
+      +   '</span>'
+      + '</span>'
+      + '</button>';
+  }).join('');
+
+  // Replace tiles (keep the empty placeholder div around for later)
+  listEl.querySelectorAll('.dm-conv-item').forEach(el => el.remove());
+  listEl.insertAdjacentHTML('beforeend', html);
+
+  // Wire click → open conversation
+  listEl.querySelectorAll('.dm-conv-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openDMConversation(
+        btn.dataset.username,
+        btn.dataset.display,
+        btn.dataset.avatar || null
+      );
+    });
+  });
+}
+
+function openDMConversation(peerUsername, peerDisplayName, peerAvatar) {
+  if (!peerUsername || typeof DMS === 'undefined') return;
+  const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+  if (!me) return;
+  const convId = DMS.convIdFor(me, peerUsername);
+  _DM_ACTIVE_CONV = convId;
+
+  // Make sure the conversation exists locally even before any message is sent
+  DMS.upsertConversation(convId, {
+    peerUsername,
+    peerDisplayName: peerDisplayName || peerUsername,
+    peerAvatar: peerAvatar || null
+  });
+  DMS.markRead(convId);
+
+  // Switch the active dashboard tab to messages if we're not already there
+  const messagesLink = document.querySelector('.dash-sidebar-link[data-tab="messages"]');
+  if (messagesLink) messagesLink.click();
+
+  // Populate header
+  const nameEl = document.getElementById('dmThreadName');
+  const avatarEl = document.getElementById('dmThreadAvatar');
+  const emptyEl = document.getElementById('dmThreadEmpty');
+  const activeEl = document.getElementById('dmThreadActive');
+  if (nameEl) nameEl.textContent = peerDisplayName || peerUsername;
+  if (avatarEl) {
+    const initials = _initialsFromName(peerDisplayName || peerUsername);
+    avatarEl.innerHTML = peerAvatar
+      ? '<img src="' + _esc2(peerAvatar) + '" alt="">'
+      : '<span>' + initials + '</span>';
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (activeEl) activeEl.style.display = 'flex';
+
+  // Initial render from cache
+  renderDMMessages(DMS.getMessages(convId));
+
+  // Live listener for new incoming messages
+  DMS.startMessageListener(convId, (messages) => {
+    renderDMMessages(messages);
+    // Mark as read whenever we re-render while the thread is open
+    DMS.markRead(convId);
+    renderDMConversations();
+  });
+
+  // Focus composer + clear it
+  const inputEl = document.getElementById('dmInput');
+  if (inputEl) { inputEl.value = ''; inputEl.focus(); }
+  const sendBtn = document.getElementById('dmSendBtn');
+  if (sendBtn) sendBtn.disabled = true;
+
+  // Re-render the conv list to show active state
+  renderDMConversations();
+}
+
+function renderDMMessages(messages) {
+  const wrap = document.getElementById('dmMessages');
+  if (!wrap) return;
+  const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+  if (!Array.isArray(messages) || messages.length === 0) {
+    wrap.innerHTML = '<div class="dm-messages-empty"><p>Say hi 👋</p></div>';
+    return;
+  }
+  wrap.innerHTML = messages.map(m => {
+    const mine = m.from === me;
+    const text = _highlightMentions(_esc2(m.text));
+    const t = m.createdAt ? _relativeTime(m.createdAt) : '';
+    return '<div class="dm-message' + (mine ? ' mine' : '') + '">'
+      + '<div class="dm-message-bubble">' + text + '</div>'
+      + '<div class="dm-message-time">' + t + '</div>'
+      + '</div>';
+  }).join('');
+  // Scroll to bottom
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function updateDMUnreadBadge() {
+  const badge = document.getElementById('dmUnreadBadge');
+  if (!badge || typeof DMS === 'undefined') return;
+  const total = DMS.totalUnread();
+  badge.textContent = total;
+  badge.style.display = total > 0 ? 'inline-flex' : 'none';
+}
+
+function bindDMComposer() {
+  const input = document.getElementById('dmInput');
+  const sendBtn = document.getElementById('dmSendBtn');
+  const closeBtn = document.getElementById('dmThreadClose');
+  if (!input || !sendBtn) return;
+
+  const updateState = () => { sendBtn.disabled = input.value.trim().length === 0; };
+  input.addEventListener('input', updateState);
+
+  function send() {
+    if (!input.value.trim() || !_DM_ACTIVE_CONV) return;
+    const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+    if (!me) return;
+    const peer = DMS.peerOf(_DM_ACTIVE_CONV, me);
+    if (!peer) return;
+    // Look up peer display + avatar from the conv list
+    const conv = DMS.getConversations().find(c => c.convId === _DM_ACTIVE_CONV);
+    DMS.send(peer, conv && conv.peerDisplayName, conv && conv.peerAvatar, input.value);
+    input.value = '';
+    updateState();
+    renderDMMessages(DMS.getMessages(_DM_ACTIVE_CONV));
+    renderDMConversations();
+  }
+
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      _DM_ACTIVE_CONV = null;
+      DMS.stopMessageListener();
+      const emptyEl = document.getElementById('dmThreadEmpty');
+      const activeEl = document.getElementById('dmThreadActive');
+      if (emptyEl) emptyEl.style.display = 'flex';
+      if (activeEl) activeEl.style.display = 'none';
+      renderDMConversations();
+    });
+  }
+
+  updateState();
 }
 
 function renderMembers(users) {
@@ -8143,6 +8834,7 @@ function bindChatComposer() {
     setChatReplyTarget(null);
     updateChatState();
     renderChat();
+    if (typeof checkBadges === 'function') checkBadges();
   };
   chatSend.addEventListener('click', send);
   chatInput.addEventListener('keydown', (e) => {
@@ -8243,6 +8935,15 @@ function bindDashboardSidebar() {
     // already kept fresh in the background.
     if (tab === 'members') {
       renderMembers();
+    }
+
+    // Messages panel: render conversation list + restore active thread.
+    if (tab === 'messages') {
+      renderDMConversations();
+    } else {
+      // Stop the per-message listener when leaving messages (the conv
+      // listener stays alive so unread badge keeps updating).
+      if (typeof DMS !== 'undefined') DMS.stopMessageListener();
     }
   }
 
@@ -8410,6 +9111,9 @@ if (currentPage === 'dashboard.html') {
     bindDashboardSidebar();
     bindQuoteCard();
     showGraduateBannerIfReady();
+    // Run badge check on entry — catches things that became true between
+    // sessions (streak day rollover, async sync of posts/wins from another browser)
+    if (typeof checkBadges === 'function') checkBadges();
     // Initial fetches for cross-browser sync.
     // Sidebar badge counts ONLY unread announcements per user — once
     // the student clicks Mark as read on each one, the badge clears.
@@ -8452,6 +9156,33 @@ if (currentPage === 'dashboard.html') {
       // anyone who silently went offline drops out of the Online list.
       setInterval(() => renderMembers(), 30000);
     }
+
+    // DMs — start conv listener + bind composer. Conv listener stays
+    // alive across tab switches so the unread badge updates anywhere.
+    if (typeof DMS !== 'undefined') {
+      bindDMComposer();
+      DMS.startConvListener(() => {
+        renderDMConversations();
+        updateDMUnreadBadge();
+      });
+      // Initial render from cache
+      renderDMConversations();
+    }
+
+    // Delegate member-card "Message" button → open DM with that user
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.member-message-btn');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const username = btn.dataset.username;
+      const display = btn.dataset.display;
+      // Pull avatar from the matching member-card avatar element if any
+      const card = btn.closest('.member-card');
+      const avatarImg = card ? card.querySelector('.member-avatar img') : null;
+      const avatar = avatarImg ? avatarImg.src : null;
+      openDMConversation(username, display, avatar);
+    });
   }
   document.addEventListener('DOMContentLoaded', initDashboardCommunity);
   if (document.readyState !== 'loading') initDashboardCommunity();

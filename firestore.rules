@@ -61,5 +61,17 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    // Direct messages — conversation metadata + messages subcollection.
+    // Same {true / auth} pattern as the rest; if you want stricter peer-only
+    // visibility later, add: allow read: if request.auth.uid in resource.data.participants
+    match /sphere_dms/{convId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      match /messages/{msgId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
+    }
   }
 }
