@@ -7947,7 +7947,6 @@ if (currentPage === 'dashboard.html') {
   }
 
   function bindQuoteCard() {
-    const refreshBtn = document.getElementById('quoteRefresh');
     const card = document.getElementById('quoteCard');
     let currentIdx = -1;
 
@@ -7972,8 +7971,7 @@ if (currentPage === 'dashboard.html') {
       }
     }
 
-    // Seed with today's deterministic quote so the first render matches
-    // what we had before the auto-rotate landed.
+    // Seed with today's deterministic quote so the first paint isn't blank.
     renderMotivationalQuote();
     currentIdx = MOTIVATIONAL_QUOTES.indexOf(_pickQuoteForToday());
 
@@ -7986,16 +7984,6 @@ if (currentPage === 'dashboard.html') {
         rotateTimer = setInterval(showRandomQuote, 6000);
       }
     });
-
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => {
-        // Manual refresh resets the rotation timer so the user gets a
-        // full 6 seconds with the quote they just rolled.
-        clearInterval(rotateTimer);
-        showRandomQuote();
-        rotateTimer = setInterval(showRandomQuote, 6000);
-      });
-    }
   }
 
   function initDashboardCommunity() {
