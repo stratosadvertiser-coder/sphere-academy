@@ -943,10 +943,32 @@ function _handleSyncError(moduleName, err) {
   if (code === 'permission-denied') {
     const banner = _ensureSyncErrorBanner();
     if (banner) {
-      banner.innerHTML = '<strong>⚠ Posts aren\'t syncing across accounts.</strong> '
-        + 'Firestore security rules are blocking <code>' + moduleName + '</code> writes. '
-        + 'See <code>FIREBASE_SETUP.md</code> Part 3 for the rules to publish in the Firebase console.';
+      // Module-specific copy so admins know exactly which collection's
+      // rules need attention.
+      const friendly = ({
+        POSTS: 'Feed posts',
+        WINS: 'Win celebrations',
+        ANNOUNCEMENTS: 'Announcements',
+        FAQS: 'FAQ entries',
+        CHAT: 'Group chat',
+        DMS: 'Direct messages',
+        EVENTS: 'Events',
+        PRESENCE: 'Online presence'
+      })[moduleName] || moduleName;
+      banner.innerHTML =
+        '<button class="sync-error-banner-close" type="button" aria-label="Dismiss">&times;</button>'
+        + '<strong>⚠ ' + friendly + ' aren\'t syncing across accounts.</strong> '
+        + 'Firestore security rules are blocking the <code>sphere_' + moduleName.toLowerCase() + '</code> collection. '
+        + 'Open <code>firestore.rules</code> in the repo (or <code>FIREBASE_SETUP.md</code> Part 3) and paste the full rule set into the Firebase console → Firestore → Rules → Publish.';
       banner.style.display = 'block';
+      // Wire up the dismiss button (overrides the whole-banner click)
+      const closeBtn = banner.querySelector('.sync-error-banner-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          banner.style.display = 'none';
+        });
+      }
     }
   }
 }
@@ -958,11 +980,9 @@ function _ensureSyncErrorBanner() {
   banner = document.createElement('div');
   banner.id = 'syncErrorBanner';
   banner.style.cssText = 'position:fixed; bottom:20px; left:20px; right:20px; max-width:560px; '
-    + 'margin:0 auto; padding:14px 18px; border-radius:12px; background:#fef3c7; '
+    + 'margin:0 auto; padding:14px 44px 14px 18px; border-radius:12px; background:#fef3c7; '
     + 'color:#78350f; border:1px solid #f59e0b; box-shadow:0 10px 30px -8px rgba(0,0,0,0.25); '
-    + 'font-size:0.88rem; z-index:9999; display:none;';
-  banner.addEventListener('click', () => { banner.style.display = 'none'; });
-  banner.title = 'Click to dismiss';
+    + 'font-size:0.88rem; line-height:1.5; z-index:9999; display:none;';
   document.body.appendChild(banner);
   return banner;
 }
