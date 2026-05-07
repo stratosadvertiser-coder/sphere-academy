@@ -4428,13 +4428,13 @@ img {
   background: var(--bg-alt);
 }
 .admin-card-body h3 {
-  font-family: 'Norwester', 'Bebas Neue', 'Oswald', Impact, sans-serif;
-  font-size: 1.15rem;
-  font-weight: 400;
-  text-transform: uppercase;
+  font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: none;
   margin: 0;
-  letter-spacing: 0.025em;
-  line-height: 1.15;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
   color: var(--text);
 }
 
@@ -4732,16 +4732,15 @@ img {
 [data-theme="dark"] .course-card-tag.purple { background: rgba(139, 158, 255, 0.15); color: #c5cbf5; }
 
 .course-card-body h3 {
-  /* Norwester — condensed sport/architectural display sans, all-caps.
-     Sized down a notch so the title doesn't shout against the
-     softened card outline. */
-  font-family: 'Norwester', 'Bebas Neue', 'Oswald', Impact, sans-serif;
-  font-size: 1.15rem;
-  font-weight: 400;
-  text-transform: uppercase;
+  /* Playfair Display — classic high-contrast serif. Editorial,
+     timeless, small but unmistakeable. Title case, not uppercase. */
+  font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: none;
   margin: 0;
-  letter-spacing: 0.025em;
-  line-height: 1.15;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
   color: var(--text);
   /* Clamp to 2 lines */
   display: -webkit-box;
