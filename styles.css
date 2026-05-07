@@ -4418,7 +4418,7 @@ img {
 
 /* Body section under the image — mirrors student-side .course-card-body */
 .admin-card-body {
-  padding: 16px 18px 30px 30px;
+  padding: 16px 18px 30px 22px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -4700,9 +4700,9 @@ img {
 /* Card body — tight Skool-style. Padding kept generous so the card
    keeps the same vertical footprint as when the phase pill was here.
    Title pinned to the top edge of the body section, right under the
-   cover image, with a slight indent from the left. */
+   cover image, with a quiet indent from the left for a classy feel. */
 .course-card-body {
-  padding: 16px 18px 30px 30px;
+  padding: 16px 18px 30px 22px;
   flex: 1;
   display: flex;
   flex-direction: column;
