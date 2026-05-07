@@ -146,8 +146,22 @@ const DATA_SYNC = {
         firebase.auth().onAuthStateChanged(user => {
           if (!user) {
             firebase.auth().signInAnonymously()
-              .then(() => console.log('[SYNC] Firebase anonymous auth ready'))
+              .then(() => {
+                console.log('[SYNC] Firebase anonymous auth ready');
+                // Once auth is live, push any local-only items up to
+                // Firestore — items that were saved locally back when
+                // security rules were blocking the write.
+                if (typeof backfillCommunityToFirestore === 'function') {
+                  backfillCommunityToFirestore();
+                }
+              })
               .catch(e => console.warn('[SYNC] Anonymous auth failed (writes may fail):', e.message));
+          } else {
+            // Already authenticated (e.g. existing anon session) — still
+            // run the backfill once per session.
+            if (typeof backfillCommunityToFirestore === 'function') {
+              backfillCommunityToFirestore();
+            }
           }
         });
       }
@@ -761,6 +775,80 @@ function _ensureSyncErrorBanner() {
   banner.title = 'Click to dismiss';
   document.body.appendChild(banner);
   return banner;
+}
+
+// ============================================================
+// BACKFILL — push local-only community items up to Firestore.
+//
+// When Firestore security rules were blocking writes to most
+// sphere_* collections, every post/announcement/win/etc. that the
+// admin (and students) created landed only in their own
+// localStorage. After the rules are fixed, those legacy items are
+// still invisible to other accounts because they never reached the
+// shared database.
+//
+// On the first dashboard/page load AFTER auth is ready, walk
+// through every community module, take whatever's in localStorage,
+// and `set()` each item by id into its Firestore collection.
+// `set()` is idempotent — re-uploading the same id with the same
+// data is a no-op. Videos are stripped (too big for the 1 MB doc
+// cap), and the run is gated by sessionStorage so it doesn't
+// retrigger on every tab navigation.
+// ============================================================
+function backfillCommunityToFirestore() {
+  if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+  // sessionStorage gate — one backfill pass per tab/session is enough.
+  // Each newly-created item still syncs immediately via the normal
+  // POSTS.add()/etc. path, so we don't need to re-run.
+  try {
+    if (sessionStorage.getItem('_sphere_backfill_done') === '1') return;
+    sessionStorage.setItem('_sphere_backfill_done', '1');
+  } catch (e) { /* ignore — sessionStorage might be disabled */ }
+
+  const FIRESTORE_DOC_LIMIT = 900 * 1024;
+  const modules = [
+    { name: 'POSTS',         mod: typeof POSTS !== 'undefined' ? POSTS : null,         stripVideos: true  },
+    { name: 'WINS',          mod: typeof WINS !== 'undefined' ? WINS : null,           stripVideos: true  },
+    { name: 'ANNOUNCEMENTS', mod: typeof ANNOUNCEMENTS !== 'undefined' ? ANNOUNCEMENTS : null, stripVideos: false },
+    { name: 'FAQS',          mod: typeof FAQS !== 'undefined' ? FAQS : null,           stripVideos: false },
+    { name: 'CHAT',          mod: typeof CHAT !== 'undefined' ? CHAT : null,           stripVideos: false },
+    { name: 'EVENTS',        mod: typeof EVENTS !== 'undefined' ? EVENTS : null,       stripVideos: false }
+  ];
+
+  let totalScheduled = 0;
+  modules.forEach(({ name, mod, stripVideos }) => {
+    if (!mod || !mod.STORAGE_KEY || !mod.COLLECTION) return;
+    const items = safeGetJSON(mod.STORAGE_KEY, []);
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    let uploadedCount = 0;
+    items.forEach(item => {
+      if (!item || !item.id) return;
+      let payload = item;
+      if (stripVideos && Array.isArray(item.media)) {
+        payload = Object.assign({}, item, {
+          media: item.media.filter(m => m && m.type === 'image')
+        });
+      }
+      const sizeApprox = JSON.stringify(payload).length;
+      if (sizeApprox > FIRESTORE_DOC_LIMIT) {
+        console.warn('[BACKFILL] ' + name + ' item ' + item.id + ' is ' + sizeApprox + 'B — skipping');
+        return;
+      }
+      try {
+        DATA_SYNC.db.collection(mod.COLLECTION).doc(item.id).set(payload, { merge: true })
+          .catch(e => _handleSyncError(name, e));
+        uploadedCount++;
+      } catch (e) { /* swallow */ }
+    });
+    totalScheduled += uploadedCount;
+    if (uploadedCount > 0) {
+      console.log('[BACKFILL] ' + name + ': scheduled ' + uploadedCount + ' item(s) for upload');
+    }
+  });
+  if (totalScheduled > 0) {
+    console.log('[BACKFILL] ✓ Total ' + totalScheduled + ' local-only items pushed to Firestore. Other accounts will see them within seconds.');
+  }
 }
 
 // ===== POSTS — Community feed (Home tab) =====
