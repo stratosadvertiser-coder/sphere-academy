@@ -559,10 +559,11 @@ const ASSIGNMENTS = {
     return sub && sub.submitted === true;
   },
 
-  submit(weekId, files) {
+  submit(weekId, files, links) {
     const all = this.getAll();
     all[weekId] = {
-      files: files,
+      files: files || [],
+      links: links || [],
       submitted: true,
       submittedAt: new Date().toISOString()
     };
@@ -2926,18 +2927,21 @@ if (currentPage === 'lesson.html') {
         // Show submitted state
         const date = new Date(submission.submittedAt);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const subFiles = submission.files || [];
+        const subLinks = submission.links || [];
+        const totalCount = subFiles.length + subLinks.length;
         asgnHtml += '<div class="assignment-submitted">';
         asgnHtml += '<div class="assignment-submitted-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><polyline points="20 6 9 17 4 12"/></svg></div>';
         asgnHtml += '<div class="assignment-submitted-text">';
         asgnHtml += '<strong>Assignment Submitted</strong>';
-        asgnHtml += '<span>Submitted on ' + dateStr + ' &bull; ' + submission.files.length + ' file(s)</span>';
+        asgnHtml += '<span>Submitted on ' + dateStr + ' &bull; ' + totalCount + ' submission' + (totalCount === 1 ? '' : 's') + '</span>';
         asgnHtml += '</div>';
-        asgnHtml += '<button class="assignment-resubmit" id="asgnResubmit">Re-upload</button>';
+        asgnHtml += '<button class="assignment-resubmit" id="asgnResubmit">Re-submit</button>';
         asgnHtml += '</div>';
 
         // Show submitted files
         asgnHtml += '<div class="assignment-files" id="asgnFileList">';
-        submission.files.forEach(f => {
+        subFiles.forEach(f => {
           const icon = f.type.startsWith('image') ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M12 2l2 4 4 .5-3 3 .7 4.2L12 12l-3.7 1.7.7-4.2-3-3L10 6z"/></svg>' : f.type.startsWith('video') ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="2" y="7" width="15" height="10" rx="2"/><path d="m17 10 5-3v10l-5-3z"/></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
           const cls = f.type.startsWith('image') ? 'image' : f.type.startsWith('video') ? 'video' : 'pdf';
           asgnHtml += '<div class="assignment-file">';
@@ -2945,6 +2949,19 @@ if (currentPage === 'lesson.html') {
           asgnHtml += '<div class="assignment-file-info">';
           asgnHtml += '<div class="assignment-file-name">' + f.name + '</div>';
           asgnHtml += '<div class="assignment-file-size">' + f.size + '</div>';
+          asgnHtml += '</div></div>';
+        });
+        // Show submitted links
+        subLinks.forEach(linkObj => {
+          const url = (typeof linkObj === 'string') ? linkObj : (linkObj && linkObj.url) || '';
+          if (!url) return;
+          const safeUrl = url.replace(/"/g, '&quot;');
+          const display = url.length > 60 ? url.substring(0, 60) + '…' : url;
+          asgnHtml += '<div class="assignment-file">';
+          asgnHtml += '<div class="assignment-file-icon link"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>';
+          asgnHtml += '<div class="assignment-file-info">';
+          asgnHtml += '<div class="assignment-file-name"><a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + display + '</a></div>';
+          asgnHtml += '<div class="assignment-file-size">External link</div>';
           asgnHtml += '</div></div>';
         });
         asgnHtml += '</div>';
@@ -2956,6 +2973,17 @@ if (currentPage === 'lesson.html') {
         asgnHtml += '<div class="assignment-dropzone-text">Drag & drop files or <strong>browse</strong></div>';
         asgnHtml += '<div class="assignment-dropzone-hint">Accepted: ' + typeLabels.join(', ') + ' &bull; Max 10MB per file &bull; Up to 5 files</div>';
         asgnHtml += '</div>';
+
+        // OR — paste a link section
+        asgnHtml += '<div class="assignment-or-divider"><span>OR</span></div>';
+        asgnHtml += '<div class="assignment-link-section">';
+        asgnHtml += '<label class="assignment-link-label" for="asgnLinkInput"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Paste a link <span class="assignment-link-hint">(Google Drive, YouTube, Dropbox, Canva, Figma — anything)</span></label>';
+        asgnHtml += '<div class="assignment-link-row">';
+        asgnHtml += '<input type="url" id="asgnLinkInput" placeholder="https://drive.google.com/... or any URL" autocomplete="url">';
+        asgnHtml += '<button type="button" class="btn btn-outline btn-sm" id="asgnLinkAddBtn">Add link</button>';
+        asgnHtml += '</div>';
+        asgnHtml += '</div>';
+
         asgnHtml += '<div class="assignment-files" id="asgnFileList"></div>';
         asgnHtml += '<div class="assignment-submit" id="asgnSubmitArea" style="display:none;">';
         asgnHtml += '<button class="btn btn-primary" id="asgnSubmitBtn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Submit Assignment</button>';
@@ -2972,7 +3000,10 @@ if (currentPage === 'lesson.html') {
         const fileList = document.getElementById('asgnFileList');
         const submitArea = document.getElementById('asgnSubmitArea');
         const submitBtn = document.getElementById('asgnSubmitBtn');
+        const linkInput = document.getElementById('asgnLinkInput');
+        const linkAddBtn = document.getElementById('asgnLinkAddBtn');
         let pendingFiles = [];
+        let pendingLinks = [];
 
         function renderPendingFiles() {
           fileList.innerHTML = '';
@@ -2989,15 +3020,35 @@ if (currentPage === 'lesson.html') {
               + '<div class="assignment-file-name">' + f.name + '</div>'
               + '<div class="assignment-file-size">' + sizeStr + '</div>'
               + '</div>'
-              + '<button class="assignment-file-remove" data-idx="' + i + '" title="Remove">&#10005;</button>';
+              + '<button class="assignment-file-remove" data-kind="file" data-idx="' + i + '" title="Remove">&#10005;</button>';
             fileList.appendChild(div);
           });
-          submitArea.style.display = pendingFiles.length > 0 ? 'flex' : 'none';
+          // Render pending links
+          pendingLinks.forEach((url, i) => {
+            const safeUrl = url.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const display = url.length > 60 ? url.substring(0, 60) + '…' : url;
+            const div = document.createElement('div');
+            div.className = 'assignment-file';
+            div.innerHTML = '<div class="assignment-file-icon link"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>'
+              + '<div class="assignment-file-info">'
+              + '<div class="assignment-file-name">' + display + '</div>'
+              + '<div class="assignment-file-size">External link</div>'
+              + '</div>'
+              + '<button class="assignment-file-remove" data-kind="link" data-idx="' + i + '" title="Remove">&#10005;</button>';
+            fileList.appendChild(div);
+          });
+          const total = pendingFiles.length + pendingLinks.length;
+          submitArea.style.display = total > 0 ? 'flex' : 'none';
 
           // Remove handlers
           fileList.querySelectorAll('.assignment-file-remove').forEach(btn => {
             btn.addEventListener('click', () => {
-              pendingFiles.splice(parseInt(btn.dataset.idx), 1);
+              const idx = parseInt(btn.dataset.idx);
+              if (btn.dataset.kind === 'link') {
+                pendingLinks.splice(idx, 1);
+              } else {
+                pendingFiles.splice(idx, 1);
+              }
               renderPendingFiles();
             });
           });
@@ -3015,6 +3066,34 @@ if (currentPage === 'lesson.html') {
           renderPendingFiles();
         }
 
+        function addLink() {
+          if (!linkInput) return;
+          let url = (linkInput.value || '').trim();
+          if (!url) return;
+          // Auto-prepend https:// if missing protocol
+          if (!/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(url)) {
+            url = 'https://' + url;
+          }
+          // Basic URL sanity check
+          try {
+            const parsed = new URL(url);
+            if (!parsed.hostname || parsed.hostname.indexOf('.') === -1) {
+              alert('Please enter a valid link (e.g. https://drive.google.com/...)');
+              return;
+            }
+          } catch (e) {
+            alert('Please enter a valid link (e.g. https://drive.google.com/...)');
+            return;
+          }
+          if (pendingLinks.length >= 5) {
+            alert('You can add up to 5 links per assignment.');
+            return;
+          }
+          pendingLinks.push(url);
+          linkInput.value = '';
+          renderPendingFiles();
+        }
+
         if (fileInput) fileInput.addEventListener('change', (e) => addFiles(e.target.files));
 
         if (dropzone) {
@@ -3027,33 +3106,41 @@ if (currentPage === 'lesson.html') {
           });
         }
 
+        if (linkAddBtn) linkAddBtn.addEventListener('click', addLink);
+        if (linkInput) {
+          linkInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addLink();
+            }
+          });
+        }
+
         if (submitBtn) {
           submitBtn.addEventListener('click', () => {
-            if (pendingFiles.length === 0) return;
+            if (pendingFiles.length === 0 && pendingLinks.length === 0) return;
             submitBtn.textContent = 'Submitting...';
             submitBtn.disabled = true;
 
-            // Convert files to storable format
-            let processed = 0;
-            const fileData = [];
-            pendingFiles.forEach(file => {
+            // Convert files to storable format (metadata only)
+            const fileData = pendingFiles.map(file => {
               const sizeStr = file.size < 1024 * 1024
                 ? (file.size / 1024).toFixed(1) + ' KB'
                 : (file.size / (1024 * 1024)).toFixed(1) + ' MB';
-              // Store metadata only (not base64 of large files)
-              fileData.push({
+              return {
                 name: file.name,
                 size: sizeStr,
                 type: file.type,
                 date: new Date().toISOString()
-              });
-              processed++;
-              if (processed === pendingFiles.length) {
-                ASSIGNMENTS.submit(weekId, fileData);
-                // Reload to show submitted state
-                window.location.reload();
-              }
+              };
             });
+            const linkData = pendingLinks.map(url => ({
+              url: url,
+              date: new Date().toISOString()
+            }));
+            ASSIGNMENTS.submit(weekId, fileData, linkData);
+            // Reload to show submitted state
+            window.location.reload();
           });
         }
       } else {
