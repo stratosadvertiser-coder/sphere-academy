@@ -19,12 +19,9 @@
   --accent-light: #fce7f0;
   --text: #0b0f1c;
   --text-light: #5a6178;
-  /* Warm off-white instead of pure #fff — easier on the eyes for long
-     reading sessions. Subtle cream tint, still reads as "white" but
-     drops the cold blue-white glare. */
-  --bg: #fbf9f5;
-  --bg-alt: #f4f1ea;
-  --border: #e6e2d6;
+  --bg: #ffffff;
+  --bg-alt: #f7f8fc;
+  --border: #e1e4f0;
   --success: #5b6ee8;
   --radius: 12px;
   --radius-lg: 20px;
@@ -4399,11 +4396,12 @@ img {
   border: 1.5px solid rgba(15, 23, 42, 0.45);
   border-radius: 14px;
   overflow: hidden;
-  background: var(--bg-alt);
+  background: #f4f1ea;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 [data-theme="dark"] .admin-card-upload {
+  background: var(--bg-alt);
   border-color: rgba(255, 255, 255, 0.35);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -4428,6 +4426,9 @@ img {
   gap: 4px;
   min-height: 76px;
   border-top: 1px solid var(--border);
+  background: #f4f1ea;
+}
+[data-theme="dark"] .admin-card-body {
   background: var(--bg-alt);
 }
 .admin-card-body h3 {
@@ -4600,7 +4601,9 @@ img {
 .course-card-link {
   display: flex;
   flex-direction: column;
-  background: var(--bg-alt);
+  /* Warm off-white card surface — softer on the eyes than the rest
+     of the page's pure white. Local to course cards only. */
+  background: #f4f1ea;
   border: 1.5px solid rgba(15, 23, 42, 0.45);
   border-radius: 14px;
   overflow: hidden;
@@ -4611,6 +4614,7 @@ img {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 [data-theme="dark"] .course-card-link {
+  background: var(--bg-alt);
   border-color: rgba(255, 255, 255, 0.35);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
