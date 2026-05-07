@@ -4651,6 +4651,47 @@ function startCommunityNotifListeners() {
     (w) => '<span class="notif-kind">Win</span> ' + (w.displayName || 'Someone') + ' celebrated: ' + (w.title || ''),
     '&#127942;',
     'dashboard.html');
+
+  // Chat: only notify when the message mentions ME (otherwise the chat
+  // would spam the bell on every line). Match on display name OR username.
+  try {
+    const myDisplayName = (typeof AUTH !== 'undefined' && AUTH.getDisplayName) ? AUTH.getDisplayName() : '';
+    if (!me) return;
+    DATA_SYNC.db.collection('sphere_chat')
+      .orderBy('createdAt', 'desc').limit(50)
+      .onSnapshot(snap => {
+        snap.docChanges().forEach(change => {
+          if (change.type !== 'added') return;
+          const data = change.doc.data() || {};
+          const id = data.id || change.doc.id;
+          if (!id) return;
+          if (SEEN_NOTIF_IDS.has('chat_mentions', id)) return;
+          const createdAt = typeof data.createdAt === 'number' ? data.createdAt : 0;
+          if (createdAt && createdAt < startTime - GRACE_MS) {
+            SEEN_NOTIF_IDS.mark('chat_mentions', id);
+            return;
+          }
+          SEEN_NOTIF_IDS.mark('chat_mentions', id);
+          if (data.username && data.username === me) return; // skip my own messages
+          const text = String(data.text || '');
+          // Look for @<my display name> or @<my username>
+          const mentionsMe =
+            (myDisplayName && text.indexOf('@' + myDisplayName) !== -1) ||
+            (me && text.indexOf('@' + me) !== -1);
+          if (!mentionsMe) return;
+          if (typeof NOTIFS !== 'undefined') {
+            const author = data.displayName || 'Someone';
+            const preview = text.length > 80 ? text.substring(0, 80) + '…' : text;
+            NOTIFS.add(
+              '<span class="notif-kind">Chat</span> ' + author + ' mentioned you: ' + preview,
+              '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+              'dashboard.html'
+            );
+            console.log('[NOTIFY chat_mentions] fired for', id);
+          }
+        });
+      }, err => console.warn('[NOTIFY chat_mentions] listener:', err.message));
+  } catch (e) { console.warn('[NOTIFY chat_mentions] start:', e.message); }
 }
 
 if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn()) {
@@ -7706,7 +7747,7 @@ function renderChat(messages) {
       +   nameHeader
       +   replyQuote
       +   '<div class="chat-bubble-row">'
-      +     '<div class="chat-bubble" data-id="' + _esc(m.id) + '">' + _esc(m.text) + '</div>'
+      +     '<div class="chat-bubble" data-id="' + _esc(m.id) + '">' + _highlightMentions(_esc(m.text)) + '</div>'
       +     '<div class="chat-msg-actions">'
       +       '<button type="button" class="chat-action-btn chat-react-btn" data-id="' + _esc(m.id) + '" title="React"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>'
       +       '<button type="button" class="chat-action-btn chat-reply-btn" data-id="' + _esc(m.id) + '" data-name="' + _esc(m.displayName) + '" data-text="' + _esc(m.text) + '" title="Reply"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>'
@@ -7887,6 +7928,174 @@ function setChatReplyTarget(target) {
   if (input) input.focus();
 }
 
+// ============================================================
+// CHAT_MENTION — @mention autocomplete for the chat composer.
+// Type "@" anywhere in the message and a dropdown appears with
+// matching members. Click or Enter inserts "@Display Name ".
+// Mentioned names are highlighted as pills inside the rendered
+// chat bubble (see _highlightMentions below).
+// ============================================================
+const CHAT_MENTION = {
+  _dropdown: null,
+  _matches: [],
+  _activeIdx: 0,
+  _input: null,
+  _atPos: -1,
+
+  getCandidates(query) {
+    const cache = (typeof _MEMBERS_CACHE !== 'undefined') ? _MEMBERS_CACHE.slice() : [];
+    const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+    const q = (query || '').toLowerCase();
+    return cache
+      .filter(u => u.username !== me)
+      .filter(u => {
+        if (!q) return true;
+        const name = (u.displayName || u.username || '').toLowerCase();
+        return name.includes(q);
+      })
+      .sort((a, b) => String(a.displayName || a.username).localeCompare(String(b.displayName || b.username)))
+      .slice(0, 6);
+  },
+
+  attachTo(input) {
+    if (!input) return;
+    this._input = input;
+    const composer = input.closest('.chat-composer');
+    if (!composer) return;
+    if (!this._dropdown) {
+      this._dropdown = document.createElement('div');
+      this._dropdown.className = 'chat-mention-dropdown';
+      this._dropdown.style.display = 'none';
+      composer.style.position = 'relative';
+      composer.appendChild(this._dropdown);
+    }
+    input.addEventListener('input', () => this._onInput());
+    input.addEventListener('keydown', (e) => this._onKeydown(e));
+    input.addEventListener('blur', () => setTimeout(() => this._hide(), 200));
+  },
+
+  _onInput() {
+    const input = this._input;
+    if (!input) return;
+    const text = input.value;
+    const caret = input.selectionStart || 0;
+    // Find the most recent '@' before the caret, stopping at whitespace
+    let atPos = -1;
+    for (let i = caret - 1; i >= 0; i--) {
+      const ch = text[i];
+      if (ch === '@') { atPos = i; break; }
+      if (/\s/.test(ch)) break;
+    }
+    if (atPos === -1) { this._hide(); return; }
+    const before = atPos === 0 ? '' : text[atPos - 1];
+    if (before && !/\s/.test(before)) { this._hide(); return; }
+    const query = text.slice(atPos + 1, caret);
+    if (/\s/.test(query)) { this._hide(); return; }
+    this._atPos = atPos;
+    this._matches = this.getCandidates(query);
+    this._activeIdx = 0;
+    if (this._matches.length === 0) { this._hide(); return; }
+    this._render();
+  },
+
+  _onKeydown(e) {
+    if (!this._dropdown || this._dropdown.style.display === 'none') return;
+    if (this._matches.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this._activeIdx = (this._activeIdx + 1) % this._matches.length;
+      this._highlightActive();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this._activeIdx = (this._activeIdx - 1 + this._matches.length) % this._matches.length;
+      this._highlightActive();
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      this._insert(this._matches[this._activeIdx]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      this._hide();
+    }
+  },
+
+  _insert(member) {
+    if (!member || !this._input) return;
+    const input = this._input;
+    const text = input.value;
+    const caret = input.selectionStart || 0;
+    const name = member.displayName || member.username;
+    const before = text.slice(0, this._atPos);
+    const after = text.slice(caret);
+    const inserted = '@' + name + ' ';
+    input.value = before + inserted + after;
+    const newCaret = (before + inserted).length;
+    input.setSelectionRange(newCaret, newCaret);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+    this._hide();
+  },
+
+  _render() {
+    if (!this._dropdown) return;
+    this._dropdown.innerHTML = this._matches.map((u, i) => {
+      const initials = (typeof _initialsFromName === 'function') ? _initialsFromName(u.displayName || u.username) : 'U';
+      const avatar = u.avatar
+        ? '<img src="' + String(u.avatar).replace(/"/g, '&quot;') + '" alt="">'
+        : '<span>' + initials + '</span>';
+      const name = String(u.displayName || u.username).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<button type="button" class="chat-mention-item' + (i === this._activeIdx ? ' is-active' : '') + '" data-idx="' + i + '">'
+        + '<span class="chat-mention-avatar">' + avatar + '</span>'
+        + '<span class="chat-mention-name">' + name + '</span>'
+        + '</button>';
+    }).join('');
+    this._dropdown.querySelectorAll('.chat-mention-item').forEach(el => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const idx = parseInt(el.dataset.idx);
+        this._insert(this._matches[idx]);
+      });
+      el.addEventListener('mouseenter', () => {
+        this._activeIdx = parseInt(el.dataset.idx);
+        this._highlightActive();
+      });
+    });
+    this._dropdown.style.display = 'block';
+  },
+
+  _highlightActive() {
+    if (!this._dropdown) return;
+    this._dropdown.querySelectorAll('.chat-mention-item').forEach((el, i) => {
+      el.classList.toggle('is-active', i === this._activeIdx);
+    });
+  },
+
+  _hide() {
+    if (this._dropdown) this._dropdown.style.display = 'none';
+    this._matches = [];
+    this._atPos = -1;
+  }
+};
+
+// Wraps any "@<member display name>" in a styled pill inside an
+// already-escaped chat bubble. Only matches names from the live
+// member cache so random "@whatever" text isn't styled.
+function _highlightMentions(escapedText) {
+  if (!escapedText) return escapedText;
+  const cache = (typeof _MEMBERS_CACHE !== 'undefined') ? _MEMBERS_CACHE : [];
+  if (cache.length === 0) return escapedText;
+  const names = cache.map(u => u.displayName || u.username).filter(Boolean);
+  // Longest first so "Charles Keith Yerro" beats "Charles"
+  names.sort((a, b) => b.length - a.length);
+  let result = escapedText;
+  names.forEach(name => {
+    const escName = name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const reSrc = escName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp('@(' + reSrc + ')(?![A-Za-z0-9_])', 'g');
+    result = result.replace(re, '<span class="chat-mention">@$1</span>');
+  });
+  return result;
+}
+
 function bindChatComposer() {
   const chatInput = document.getElementById('chatInput');
   const chatSend = document.getElementById('chatSendBtn');
@@ -7919,6 +8128,12 @@ function bindChatComposer() {
   };
   chatSend.addEventListener('click', send);
   chatInput.addEventListener('keydown', (e) => {
+    // If the @mention dropdown is open, let it claim Enter / arrows /
+    // Escape first — otherwise fall through to send-on-enter / cancel-reply.
+    const dropdown = CHAT_MENTION._dropdown;
+    const isMentionOpen = dropdown && dropdown.style.display !== 'none' && CHAT_MENTION._matches.length > 0;
+    if (isMentionOpen) return;
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       send();
@@ -7926,6 +8141,8 @@ function bindChatComposer() {
       setChatReplyTarget(null);
     }
   });
+  // Wire @mention autocomplete (loads candidates from the live member cache)
+  CHAT_MENTION.attachTo(chatInput);
   updateChatState();
 }
 
