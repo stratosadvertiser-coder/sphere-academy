@@ -4418,21 +4418,23 @@ img {
 
 /* Body section under the image — mirrors student-side .course-card-body */
 .admin-card-body {
-  padding: 14px 16px 12px;
+  padding: 22px 18px 26px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 4px;
+  min-height: 76px;
   border-top: 1px solid var(--border);
   background: var(--bg-alt);
 }
 .admin-card-body h3 {
-  font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
-  font-size: 1.18rem;
-  font-weight: 600;
-  font-variation-settings: 'opsz' 96, 'SOFT' 50;
+  font-family: 'Norwester', 'Bebas Neue', 'Oswald', Impact, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  text-transform: uppercase;
   margin: 0;
-  letter-spacing: -0.015em;
-  line-height: 1.18;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
   color: var(--text);
 }
 
@@ -4695,13 +4697,16 @@ img {
   border: 1px solid rgba(255,255,255,0.18);
 }
 
-/* Card body — tight Skool-style */
+/* Card body — tight Skool-style. Padding kept generous so the card
+   keeps the same vertical footprint as when the phase pill was here. */
 .course-card-body {
-  padding: 14px 16px 16px;
+  padding: 22px 18px 26px;
   flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 4px;
+  min-height: 76px;
 }
 
 .course-card-tag {
@@ -4727,16 +4732,16 @@ img {
 [data-theme="dark"] .course-card-tag.purple { background: rgba(139, 158, 255, 0.15); color: #c5cbf5; }
 
 .course-card-body h3 {
-  /* Fraunces — variable-axis modern serif. Higher optical-size + softer
-     curves give the phase titles editorial character without feeling
-     vintage. Pairs with Montserrat body for a clean contrast. */
-  font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
-  font-size: 1.18rem;
-  font-weight: 600;
-  font-variation-settings: 'opsz' 96, 'SOFT' 50;
+  /* Norwester — condensed sport/architectural display sans, all-caps.
+     Big presence per inch of width, so the title reads like a poster
+     headline. Falls back to Bebas Neue / Impact if the CDN font fails. */
+  font-family: 'Norwester', 'Bebas Neue', 'Oswald', Impact, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  text-transform: uppercase;
   margin: 0;
-  letter-spacing: -0.015em;
-  line-height: 1.18;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
   color: var(--text);
   /* Clamp to 2 lines */
   display: -webkit-box;
