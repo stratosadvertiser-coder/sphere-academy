@@ -7515,6 +7515,29 @@ function _esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Wraps any http(s) URL inside an already-_esc'd string in an
+// <a target="_blank"> tag. Long URLs render with a friendlier
+// shortened label (host + first 28 chars) but keep the full link
+// in href. Use AFTER _esc so we don't double-escape user text.
+function _linkify(escapedText) {
+  if (!escapedText) return escapedText;
+  return String(escapedText).replace(
+    /(https?:\/\/[^\s<>"']+)/g,
+    function (url) {
+      let label = url;
+      if (label.length > 60) {
+        try {
+          const u = new URL(url);
+          label = u.hostname + u.pathname.slice(0, 16) + (url.length > u.hostname.length + 16 ? '…' : '');
+        } catch (e) {
+          label = label.slice(0, 60) + '…';
+        }
+      }
+      return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" class="auto-link">' + label + '</a>';
+    }
+  );
+}
+
 function renderPosts() {
   const listEl = document.getElementById('postList');
   const countEl = document.getElementById('feedCount');
@@ -7561,7 +7584,7 @@ function renderPosts() {
       + '<div class="post-avatar">' + _avatarHTML(p) + '</div>'
       + '<div class="post-body">'
       +   '<div class="post-meta"><strong>' + _esc(p.displayName) + '</strong><time>' + timeAgo(p.createdAt) + '</time></div>'
-      +   (p.text ? '<p class="post-text">' + _esc(p.text) + '</p>' : '')
+      +   (p.text ? '<p class="post-text">' + _linkify(_esc(p.text)).replace(/\n/g, '<br>') + '</p>' : '')
       +   mediaHTML
       +   renderReactionsRow(p, 'posts')
       +   '<div class="post-actions-row">'
@@ -7580,7 +7603,7 @@ function renderPosts() {
                 + '<div class="comment-body">'
                 +   '<div class="comment-bubble">'
                 +     '<strong>' + _esc(c.displayName) + '</strong>'
-                +     '<p>' + _esc(c.text) + '</p>'
+                +     '<p>' + _linkify(_esc(c.text)).replace(/\n/g, '<br>') + '</p>'
                 +   '</div>'
                 +   '<div class="comment-meta"><time>' + timeAgo(c.createdAt) + '</time>'
                 +     (cCanDelete ? '<button type="button" class="comment-delete-btn" data-post-id="' + p.id + '" data-comment-id="' + c.id + '">Delete</button>' : '')
@@ -7688,7 +7711,7 @@ function renderWins() {
       + '<div class="win-trophy">&#127942;</div>'
       + '<div class="win-body">'
       +   '<h4>' + _esc(w.title) + '</h4>'
-      +   (w.description ? '<p>' + _esc(w.description) + '</p>' : '')
+      +   (w.description ? '<p>' + _linkify(_esc(w.description)).replace(/\n/g, '<br>') + '</p>' : '')
       +   mediaHTML
       +   '<div class="win-meta"><span class="win-author">' + _esc(w.displayName) + '</span><time>' + timeAgo(w.createdAt) + '</time></div>'
       +   renderReactionsRow(w, 'wins')
@@ -8043,7 +8066,7 @@ function renderAnnouncements() {
     return '<article class="ann-item' + stateClass + '" data-id="' + a.id + '">'
       + (a.pinned ? '<span class="ann-pin-badge">&#128204; Pinned</span>' : '')
       + '<h3>' + _esc(a.title) + '</h3>'
-      + (a.body ? '<p>' + _esc(a.body).replace(/\n/g, '<br>') + '</p>' : '')
+      + (a.body ? '<p>' + _linkify(_esc(a.body)).replace(/\n/g, '<br>') + '</p>' : '')
       + '<div class="ann-meta"><span>' + _esc(a.authorName || 'Admin') + '</span><time>' + timeAgo(a.createdAt) + '</time></div>'
       + renderReactionsRow(a, 'announcements')
       + '<div class="ann-actions">' + readBtn + '</div>'
@@ -8083,7 +8106,7 @@ function renderFAQs() {
   listEl.innerHTML = items.map(f => {
     return '<details class="faq-item" data-id="' + f.id + '">'
       + '<summary>' + _esc(f.question) + '</summary>'
-      + (f.answer ? '<div class="faq-answer">' + _esc(f.answer).replace(/\n/g, '<br>') + '</div>' : '')
+      + (f.answer ? '<div class="faq-answer">' + _linkify(_esc(f.answer)).replace(/\n/g, '<br>') + '</div>' : '')
       + (isAdmin ? '<button class="faq-delete-btn" data-id="' + f.id + '" title="Delete">&times;</button>' : '')
       + '</details>';
   }).join('');
@@ -8309,7 +8332,7 @@ function renderDMMessages(messages) {
   }
   wrap.innerHTML = messages.map(m => {
     const mine = m.from === me;
-    const text = _highlightMentions(_esc2(m.text));
+    const text = _linkify(_highlightMentions(_esc2(m.text))).replace(/\n/g, '<br>');
     const t = m.createdAt ? _relativeTime(m.createdAt) : '';
     return '<div class="dm-message' + (mine ? ' mine' : '') + '">'
       + '<div class="dm-message-bubble">' + text + '</div>'
@@ -8476,7 +8499,7 @@ function renderChat(messages) {
       +   nameHeader
       +   replyQuote
       +   '<div class="chat-bubble-row">'
-      +     '<div class="chat-bubble" data-id="' + _esc(m.id) + '">' + _highlightMentions(_esc(m.text)) + '</div>'
+      +     '<div class="chat-bubble" data-id="' + _esc(m.id) + '">' + _linkify(_highlightMentions(_esc(m.text))).replace(/\n/g, '<br>') + '</div>'
       +     '<div class="chat-msg-actions">'
       +       '<button type="button" class="chat-action-btn chat-react-btn" data-id="' + _esc(m.id) + '" title="React"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>'
       +       '<button type="button" class="chat-action-btn chat-reply-btn" data-id="' + _esc(m.id) + '" data-name="' + _esc(m.displayName) + '" data-text="' + _esc(m.text) + '" title="Reply"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>'

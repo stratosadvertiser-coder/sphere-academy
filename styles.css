@@ -8289,33 +8289,51 @@ img {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 18px 22px;
+  padding: 22px 26px;
   position: relative;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  /* Long URLs and other unbreakable strings shouldn't punch out of
+     the card. anywhere lets the browser break inside words when
+     there's no whitespace to wrap on. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
-.ann-item:hover { border-color: rgba(91, 110, 232, 0.3); }
+.ann-item:hover {
+  border-color: rgba(91, 110, 232, 0.4);
+  box-shadow: 0 6px 20px -10px rgba(91, 110, 232, 0.25);
+}
 .ann-item.pinned {
-  border-left: 3px solid var(--primary);
-  background: linear-gradient(135deg, rgba(91, 110, 232, 0.04), transparent 60%);
+  border-left: 4px solid var(--primary);
+  background: linear-gradient(135deg, rgba(91, 110, 232, 0.05), transparent 70%);
 }
 .ann-pin-badge {
-  display: inline-block;
-  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--primary);
-  margin-bottom: 6px;
+  background: var(--primary-light);
+  padding: 3px 8px;
+  border-radius: 50px;
+  margin-bottom: 10px;
 }
 .ann-item h3 {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
 .ann-item p {
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: 0.93rem;
+  line-height: 1.65;
   color: var(--text);
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  white-space: pre-wrap;
 }
 .ann-meta {
   display: flex;
@@ -10509,4 +10527,53 @@ img {
   border-radius: 4px;
   font-size: 0.85em;
   font-family: ui-monospace, 'SF Mono', Monaco, Consolas, monospace;
+}
+
+/* ============================================================
+   GLOBAL TEXT-OVERFLOW SAFETY + AUTO-LINK STYLING
+   Applied to every user-content container so a long URL or
+   unbroken token can't punch out of its card.
+   ============================================================ */
+.post-text,
+.win-body p,
+.faq-answer,
+.qa-comment-text,
+.comment-body p,
+.chat-bubble,
+.dm-message-bubble,
+.ann-item p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Auto-linkified URLs inside posts/announcements/comments/etc. */
+.auto-link {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+  font-weight: 500;
+}
+.auto-link:hover {
+  text-decoration-thickness: 2px;
+  color: var(--primary-dark);
+}
+[data-theme="dark"] .auto-link {
+  color: #c5cbf5;
+}
+[data-theme="dark"] .auto-link:hover {
+  color: #fff;
+}
+/* Inside the user's own DM bubble (indigo background) the link
+   needs to read against white, not against indigo. */
+.dm-message.mine .auto-link {
+  color: #fff;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
+}
+.dm-message.mine .auto-link:hover {
+  text-decoration-color: #fff;
+}
+.chat-message.mine .auto-link {
+  color: #fff;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
 }
