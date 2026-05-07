@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-06-balance">
+  <link rel="stylesheet" href="styles.css?v=2025-05-06-graduate">
 </head>
 <body class="page-loaded">
 
@@ -95,6 +95,22 @@
         <span id="dashName"></span>
         <span id="dashSub"></span>
         <a id="dashContinueBtn" href="lesson.html?week=w1"><span id="dashContinueLabel"></span></a>
+      </div>
+
+      <!-- Marketing Intern Graduate banner — shows once all 16 lessons are done -->
+      <div class="graduate-banner" id="graduateBanner" style="display:none;">
+        <div class="graduate-banner-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        </div>
+        <div class="graduate-banner-body">
+          <p class="graduate-banner-eyebrow">Achievement unlocked</p>
+          <h2>You're a Marketing Intern Graduate</h2>
+          <p class="graduate-banner-sub">Tapos mo na lahat ng 16 lessons. Time to download your certificate.</p>
+        </div>
+        <button class="btn btn-primary graduate-banner-btn" id="graduateBannerCertBtn" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5 a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Certificate
+        </button>
       </div>
 
       <!-- Motivational Quote of the day -->
@@ -352,6 +368,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-06-balance"></script>
+  <script src="script.js?v=2025-05-06-graduate"></script>
 </body>
 </html>

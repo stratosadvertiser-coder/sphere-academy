@@ -2209,7 +2209,7 @@ const LESSONS = {
       const prevWeekId = 'w' + (lesson.week - 1);
       const prev = this.get(prevWeekId);
       if (!prev) return out;
-      const prevLabel = 'Week ' + prev.week + ' \u2014 ' + prev.title;
+      const prevLabel = 'Lesson ' + prev.week + ' \u2014 ' + prev.title;
       if (typeof PROGRESS !== 'undefined' && !PROGRESS.isCompleted(prevWeekId)) {
         out.push({ type: 'complete', label: 'Complete the lesson: ' + prevLabel, weekId: prevWeekId });
       }
@@ -3383,7 +3383,7 @@ if (currentPage === 'lesson.html') {
       completeBtn.classList.toggle('completed', isComplete);
       completeBtn.innerHTML = isComplete
         ? '&#10003; Week ' + lesson.week + ' Completed'
-        : '&#9744; Mark Week ' + lesson.week + ' as Complete';
+        : '&#9744; Mark Lesson ' + lesson.week + ' as Complete';
 
       completeBtn.addEventListener('click', function() {
         const wasComplete = PROGRESS.isCompleted(weekId);
@@ -3394,13 +3394,13 @@ if (currentPage === 'lesson.html') {
         this.classList.toggle('completed', nowComplete);
         this.innerHTML = nowComplete
           ? '&#10003; Week ' + lesson.week + ' Completed'
-          : '&#9744; Mark Week ' + lesson.week + ' as Complete';
+          : '&#9744; Mark Lesson ' + lesson.week + ' as Complete';
 
         // Update sidebar progress bar
         const progressFill = document.querySelector('.progress-fill');
         const progressText = document.querySelector('.progress-text');
         if (progressFill) progressFill.style.width = PROGRESS.getPercentage() + '%';
-        if (progressText) progressText.textContent = PROGRESS.getCompletedCount() + ' of 16 weeks completed (' + PROGRESS.getPercentage() + '%)';
+        if (progressText) progressText.textContent = PROGRESS.getCompletedCount() + ' of 16 lessons completed (' + PROGRESS.getPercentage() + '%)';
 
         // Update sidebar icons
         document.querySelectorAll('.sidebar-lesson').forEach((link, i) => {
@@ -3496,7 +3496,7 @@ if (currentPage === 'lesson.html') {
   const progressFill = document.querySelector('.progress-fill');
   const progressText = document.querySelector('.progress-text');
   if (progressFill) progressFill.style.width = PROGRESS.getPercentage() + '%';
-  if (progressText) progressText.textContent = PROGRESS.getCompletedCount() + ' of 16 weeks completed (' + PROGRESS.getPercentage() + '%)';
+  if (progressText) progressText.textContent = PROGRESS.getCompletedCount() + ' of 16 lessons completed (' + PROGRESS.getPercentage() + '%)';
 
   // Show certificate banner when all 16 lessons are completed
   function checkAndShowCertBanner() {
@@ -3506,8 +3506,8 @@ if (currentPage === 'lesson.html') {
       certSection.style.display = 'block';
       certSection.innerHTML = '<div class="lesson-cert-banner">'
         + '<span class="cert-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span>'
-        + '<h2>Congratulations! You Completed the Program!</h2>'
-        + '<p>You\'ve finished all 16 weeks of the Marketing Intern Training Program. Your certificate is ready to download.</p>'
+        + '<h2>🎓 You\'re a Marketing Intern Graduate!</h2>'
+        + '<p>You finished all 16 lessons. Your graduate certificate is ready to download.</p>'
         + '<button class="btn" id="lessonCertDownload"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Your Certificate</button>'
         + '</div>';
 
@@ -3612,7 +3612,7 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
     const lesson = LESSONS.get(id);
     if (!lesson) return;
 
-    document.getElementById('editorWeekLabel').textContent = 'Week ' + lesson.week + ' — ' + LESSONS.getMonthPrefix(lesson.month);
+    document.getElementById('editorWeekLabel').textContent = 'Lesson ' + lesson.week + ' — ' + LESSONS.getMonthPrefix(lesson.month);
     document.getElementById('editorTitle').value = lesson.title;
     document.getElementById('editorCategory').value = lesson.category;
     document.getElementById('editorDifficulty').value = lesson.difficulty;
@@ -4703,7 +4703,7 @@ if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn()) {
 // Seed default notifications if empty
 if (NOTIFS.getAll().length === 0) {
   NOTIFS.add('Welcome to Sphere Academy! Start with Week 1.', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>');
-  NOTIFS.add('Complete lessons weekly to build your streak!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>');
+  NOTIFS.add('Race to finish — paunahan matapos!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>');
 }
 
 const notifBtn = document.getElementById('notifBtn');
@@ -4870,7 +4870,7 @@ if (currentPage === 'profile.html') {
   if (completed >= 16) {
     if (certCard) certCard.classList.add('earned');
     if (certIcon) certIcon.textContent = '\u{1F3C6}';
-    if (certTitle) certTitle.textContent = 'Certificate Earned!';
+    if (certTitle) certTitle.textContent = 'Marketing Intern Graduate!';
     if (certDesc) certDesc.textContent = 'Congratulations! You completed the Marketing Intern Training Program.';
     if (certDownload) {
       certDownload.style.display = 'inline-flex';
@@ -5365,10 +5365,10 @@ const ABOUT = {
   defaultText: {
     label: 'About Us',
     title: 'About Stratos Sphere Academy',
-    desc: 'Stratos Sphere Academy is a 4-month hands-on marketing training program built to transform beginners into confident, job-ready digital marketers. Through structured weekly modules covering creatives, tools, AI-powered workflows, and Meta Ads, we equip interns with the real-world skills that matter — from designing high-converting content to launching and optimizing paid campaigns.'
+    desc: 'Stratos Sphere Academy is a hands-on marketing training program built to transform beginners into confident, job-ready digital marketers. Through structured lesson modules covering creatives, tools, AI-powered workflows, and Meta Ads, we equip interns with the real-world skills that matter — from designing high-converting content to launching and optimizing paid campaigns.'
   },
   defaultPillars: [
-    { icon: 'graduation', color: 'blue',   title: 'Structured Learning', desc: '16 weekly modules with quizzes, assignments, and clear milestones.' },
+    { icon: 'graduation', color: 'blue',   title: 'Structured Learning', desc: '16 lessons with quizzes, assignments, and clear milestones.' },
     { icon: 'star',       color: 'purple', title: 'Real-World Skills',   desc: 'Hands-on creative production, bot automation, and Meta Ads execution.' },
     { icon: 'award',      color: 'green',  title: 'Career-Ready',        desc: 'Graduate with a portfolio, a certificate, and a place on the marketing team.' }
   ],
@@ -5641,7 +5641,7 @@ const OUTCOME_CAROUSEL = {
   defaultText: {
     title: "You're Ready to Make an Impact!",
     subtitle: 'Welcome to the Marketing Team',
-    desc: 'Complete this 4-month program and you will be equipped to create high-converting image & video creatives, manage bots, CRM, and order tools confidently, and run, optimize, and report on paid ad campaigns.'
+    desc: 'Complete the full program and you will be equipped to create high-converting image & video creatives, manage bots, CRM, and order tools confidently, and run, optimize, and report on paid ad campaigns.'
   },
 
   // Compress + resize a File to a data URL <200KB. Resolves to a JPEG dataURL.
@@ -6077,7 +6077,7 @@ if (currentPage === 'index.html') {
       link.classList.remove('is-locked');
     }
     if (duration) {
-      duration.textContent = 'Week ' + (lesson.week || globalWeek);
+      duration.textContent = 'Lesson ' + (lesson.week || globalWeek);
       link.appendChild(duration);
     }
   });
@@ -6836,7 +6836,7 @@ if (currentPage === 'dashboard.html') {
     const pctEl = document.getElementById('dashPct');
     const fracEl = document.getElementById('dashFrac');
     if (pctEl) pctEl.textContent = pct + '%';
-    if (fracEl) fracEl.textContent = completed + ' / 16 weeks';
+    if (fracEl) fracEl.textContent = completed + ' / 16 lessons';
     const ring = document.querySelector('.progress-ring-fg');
     if (ring) {
       const r = 62;  // must match circle r attr in dashboard.html
@@ -6905,7 +6905,7 @@ if (currentPage === 'dashboard.html') {
     const weekTitleEl = document.getElementById('dashWeekTitle');
     const deadlineEl = document.getElementById('dashDeadline');
     if (currentLesson) {
-      if (weekNumEl) weekNumEl.textContent = 'Week ' + currentLesson.week;
+      if (weekNumEl) weekNumEl.textContent = 'Lesson ' + currentLesson.week;
       if (weekTitleEl) weekTitleEl.textContent = currentLesson.title;
       if (deadlineEl) {
         if (currentLesson.assignment && currentLesson.assignment.enabled) {
@@ -6918,7 +6918,7 @@ if (currentPage === 'dashboard.html') {
       }
     } else if (completed >= 16) {
       if (weekNumEl) weekNumEl.textContent = 'Complete!';
-      if (weekTitleEl) weekTitleEl.textContent = 'You finished all 16 weeks.';
+      if (weekTitleEl) weekTitleEl.textContent = 'You finished all 16 lessons.';
       if (deadlineEl) deadlineEl.textContent = 'Download your certificate';
     }
 
@@ -6939,7 +6939,7 @@ if (currentPage === 'dashboard.html') {
           reminderStatus.className = 'reminder-status ' + (submitted ? 'submitted' : 'pending');
         }
       } else if (hasQuiz) {
-        if (reminderTitle) reminderTitle.textContent = 'Week ' + currentLesson.week + ' Assessment';
+        if (reminderTitle) reminderTitle.textContent = 'Lesson ' + currentLesson.week + ' Assessment';
         if (reminderDesc) reminderDesc.textContent = 'Complete the quiz for ' + currentLesson.title + '.';
         if (reminderStatus) {
           const passed = (typeof QUIZ_RESULTS !== 'undefined') && QUIZ_RESULTS.isPassed(currentLesson.id);
@@ -6947,7 +6947,7 @@ if (currentPage === 'dashboard.html') {
           reminderStatus.className = 'reminder-status ' + (passed ? 'submitted' : 'pending');
         }
       } else {
-        if (reminderTitle) reminderTitle.textContent = 'Week ' + currentLesson.week + ': ' + currentLesson.title;
+        if (reminderTitle) reminderTitle.textContent = 'Lesson ' + currentLesson.week + ': ' + currentLesson.title;
         if (reminderDesc) reminderDesc.textContent = 'Watch the lesson and mark it as complete.';
         if (reminderStatus) {
           const isDone = (typeof PROGRESS !== 'undefined') && PROGRESS.isCompleted(currentLesson.id);
@@ -8283,6 +8283,67 @@ if (currentPage === 'dashboard.html') {
     authorEl.textContent = '— ' + q.author;
   }
 
+  // ============================================================
+  // GRADUATE BANNER — shows on Feed when all 16 lessons are done.
+  // Reuses the same certificate-HTML generator that lesson.html uses
+  // so the user gets the same downloadable cert from either place.
+  // ============================================================
+  function showGraduateBannerIfReady() {
+    const banner = document.getElementById('graduateBanner');
+    if (!banner) return;
+    const done = (typeof PROGRESS !== 'undefined') ? PROGRESS.getCompletedCount() : 0;
+    if (done < 16) { banner.style.display = 'none'; return; }
+    banner.style.display = 'flex';
+    const btn = document.getElementById('graduateBannerCertBtn');
+    if (btn && !btn.dataset.bound) {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', () => {
+        const name = (typeof AUTH !== 'undefined' && AUTH.getDisplayName) ? AUTH.getDisplayName() : 'Marketing Intern';
+        const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const logoSrc = document.querySelector('.logo-icon img')?.src || '';
+        const certHtml = '<!DOCTYPE html><html><head><title>Certificate - Sphere Academy</title>'
+          + '<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">'
+          + '<style>'
+          + '*{margin:0;padding:0;box-sizing:border-box;}'
+          + 'body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f1f5f9;font-family:"Plus Jakarta Sans",sans-serif;padding:40px;}'
+          + '.cert{background:#fff;width:1000px;max-width:100%;padding:60px 80px;border:8px solid #635bff;border-radius:16px;text-align:center;box-shadow:0 30px 80px -20px rgba(15,23,42,0.3);}'
+          + '.cert h1{font-size:2.4rem;font-weight:800;color:#0f172a;margin-bottom:8px;letter-spacing:-0.02em;}'
+          + '.cert .label{font-size:0.78rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#635bff;margin-bottom:24px;}'
+          + '.cert .name{font-size:2.6rem;font-weight:700;color:#0f172a;margin:30px 0 14px;border-bottom:2px solid #635bff;padding-bottom:14px;display:inline-block;}'
+          + '.cert .desc{font-size:1.05rem;line-height:1.6;color:#475569;margin-bottom:36px;}'
+          + '.cert .footer{display:flex;justify-content:space-between;margin-top:48px;font-size:0.85rem;color:#64748b;}'
+          + '.cert .logo-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:30px;}'
+          + '.cert .logo-row img{width:42px;height:42px;border-radius:10px;}'
+          + '.cert .logo-row span{font-size:1.05rem;font-weight:700;color:#0f172a;}'
+          + '</style></head><body>'
+          + '<div class="cert">'
+          + '<div class="logo-row">'
+          + (logoSrc ? '<img src="' + logoSrc + '" alt="Sphere Academy">' : '')
+          + '<span>Sphere Academy</span>'
+          + '</div>'
+          + '<p class="label">Certificate of Completion</p>'
+          + '<h1>Marketing Intern Graduate</h1>'
+          + '<p class="desc">This certifies that</p>'
+          + '<div class="name">' + name + '</div>'
+          + '<p class="desc">has successfully completed all 16 lessons of the Sphere Academy Marketing Intern Training Program — covering creatives, AI workflows, marketing tools, and Meta Ads Manager.</p>'
+          + '<div class="footer">'
+          + '<span>Issued: ' + date + '</span>'
+          + '<span>Stratos Sphere Academy</span>'
+          + '</div>'
+          + '</div></body></html>';
+        const blob = new Blob([certHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Sphere_Academy_Certificate_' + name.replace(/\s/g, '_') + '.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    }
+  }
+
   function bindQuoteCard() {
     const card = document.getElementById('quoteCard');
     let currentIdx = -1;
@@ -8330,6 +8391,7 @@ if (currentPage === 'dashboard.html') {
     bindChatComposer();
     bindDashboardSidebar();
     bindQuoteCard();
+    showGraduateBannerIfReady();
     // Initial fetches for cross-browser sync.
     // Sidebar badge counts ONLY unread announcements per user — once
     // the student clicks Mark as read on each one, the badge clears.
