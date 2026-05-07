@@ -9245,6 +9245,31 @@ if (currentPage === 'dashboard.html') {
   }
   document.addEventListener('DOMContentLoaded', initDashboardCommunity);
   if (document.readyState !== 'loading') initDashboardCommunity();
+
+  // If admin opened the page with #dm=<username> (typically from the
+  // submission inspector's "Open DM" button), jump straight into that
+  // conversation with a pre-filled refresh-reminder message.
+  function _handleDMHash() {
+    const m = /#dm=([^&]+)/.exec(window.location.hash || '');
+    if (!m) return;
+    const target = decodeURIComponent(m[1]);
+    if (!target || typeof openDMConversation !== 'function') return;
+    setTimeout(() => {
+      openDMConversation(target, target, null);
+      setTimeout(() => {
+        const input = document.getElementById('dmInput');
+        if (input) {
+          input.value = 'Hi! Pakirefresh lang ng Sphere site (Ctrl+F5) — kailangan ko ma-review yung mga submissions mo. Salamat!';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.focus();
+        }
+        // Clean the hash so a refresh doesn't re-prefill the input
+        history.replaceState(null, '', window.location.pathname);
+      }, 250);
+    }, 800);
+  }
+  if (document.readyState !== 'loading') _handleDMHash();
+  else document.addEventListener('DOMContentLoaded', _handleDMHash);
 }
 
 // ============================================================
@@ -9791,7 +9816,15 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
     // assignmentDetails (synced via USER_SYNC) so files + paste-links
     // are visible. Lessons with no submission show a "Not submitted"
     // placeholder so admin can scan completion at a glance.
+    //
+    // The modal stays subscribed to the student's Firestore doc while
+    // open, so the moment they refresh their browser and push their
+    // submission detail up, the modal auto-updates without the admin
+    // having to close + reopen it.
     // ============================================================
+    let _subInspectorUnsub = null;
+    let _subInspectorStudent = null;
+
     function openSubmissionInspector(student) {
       // Tear down any existing modal first
       closeSubmissionInspector();
@@ -9799,6 +9832,60 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       const modal = document.createElement('div');
       modal.className = 'sub-inspector-overlay';
       modal.id = 'subInspectorOverlay';
+      _subInspectorStudent = student;
+
+      modal.innerHTML =
+        '<div class="sub-inspector" role="dialog" aria-modal="true">'
+        +   '<header class="sub-inspector-head" id="subInspectorHead"></header>'
+        +   '<div class="sub-inspector-body" id="subInspectorBody"></div>'
+        + '</div>';
+      document.body.appendChild(modal);
+
+      // First paint with whatever we already have cached
+      _renderSubmissionInspector(student);
+
+      // Trigger entry animation
+      requestAnimationFrame(() => modal.classList.add('is-open'));
+
+      // Wire close
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeSubmissionInspector();
+      });
+      const closeBtn = modal.querySelector('.sub-inspector-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeSubmissionInspector);
+      // ESC closes too
+      document.addEventListener('keydown', _subInspectorEsc);
+
+      // Live listener: when the student's Firestore doc changes (eg. they
+      // open Sphere on their phone and USER_SYNC pushes new
+      // assignmentDetails), re-render the modal so admin sees the
+      // submission contents the moment they land.
+      try {
+        if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && student.username) {
+          _subInspectorUnsub = DATA_SYNC.db.collection('sphere_users').doc(student.username)
+            .onSnapshot(doc => {
+              if (!doc.exists) return;
+              const data = doc.data() || {};
+              // Merge fresh server data into our local student object
+              const fresh = Object.assign({}, _subInspectorStudent || student, {
+                progress: data.progress || {},
+                assignments: data.assignments || {},
+                assignmentDetails: data.assignmentDetails || {},
+                quizScores: data.quizScores || {}
+              });
+              _subInspectorStudent = fresh;
+              _renderSubmissionInspector(fresh);
+            }, err => console.warn('[INSPECTOR] listener:', err.message));
+        }
+      } catch (e) { console.warn('[INSPECTOR] listener start:', e.message); }
+    }
+
+    // Pure render — recomputes head + body from the given student object.
+    // Called both on first open and on every Firestore snapshot update.
+    function _renderSubmissionInspector(student) {
+      const head = document.getElementById('subInspectorHead');
+      const body = document.getElementById('subInspectorBody');
+      if (!head || !body) return;
 
       const safeName = (student.displayName || student.username || '?').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const initials = (student.displayName || student.username || '?').split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
@@ -9806,13 +9893,24 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       const details = student.assignmentDetails || {};
       const legacyAssignments = student.assignments || {};
       const completed = student.progress ? Object.values(student.progress).filter(Boolean).length : 0;
-      // Submitted count = anyone with details OR legacy true (so historical
-      // submissions before assignmentDetails landed still count)
       const submittedSet = new Set([
         ...Object.keys(details),
         ...Object.keys(legacyAssignments).filter(k => legacyAssignments[k] === true)
       ]);
       const submittedCount = submittedSet.size;
+      const pendingCount = Object.keys(legacyAssignments).filter(k => legacyAssignments[k] === true && !details[k]).length;
+
+      head.innerHTML =
+        '<div class="sub-inspector-avatar">' + initials + '</div>'
+        + '<div class="sub-inspector-meta">'
+        +   '<h3>' + safeName + '</h3>'
+        +   '<p>@' + (student.username || '') + ' · ' + completed + '/16 lessons · ' + submittedCount + '/16 assignments'
+        +     (pendingCount > 0 ? ' · <span style="color:#b45309;">' + pendingCount + ' awaiting sync</span>' : '')
+        +   '</p>'
+        + '</div>'
+        + '<button type="button" class="sub-inspector-close" aria-label="Close">&times;</button>';
+      const closeBtn = head.querySelector('.sub-inspector-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeSubmissionInspector);
 
       // Build per-lesson rows for w1..w16
       const lessonsList = (typeof LESSONS !== 'undefined' && LESSONS.getAll) ? LESSONS.getAll() : [];
@@ -9822,51 +9920,61 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       }
 
       const rowsHtml = [];
+      // Top banner if any lessons are still awaiting sync
+      if (pendingCount > 0) {
+        rowsHtml.push(
+          '<div class="sub-pending-banner">'
+          + '<strong>⚠ ' + pendingCount + ' submission' + (pendingCount === 1 ? '' : 's') + ' awaiting sync.</strong> '
+          + 'These exist in <strong>' + safeName + '</strong>\'s browser but the file/link contents haven\'t reached the database yet. '
+          + 'Send them a DM and ask them to open the Sphere site once — this modal will refresh automatically.'
+          + ' <button type="button" class="sub-pending-dm-btn" data-username="' + String(student.username || '').replace(/"/g, '&quot;') + '" data-display="' + safeName.replace(/"/g, '&quot;') + '">Open DM with ' + safeName + ' →</button>'
+          + '</div>'
+        );
+      }
+
       for (let i = 1; i <= 16; i++) {
         const wid = 'w' + i;
         const sub = details[wid];
         const legacyDone = legacyAssignments[wid] === true;
         const title = lessonTitle(wid);
+        const safeTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
         if (!sub) {
-          // Two empty cases:
-          //   (a) Truly not submitted yet — show neutral placeholder
-          //   (b) Legacy submission exists (boolean map says true) but
-          //       full payload hasn't synced yet — show informative
-          //       hint so admin knows it'll appear after student reloads.
           if (legacyDone) {
             rowsHtml.push(
               '<div class="sub-row sub-row-pending">'
-              + '<div class="sub-row-head"><span class="sub-row-week">Lesson ' + i + '</span><span class="sub-row-status submitted">Submitted</span></div>'
-              + '<div class="sub-row-title">' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
-              + '<div class="sub-row-empty-note">Files &amp; links will appear here the next time this student opens the site.</div>'
+              + '<div class="sub-row-head"><span class="sub-row-week">Lesson ' + i + '</span><span class="sub-row-status submitted">Submitted</span><span class="sub-row-status awaiting" title="Detail in student\'s browser, not in database yet">Awaiting sync</span></div>'
+              + '<div class="sub-row-title">' + safeTitle + '</div>'
+              + '<div class="sub-row-empty-note">The file/link details are in <strong>' + safeName + '</strong>\'s browser. They\'ll appear here automatically the next time this student opens the Sphere site.</div>'
               + '</div>'
             );
           } else {
             rowsHtml.push(
               '<div class="sub-row sub-row-empty">'
               + '<div class="sub-row-head"><span class="sub-row-week">Lesson ' + i + '</span><span class="sub-row-status not-submitted">Not submitted</span></div>'
-              + '<div class="sub-row-title">' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+              + '<div class="sub-row-title">' + safeTitle + '</div>'
               + '</div>'
             );
           }
           continue;
         }
+
         const files = Array.isArray(sub.files) ? sub.files : [];
         const links = Array.isArray(sub.links) ? sub.links : [];
         const subDate = sub.submittedAt ? new Date(sub.submittedAt) : null;
         const dateStr = subDate ? subDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
-        let body = '';
+        let bodyHtml = '';
         if (files.length === 0 && links.length === 0) {
-          body = '<div class="sub-row-empty-note">Submitted with no files or links.</div>';
+          bodyHtml = '<div class="sub-row-empty-note">Submitted with no files or links.</div>';
         } else {
-          body = '<div class="sub-row-items">';
+          bodyHtml = '<div class="sub-row-items">';
           files.forEach(f => {
             const fName = String(f.name || 'file').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const fSize = String(f.size || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const ftype = String(f.type || '').toLowerCase();
             const icon = ftype.startsWith('image') ? '🖼️' : ftype.startsWith('video') ? '🎬' : '📄';
-            body += '<div class="sub-item"><span class="sub-item-icon">' + icon + '</span>'
+            bodyHtml += '<div class="sub-item"><span class="sub-item-icon">' + icon + '</span>'
               + '<div class="sub-item-meta"><div class="sub-item-name">' + fName + '</div>'
               + '<div class="sub-item-sub">File · ' + fSize + '</div></div>'
               + '<span class="sub-item-tag" title="The platform stores filenames + sizes only, not the file bytes.">Metadata</span></div>';
@@ -9877,12 +9985,12 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
             const safeUrl = url.replace(/"/g, '&quot;');
             const display = url.length > 80 ? url.substring(0, 80) + '…' : url;
             const safeDisplay = display.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            body += '<div class="sub-item"><span class="sub-item-icon">🔗</span>'
+            bodyHtml += '<div class="sub-item"><span class="sub-item-icon">🔗</span>'
               + '<div class="sub-item-meta"><div class="sub-item-name"><a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + safeDisplay + '</a></div>'
               + '<div class="sub-item-sub">External link</div></div>'
               + '<a class="sub-item-open" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">Open ↗</a></div>';
           });
-          body += '</div>';
+          bodyHtml += '</div>';
         }
 
         rowsHtml.push(
@@ -9892,38 +10000,39 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           +   '<span class="sub-row-status submitted">Submitted</span>'
           +   (dateStr ? '<span class="sub-row-date">' + dateStr + '</span>' : '')
           + '</div>'
-          + '<div class="sub-row-title">' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
-          + body
+          + '<div class="sub-row-title">' + safeTitle + '</div>'
+          + bodyHtml
           + '</div>'
         );
       }
 
-      modal.innerHTML =
-        '<div class="sub-inspector" role="dialog" aria-modal="true" aria-label="Submissions for ' + safeName + '">'
-        +   '<header class="sub-inspector-head">'
-        +     '<div class="sub-inspector-avatar">' + initials + '</div>'
-        +     '<div class="sub-inspector-meta">'
-        +       '<h3>' + safeName + '</h3>'
-        +       '<p>@' + (student.username || '') + ' · ' + completed + '/16 lessons completed · ' + submittedCount + '/16 assignments submitted</p>'
-        +     '</div>'
-        +     '<button type="button" class="sub-inspector-close" aria-label="Close">&times;</button>'
-        +   '</header>'
-        +   '<div class="sub-inspector-body">'
-        +     rowsHtml.join('')
-        +   '</div>'
-        + '</div>';
+      body.innerHTML = rowsHtml.join('');
 
-      document.body.appendChild(modal);
-      // Trigger entry animation
-      requestAnimationFrame(() => modal.classList.add('is-open'));
-
-      // Wire close
-      modal.querySelector('.sub-inspector-close').addEventListener('click', closeSubmissionInspector);
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeSubmissionInspector();
-      });
-      // ESC closes it too
-      document.addEventListener('keydown', _subInspectorEsc);
+      // Wire the "Open DM" button on the pending banner
+      const dmBtn = body.querySelector('.sub-pending-dm-btn');
+      if (dmBtn) {
+        dmBtn.addEventListener('click', () => {
+          const username = dmBtn.dataset.username;
+          const display = dmBtn.dataset.display;
+          if (!username || typeof openDMConversation !== 'function') return;
+          // Drop a quick draft message in the input so admin can hit Send
+          closeSubmissionInspector();
+          // Switch to dashboard if we're on admin.html
+          if (window.location.pathname.indexOf('admin.html') !== -1) {
+            window.location.href = 'dashboard.html#dm=' + encodeURIComponent(username);
+            return;
+          }
+          openDMConversation(username, display, null);
+          setTimeout(() => {
+            const input = document.getElementById('dmInput');
+            if (input) {
+              input.value = 'Hi ' + display + '! Pakirefresh lang ng Sphere site (Ctrl+F5) — kailangan ko ma-review yung mga submissions mo. Salamat!';
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.focus();
+            }
+          }, 200);
+        });
+      }
     }
 
     function _subInspectorEsc(e) {
@@ -9935,6 +10044,12 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       if (!m) return;
       m.classList.remove('is-open');
       document.removeEventListener('keydown', _subInspectorEsc);
+      // Stop the per-student listener
+      if (typeof _subInspectorUnsub === 'function') {
+        try { _subInspectorUnsub(); } catch (e) {}
+      }
+      _subInspectorUnsub = null;
+      _subInspectorStudent = null;
       setTimeout(() => { if (m.parentNode) m.parentNode.removeChild(m); }, 220);
     }
 

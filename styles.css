@@ -10726,6 +10726,50 @@ img {
 [data-theme="dark"] .sub-row-pending {
   background: linear-gradient(180deg, rgba(245, 158, 11, 0.10) 0%, rgba(255, 255, 255, 0.02) 100%);
 }
+.sub-row-status.awaiting {
+  background: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+  margin-left: 4px;
+}
+[data-theme="dark"] .sub-row-status.awaiting {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
+}
+.sub-pending-banner {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #fef3c7 0%, var(--bg) 80%);
+  border: 1px solid #fbbf24;
+  color: #78350f;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+[data-theme="dark"] .sub-pending-banner {
+  background: linear-gradient(135deg, #422006 0%, rgba(255, 255, 255, 0.02) 80%);
+  color: #fcd34d;
+  border-color: #d97706;
+}
+.sub-pending-banner strong { color: inherit; }
+.sub-pending-dm-btn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sub-pending-dm-btn:hover {
+  background: currentColor;
+}
+.sub-pending-dm-btn:hover { color: #fff7ed; }
+[data-theme="dark"] .sub-pending-dm-btn:hover { color: #422006; }
 .sub-row-head {
   display: flex;
   align-items: center;
