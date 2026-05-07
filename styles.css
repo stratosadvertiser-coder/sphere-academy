@@ -4393,15 +4393,15 @@ img {
 .admin-card-upload {
   display: flex;
   flex-direction: column;
-  border: 2px solid rgba(15, 23, 42, 0.85);
+  border: 1.5px solid rgba(15, 23, 42, 0.45);
   border-radius: 14px;
   overflow: hidden;
   background: var(--bg-alt);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 [data-theme="dark"] .admin-card-upload {
-  border-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.35);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
@@ -4429,12 +4429,12 @@ img {
 }
 .admin-card-body h3 {
   font-family: 'Norwester', 'Bebas Neue', 'Oswald', Impact, sans-serif;
-  font-size: 1.45rem;
+  font-size: 1.15rem;
   font-weight: 400;
   text-transform: uppercase;
   margin: 0;
-  letter-spacing: 0.03em;
-  line-height: 1.1;
+  letter-spacing: 0.025em;
+  line-height: 1.15;
   color: var(--text);
 }
 
@@ -4598,17 +4598,17 @@ img {
   display: flex;
   flex-direction: column;
   background: var(--bg-alt);
-  border: 2px solid rgba(15, 23, 42, 0.85);
+  border: 1.5px solid rgba(15, 23, 42, 0.45);
   border-radius: 14px;
   overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   text-decoration: none;
   color: inherit;
   position: relative;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 [data-theme="dark"] .course-card-link {
-  border-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.35);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
@@ -4733,15 +4733,15 @@ img {
 
 .course-card-body h3 {
   /* Norwester — condensed sport/architectural display sans, all-caps.
-     Big presence per inch of width, so the title reads like a poster
-     headline. Falls back to Bebas Neue / Impact if the CDN font fails. */
+     Sized down a notch so the title doesn't shout against the
+     softened card outline. */
   font-family: 'Norwester', 'Bebas Neue', 'Oswald', Impact, sans-serif;
-  font-size: 1.45rem;
+  font-size: 1.15rem;
   font-weight: 400;
   text-transform: uppercase;
   margin: 0;
-  letter-spacing: 0.03em;
-  line-height: 1.1;
+  letter-spacing: 0.025em;
+  line-height: 1.15;
   color: var(--text);
   /* Clamp to 2 lines */
   display: -webkit-box;
