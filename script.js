@@ -9632,6 +9632,7 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           progress: {},
           quizScores: {},
           assignments: {},
+          assignmentDetails: {},
           lastActive: null,
           registeredAt: null
         };
@@ -9650,6 +9651,11 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           progress: r.progress || {},
           quizScores: r.quizScores || {},
           assignments: r.assignments || {},
+          // Critical: preserve full submission detail so the inspector
+          // can show files + paste-links per lesson. Without this, the
+          // modal would show every lesson as 'Not submitted' because
+          // it had no payload to read.
+          assignmentDetails: r.assignmentDetails || {},
           lastActive: r.lastActive || null,
           lastLogin: r.lastLogin || null,
           registeredAt: r.registeredAt || null
@@ -9798,8 +9804,15 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       const initials = (student.displayName || student.username || '?').split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
 
       const details = student.assignmentDetails || {};
+      const legacyAssignments = student.assignments || {};
       const completed = student.progress ? Object.values(student.progress).filter(Boolean).length : 0;
-      const submittedCount = Object.keys(details).length;
+      // Submitted count = anyone with details OR legacy true (so historical
+      // submissions before assignmentDetails landed still count)
+      const submittedSet = new Set([
+        ...Object.keys(details),
+        ...Object.keys(legacyAssignments).filter(k => legacyAssignments[k] === true)
+      ]);
+      const submittedCount = submittedSet.size;
 
       // Build per-lesson rows for w1..w16
       const lessonsList = (typeof LESSONS !== 'undefined' && LESSONS.getAll) ? LESSONS.getAll() : [];
@@ -9812,14 +9825,30 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       for (let i = 1; i <= 16; i++) {
         const wid = 'w' + i;
         const sub = details[wid];
+        const legacyDone = legacyAssignments[wid] === true;
         const title = lessonTitle(wid);
         if (!sub) {
-          rowsHtml.push(
-            '<div class="sub-row sub-row-empty">'
-            + '<div class="sub-row-head"><span class="sub-row-week">Lesson ' + i + '</span><span class="sub-row-status not-submitted">Not submitted</span></div>'
-            + '<div class="sub-row-title">' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
-            + '</div>'
-          );
+          // Two empty cases:
+          //   (a) Truly not submitted yet — show neutral placeholder
+          //   (b) Legacy submission exists (boolean map says true) but
+          //       full payload hasn't synced yet — show informative
+          //       hint so admin knows it'll appear after student reloads.
+          if (legacyDone) {
+            rowsHtml.push(
+              '<div class="sub-row sub-row-pending">'
+              + '<div class="sub-row-head"><span class="sub-row-week">Lesson ' + i + '</span><span class="sub-row-status submitted">Submitted</span></div>'
+              + '<div class="sub-row-title">' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+              + '<div class="sub-row-empty-note">Files &amp; links will appear here the next time this student opens the site.</div>'
+              + '</div>'
+            );
+          } else {
+            rowsHtml.push(
+              '<div class="sub-row sub-row-empty">'
+              + '<div class="sub-row-head"><span class="sub-row-week">Lesson ' + i + '</span><span class="sub-row-status not-submitted">Not submitted</span></div>'
+              + '<div class="sub-row-title">' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+              + '</div>'
+            );
+          }
           continue;
         }
         const files = Array.isArray(sub.files) ? sub.files : [];

@@ -10719,6 +10719,13 @@ img {
 [data-theme="dark"] .sub-row-empty {
   background: rgba(255, 255, 255, 0.02);
 }
+.sub-row-pending {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.05) 0%, var(--bg) 100%);
+}
+[data-theme="dark"] .sub-row-pending {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.10) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
 .sub-row-head {
   display: flex;
   align-items: center;
