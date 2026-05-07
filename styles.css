@@ -4385,9 +4385,11 @@ img {
 
 /* Admin Card Image Upload */
 .admin-cards-grid {
+  /* Match the student-facing course-cards-grid layout exactly so
+     what the admin sees is what the student sees (true WYSIWYG). */
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
 }
 
 .admin-card-upload {
@@ -4517,16 +4519,20 @@ img {
 }
 
 .admin-card-preview-img {
-  /* Fill the 16:9 box completely and cover-crop — identical to how
-     the public course-card image renders. No more dragging-driven
-     overflow that made the preview feel different from the live card. */
+  /* Fill the 16:9 box and cover-crop — identical to the public course
+     card. Vertical pan is handled by object-position so what's
+     visible always matches what the student will see. Cursor hints
+     it's draggable. */
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 50%;
+  cursor: grab;
   border-radius: var(--radius) var(--radius) 0 0;
   user-select: none;
+  -webkit-user-drag: none;
   transition: none;
 }
 

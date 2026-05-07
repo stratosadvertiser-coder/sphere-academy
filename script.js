@@ -2507,7 +2507,15 @@ if (currentPage === 'course.html' || currentPage === 'index.html') {
         const img = document.createElement('img');
         img.src = imgData;
         img.alt = 'Month ' + month;
-        img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;';
+        // Apply the saved object-position-y from admin's drag-to-pan,
+        // sanitising legacy pixel-based values (negatives) back to 50%.
+        const savedPos = safeGetItem('card_image_pos_' + month);
+        let posPct = 50;
+        if (savedPos != null && savedPos !== '') {
+          const n = parseFloat(savedPos);
+          if (!isNaN(n) && n >= 0 && n <= 100) posPct = n;
+        }
+        img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center ' + posPct + '%;z-index:0;';
         cardImg.appendChild(img);
       }
       // 2) Sync the phase title from admin's saved month names so the
@@ -4016,6 +4024,9 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
   loadCardImages();
 
   // ===== DRAG TO REPOSITION CARD IMAGES =====
+  // Uses object-position-y as a percentage (0% = top of source image
+  // visible, 100% = bottom). Works hand-in-hand with object-fit: cover
+  // so the cover-crop frame is identical to what the student sees.
   function initImageDrag(month) {
     const imgEl = document.getElementById('cardImg' + month);
     if (!imgEl) return;
@@ -4023,20 +4034,31 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
     const posKey = 'card_image_pos_' + month;
     let isDragging = false;
     let startY = 0;
-    let startTop = 0;
+    let startPct = 50;
 
-    // Load saved position
-    function loadPos() {
-      const saved = safeGetItem(posKey);
-      if (saved && imgEl.style.display !== 'none') {
-        imgEl.style.top = saved + 'px';
-      }
+    function applyPct(pct) {
+      const v = Math.max(0, Math.min(100, pct));
+      imgEl.style.objectPosition = 'center ' + v + '%';
     }
 
-    // Wait for image to load to set bounds
-    imgEl.addEventListener('load', () => {
-      loadPos();
-    });
+    function readSavedPct() {
+      const saved = safeGetItem(posKey);
+      if (saved == null || saved === '') return 50;
+      const n = parseFloat(saved);
+      if (isNaN(n)) return 50;
+      // Old format stored negative pixels (e.g. "-150"). Detect that
+      // and fall back to centred so the legacy values don't break the
+      // new percentage system.
+      if (n < 0 || n > 100) return 50;
+      return n;
+    }
+
+    function loadPos() {
+      if (imgEl.style.display === 'none') return;
+      applyPct(readSavedPct());
+    }
+
+    imgEl.addEventListener('load', loadPos);
     loadPos();
 
     imgEl.addEventListener('mousedown', (e) => {
@@ -4044,63 +4066,59 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       e.preventDefault();
       isDragging = true;
       startY = e.clientY;
-      startTop = parseInt(imgEl.style.top || '0');
+      startPct = readSavedPct();
       imgEl.classList.add('dragging');
+      imgEl.style.cursor = 'grabbing';
     });
 
     document.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
       const container = imgEl.parentElement;
-      const containerH = container.offsetHeight;
-      const imgH = imgEl.offsetHeight;
-      const maxDrag = Math.max(0, imgH - containerH);
-
-      let newTop = startTop + (e.clientY - startY);
-      newTop = Math.min(0, Math.max(-maxDrag, newTop));
-      imgEl.style.top = newTop + 'px';
+      const containerH = container.offsetHeight || 1;
+      // Drag up/down by the visible frame height = 100% pan range.
+      const dy = e.clientY - startY;
+      const newPct = startPct - (dy / containerH) * 100;
+      applyPct(newPct);
     });
 
-    document.addEventListener('mouseup', () => {
+    function endDrag() {
       if (!isDragging) return;
       isDragging = false;
       imgEl.classList.remove('dragging');
-      const pos = parseInt(imgEl.style.top || '0');
-      safeSetItem(posKey, pos);
-      // Sync position to Firestore
+      imgEl.style.cursor = 'grab';
+      // Read current value back off the element so we save the same
+      // percentage we just rendered.
+      const match = /center\s+([\d.]+)%/.exec(imgEl.style.objectPosition || '');
+      const pct = match ? parseFloat(match[1]) : 50;
+      safeSetItem(posKey, String(pct));
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
         DATA_SYNC.db.collection(DATA_SYNC.COLLECTION).doc('card_images').set({
-          ['month_' + month + '_pos']: pos
+          ['month_' + month + '_pos']: pct
         }, { merge: true }).catch(e => console.error('Pos sync failed:', e));
       }
-    });
+    }
+
+    document.addEventListener('mouseup', endDrag);
 
     // Touch support for mobile
     imgEl.addEventListener('touchstart', (e) => {
       if (imgEl.style.display === 'none') return;
       isDragging = true;
       startY = e.touches[0].clientY;
-      startTop = parseInt(imgEl.style.top || '0');
+      startPct = readSavedPct();
       imgEl.classList.add('dragging');
     }, { passive: true });
 
     document.addEventListener('touchmove', (e) => {
       if (!isDragging) return;
       const container = imgEl.parentElement;
-      const containerH = container.offsetHeight;
-      const imgH = imgEl.offsetHeight;
-      const maxDrag = Math.max(0, imgH - containerH);
-
-      let newTop = startTop + (e.touches[0].clientY - startY);
-      newTop = Math.min(0, Math.max(-maxDrag, newTop));
-      imgEl.style.top = newTop + 'px';
+      const containerH = container.offsetHeight || 1;
+      const dy = e.touches[0].clientY - startY;
+      const newPct = startPct - (dy / containerH) * 100;
+      applyPct(newPct);
     }, { passive: true });
 
-    document.addEventListener('touchend', () => {
-      if (!isDragging) return;
-      isDragging = false;
-      imgEl.classList.remove('dragging');
-      safeSetItem(posKey, parseInt(imgEl.style.top || '0'));
-    });
+    document.addEventListener('touchend', endDrag);
   }
 
   for (let m = 1; m <= 4; m++) {
