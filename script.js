@@ -7610,13 +7610,10 @@ function renderMembers(users) {
   const data = _MEMBERS_CACHE.slice();
 
   const onlineList = document.getElementById('membersOnlineList');
-  const allList = document.getElementById('membersAllList');
   const onlineEmpty = document.getElementById('membersOnlineEmpty');
-  const allEmpty = document.getElementById('membersAllEmpty');
   const onlineCountEl = document.getElementById('membersOnlineCount');
-  const allCountEl = document.getElementById('membersAllCount');
   const onlineBadge = document.getElementById('onlineBadge');
-  if (!onlineList || !allList) return;
+  if (!onlineList) return;
 
   // Sort: admin first, then alphabetical by displayName
   data.sort((a, b) => {
@@ -7625,12 +7622,9 @@ function renderMembers(users) {
   });
 
   const online = data.filter(u => PRESENCE.isOnline(u));
-  const all = data;
-
   if (onlineCountEl) onlineCountEl.textContent = online.length;
-  if (allCountEl) allCountEl.textContent = all.length;
 
-  // Sidebar live online badge — only count students (exclude self & admin? include all)
+  // Sidebar live online badge — count everyone except self
   if (onlineBadge) {
     const me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
     const others = online.filter(u => u.username !== me).length;
@@ -7644,13 +7638,6 @@ function renderMembers(users) {
     onlineList.innerHTML = '<div class="dash-empty members-empty"><p>No one\'s online right now.</p></div>';
   } else {
     onlineList.innerHTML = online.map(u => _memberCardHTML(u, true)).join('');
-  }
-
-  // All section
-  if (all.length === 0) {
-    allList.innerHTML = '<div class="dash-empty members-empty"><p>No registered members yet.</p></div>';
-  } else {
-    allList.innerHTML = all.map(u => _memberCardHTML(u, PRESENCE.isOnline(u))).join('');
   }
 }
 
