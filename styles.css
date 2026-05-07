@@ -4426,11 +4426,13 @@ img {
   background: var(--bg-alt);
 }
 .admin-card-body h3 {
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+  font-size: 1.18rem;
+  font-weight: 600;
+  font-variation-settings: 'opsz' 96, 'SOFT' 50;
   margin: 0;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
   color: var(--text);
 }
 
@@ -4710,8 +4712,9 @@ img {
   letter-spacing: 0.6px;
   padding: 3px 8px;
   border-radius: 5px;
-  margin-bottom: 4px;
+  margin-top: 6px;
   width: fit-content;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .course-card-tag.blue   { background: var(--primary-light); color: var(--primary); }
@@ -4724,11 +4727,17 @@ img {
 [data-theme="dark"] .course-card-tag.purple { background: rgba(139, 158, 255, 0.15); color: #c5cbf5; }
 
 .course-card-body h3 {
-  font-size: 0.98rem;
-  font-weight: 700;
-  margin: 0 0 2px;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
+  /* Fraunces — variable-axis modern serif. Higher optical-size + softer
+     curves give the phase titles editorial character without feeling
+     vintage. Pairs with Montserrat body for a clean contrast. */
+  font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+  font-size: 1.18rem;
+  font-weight: 600;
+  font-variation-settings: 'opsz' 96, 'SOFT' 50;
+  margin: 0;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+  color: var(--text);
   /* Clamp to 2 lines */
   display: -webkit-box;
   -webkit-line-clamp: 2;
