@@ -5464,20 +5464,45 @@ img {
 .notif-list { max-height: 280px; overflow-y: auto; }
 
 .notif-item {
+  width: 100%;
   padding: 12px 16px;
+  border: none;
   border-bottom: 1px solid var(--border);
   font-size: 0.82rem;
   color: var(--text-light);
+  background: transparent;
   display: flex;
   gap: 10px;
   align-items: flex-start;
+  text-align: left;
+  font-family: inherit;
   transition: background var(--transition);
 }
 
+/* Buttons (clickable notifs) get a pointer cursor + active feedback */
+button.notif-item.is-clickable {
+  cursor: pointer;
+}
+button.notif-item.is-clickable:hover { background: var(--bg-alt); }
+button.notif-item.is-clickable:active { background: var(--primary-light); }
+button.notif-item.is-clickable:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+button.notif-item.is-clickable .notif-item-text strong::after {
+  content: ' →';
+  color: var(--primary);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1; }
+
 .notif-item:hover { background: var(--bg-alt); }
 .notif-item.unread { background: var(--primary-light); }
+[data-theme="dark"] .notif-item.unread { background: rgba(139, 158, 255, 0.10); }
 .notif-item-icon { font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
-.notif-item-text strong { display: block; color: var(--text); font-size: 0.82rem; }
+.notif-item-text { flex: 1; min-width: 0; }
+.notif-item-text strong { display: block; color: var(--text); font-size: 0.82rem; line-height: 1.4; }
 .notif-item-text span { font-size: 0.72rem; }
 
 .notif-empty {

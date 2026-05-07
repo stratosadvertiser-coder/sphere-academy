@@ -3537,7 +3537,7 @@ if (currentPage === 'lesson.html') {
                 cb.innerHTML = '&#10003; Week ' + lesson.week + ' Completed';
               }
             }
-            NOTIFS.add('You passed the Week ' + lesson.week + ' assessment with ' + percentage + '%!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>');
+            NOTIFS.add('You passed the Lesson ' + lesson.week + ' assessment with ' + percentage + '%!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>', 'lesson.html?week=' + weekId);
           } else {
             resultDiv.innerHTML = '&#10007; Score: ' + percentage + '% — Need ' + quiz.passScore + '% to pass. <a href="javascript:location.reload()" style="color:inherit;font-weight:700;text-decoration:underline;">Try Again</a>';
             try { if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('quiz_failed', weekId, 'W' + lesson.week + ': ' + lesson.title + ' — ' + percentage + '%'); } catch (e) {}
@@ -5119,17 +5119,17 @@ function startCommunityNotifListeners() {
   wire('announcements', 'sphere_announcements',
     (a) => '<span class="notif-kind">Announcement</span> ' + (a.title || 'New announcement'),
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M3 11l18-8v18l-18-8z"/><path d="M11 13v8"/></svg>',
-    'dashboard.html');
+    'dashboard.html#tab=announcements');
 
   wire('posts', 'sphere_posts',
     (p) => '<span class="notif-kind">Feed</span> ' + (p.displayName || 'Someone') + ' posted',
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-    'dashboard.html');
+    'dashboard.html#tab=feed');
 
   wire('wins', 'sphere_wins',
     (w) => '<span class="notif-kind">Win</span> ' + (w.displayName || 'Someone') + ' celebrated: ' + (w.title || ''),
     '&#127942;',
-    'dashboard.html');
+    'dashboard.html#tab=wins');
 
   // Chat: only notify when the message mentions ME (otherwise the chat
   // would spam the bell on every line). Match on display name OR username.
@@ -5164,7 +5164,7 @@ function startCommunityNotifListeners() {
             NOTIFS.add(
               '<span class="notif-kind">Chat</span> ' + author + ' mentioned you: ' + preview,
               '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
-              'dashboard.html'
+              'dashboard.html#tab=chat'
             );
             console.log('[NOTIFY chat_mentions] fired for', id);
           }
@@ -5197,7 +5197,7 @@ function startCommunityNotifListeners() {
             NOTIFS.add(
               '<span class="notif-kind">DM</span> ' + peer + ' sent you a message: ' + preview,
               '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-              'dashboard.html'
+              'dashboard.html#dm=' + encodeURIComponent(peer)
             );
           }
         });
@@ -5213,8 +5213,8 @@ if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn()) {
 
 // Seed default notifications if empty
 if (NOTIFS.getAll().length === 0) {
-  NOTIFS.add('Welcome to Sphere Academy! Start with Week 1.', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>');
-  NOTIFS.add('Race to finish — paunahan matapos!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>');
+  NOTIFS.add('Welcome to Sphere Academy! Start with Lesson 1.', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>', 'lesson.html?week=w1');
+  NOTIFS.add('Race to finish — paunahan matapos!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>', 'course.html');
 }
 
 const notifBtn = document.getElementById('notifBtn');
@@ -5233,16 +5233,70 @@ function renderNotifications() {
     if (all.length === 0) {
       notifList.innerHTML = '<div class="notif-empty">No notifications</div>';
     } else {
-      notifList.innerHTML = all.slice(0, 10).map(n => {
+      notifList.innerHTML = all.slice(0, 10).map((n, idx) => {
         const date = new Date(n.time);
         const ago = Math.floor((Date.now() - date.getTime()) / 60000);
         const timeStr = ago < 60 ? ago + 'm ago' : ago < 1440 ? Math.floor(ago/60) + 'h ago' : Math.floor(ago/1440) + 'd ago';
-        return '<div class="notif-item' + (n.read ? '' : ' unread') + '">'
+        // Each notif is now a clickable button. data-link carries the
+        // destination — handled by navigateToNotif() below so we can
+        // do SPA-style tab switching when already on dashboard.
+        const link = (n.link || '').replace(/"/g, '&quot;');
+        const tag = link ? 'button' : 'div';
+        const linkAttr = link ? ' data-link="' + link + '" data-idx="' + idx + '"' : '';
+        return '<' + tag + ' type="button" class="notif-item' + (n.read ? '' : ' unread') + (link ? ' is-clickable' : '') + '"' + linkAttr + '>'
           + '<span class="notif-item-icon">' + n.icon + '</span>'
-          + '<div class="notif-item-text"><strong>' + n.text + '</strong><span>' + timeStr + '</span></div></div>';
+          + '<div class="notif-item-text"><strong>' + n.text + '</strong><span>' + timeStr + '</span></div>'
+          + '</' + tag + '>';
       }).join('');
+
+      // Wire click handlers on every linked notif
+      notifList.querySelectorAll('.notif-item.is-clickable').forEach(el => {
+        el.addEventListener('click', () => {
+          const link = el.dataset.link;
+          if (!link) return;
+          // Close the dropdown immediately for snappy feedback
+          const dd = document.getElementById('notifDropdown');
+          if (dd) dd.classList.remove('active');
+          navigateToNotif(link);
+        });
+      });
     }
   }
+}
+
+// Routes a notification's link to the right destination. When the user
+// is already on dashboard.html and the link is a dashboard hash
+// (#tab=X / #dm=X), switches the panel without reloading. Otherwise
+// performs a full navigation.
+function navigateToNotif(link) {
+  if (!link) return;
+  const onDashboard = (typeof currentPage !== 'undefined' && currentPage === 'dashboard.html')
+    || /\bdashboard\.html\b/.test(window.location.pathname);
+  // Same-page hash navigation when on dashboard
+  if (onDashboard && link.indexOf('dashboard.html') !== -1) {
+    const hashMatch = /#(.+)$/.exec(link);
+    if (hashMatch) {
+      const hash = '#' + hashMatch[1];
+      // Update URL so refreshes preserve the deep link
+      try { history.replaceState(null, '', window.location.pathname + hash); } catch (e) {}
+      // Tab switch
+      const tabMatch = /tab=([^&]+)/.exec(hashMatch[1]);
+      if (tabMatch) {
+        const tab = decodeURIComponent(tabMatch[1]);
+        const link = document.querySelector('.dash-sidebar-link[data-tab="' + tab + '"]');
+        if (link) { link.click(); return; }
+      }
+      // DM open
+      const dmMatch = /dm=([^&]+)/.exec(hashMatch[1]);
+      if (dmMatch && typeof openDMConversation === 'function') {
+        const peer = decodeURIComponent(dmMatch[1]);
+        openDMConversation(peer, peer, null);
+        return;
+      }
+    }
+  }
+  // Default: full navigation
+  window.location.href = link;
 }
 
 if (notifBtn && notifDropdown) {
@@ -5677,7 +5731,7 @@ if (currentPage === 'admin.html' && AUTH.isAdmin()) {
       if (typeof renderAdminSidebar === 'function') renderAdminSidebar();
       if (typeof updateAdminStats === 'function') updateAdminStats();
       if (typeof loadLessonEditor === 'function') loadLessonEditor(document.querySelector('.admin-sidebar-lesson.active')?.dataset?.id || 'w1');
-      NOTIFS.add('All 16 lessons have been published!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>');
+      NOTIFS.add('All 16 lessons have been published!', '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>', 'course.html');
       const toast = document.getElementById('adminToast');
       if (toast) {
         toast.innerHTML = '<span>&#10003;</span> All 16 lessons published!';
@@ -9246,30 +9300,60 @@ if (currentPage === 'dashboard.html') {
   document.addEventListener('DOMContentLoaded', initDashboardCommunity);
   if (document.readyState !== 'loading') initDashboardCommunity();
 
-  // If admin opened the page with #dm=<username> (typically from the
-  // submission inspector's "Open DM" button), jump straight into that
-  // conversation with a pre-filled refresh-reminder message.
-  function _handleDMHash() {
-    const m = /#dm=([^&]+)/.exec(window.location.hash || '');
-    if (!m) return;
-    const target = decodeURIComponent(m[1]);
-    if (!target || typeof openDMConversation !== 'function') return;
-    setTimeout(() => {
-      openDMConversation(target, target, null);
+  // Routes URL hash on dashboard load:
+  //   #tab=<feed|announcements|faq|wins|chat|members|messages>
+  //     → opens that sidebar tab
+  //   #dm=<username>
+  //     → opens the Messages tab + that conversation
+  // Used by:
+  //   - Notification dropdown links (clicking a Feed/Win/Chat notif)
+  //   - Submission inspector's "Open DM" button (admin → student ping)
+  function _handleDashboardHash() {
+    const hash = window.location.hash || '';
+    if (!hash) return;
+    const dmMatch = /#dm=([^&]+)/.exec(hash);
+    const tabMatch = /#tab=([^&]+)/.exec(hash);
+
+    if (dmMatch) {
+      const target = decodeURIComponent(dmMatch[1]);
+      if (target && typeof openDMConversation === 'function') {
+        setTimeout(() => {
+          openDMConversation(target, target, null);
+          // Pre-fill a refresh reminder ONLY if this came from the
+          // submission inspector context (URL stayed on admin.html
+          // before the navigation). For notification-driven opens we
+          // leave the input clean.
+          const fromInspector = sessionStorage.getItem('_dm_inspector_ping') === '1';
+          if (fromInspector) {
+            sessionStorage.removeItem('_dm_inspector_ping');
+            setTimeout(() => {
+              const input = document.getElementById('dmInput');
+              if (input) {
+                input.value = 'Hi! Pakirefresh lang ng Sphere site (Ctrl+F5) — kailangan ko ma-review yung mga submissions mo. Salamat!';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.focus();
+              }
+            }, 250);
+          }
+          history.replaceState(null, '', window.location.pathname);
+        }, 800);
+      }
+      return;
+    }
+
+    if (tabMatch) {
+      const tab = decodeURIComponent(tabMatch[1]);
+      // Wait for sidebar bindings to be ready (they're set up in
+      // bindDashboardSidebar() on init)
       setTimeout(() => {
-        const input = document.getElementById('dmInput');
-        if (input) {
-          input.value = 'Hi! Pakirefresh lang ng Sphere site (Ctrl+F5) — kailangan ko ma-review yung mga submissions mo. Salamat!';
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          input.focus();
-        }
-        // Clean the hash so a refresh doesn't re-prefill the input
+        const link = document.querySelector('.dash-sidebar-link[data-tab="' + tab + '"]');
+        if (link) link.click();
         history.replaceState(null, '', window.location.pathname);
-      }, 250);
-    }, 800);
+      }, 400);
+    }
   }
-  if (document.readyState !== 'loading') _handleDMHash();
-  else document.addEventListener('DOMContentLoaded', _handleDMHash);
+  if (document.readyState !== 'loading') _handleDashboardHash();
+  else document.addEventListener('DOMContentLoaded', _handleDashboardHash);
 }
 
 // ============================================================
@@ -10014,23 +10098,29 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         dmBtn.addEventListener('click', () => {
           const username = dmBtn.dataset.username;
           const display = dmBtn.dataset.display;
-          if (!username || typeof openDMConversation !== 'function') return;
-          // Drop a quick draft message in the input so admin can hit Send
+          if (!username) return;
+          // Mark the upcoming dashboard load so its hash handler knows
+          // to pre-fill the refresh reminder (vs leaving input clean
+          // for plain notification opens).
+          try { sessionStorage.setItem('_dm_inspector_ping', '1'); } catch (e) {}
           closeSubmissionInspector();
           // Switch to dashboard if we're on admin.html
           if (window.location.pathname.indexOf('admin.html') !== -1) {
             window.location.href = 'dashboard.html#dm=' + encodeURIComponent(username);
             return;
           }
-          openDMConversation(username, display, null);
-          setTimeout(() => {
-            const input = document.getElementById('dmInput');
-            if (input) {
-              input.value = 'Hi ' + display + '! Pakirefresh lang ng Sphere site (Ctrl+F5) — kailangan ko ma-review yung mga submissions mo. Salamat!';
-              input.dispatchEvent(new Event('input', { bubbles: true }));
-              input.focus();
-            }
-          }, 200);
+          if (typeof openDMConversation === 'function') {
+            openDMConversation(username, display, null);
+            setTimeout(() => {
+              const input = document.getElementById('dmInput');
+              if (input) {
+                input.value = 'Hi ' + display + '! Pakirefresh lang ng Sphere site (Ctrl+F5) — kailangan ko ma-review yung mga submissions mo. Salamat!';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.focus();
+              }
+              try { sessionStorage.removeItem('_dm_inspector_ping'); } catch (e) {}
+            }, 200);
+          }
         });
       }
     }
