@@ -4393,25 +4393,25 @@ img {
 .admin-card-upload {
   display: flex;
   flex-direction: column;
-  border: 2px solid rgba(99, 91, 255, 0.35);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 14px;
   overflow: hidden;
   background: var(--bg-alt);
-  box-shadow: 0 1px 3px rgba(11, 15, 28, 0.08), 0 0 0 1px rgba(99, 91, 255, 0.10);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 [data-theme="dark"] .admin-card-upload {
-  border-color: rgba(139, 158, 255, 0.45);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 158, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 .admin-card-upload:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 28px -8px rgba(99, 91, 255, 0.55), 0 0 0 1px rgba(99, 91, 255, 0.40);
-  border-color: var(--primary);
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.25);
+  border-color: rgba(99, 91, 255, 0.45);
 }
 [data-theme="dark"] .admin-card-upload:hover {
-  border-color: rgba(139, 158, 255, 0.85);
-  box-shadow: 0 10px 28px -8px rgba(139, 158, 255, 0.65), 0 0 0 1px rgba(139, 158, 255, 0.55);
+  border-color: rgba(139, 158, 255, 0.55);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.6);
 }
 
 .admin-card-preview {
@@ -4443,10 +4443,10 @@ img {
   color: var(--text);
 }
 
-.admin-card-preview.blue { background: linear-gradient(135deg, #161b30 0%, #5b6ee8 100%); }
-.admin-card-preview.amber { background: linear-gradient(135deg, #161b30 0%, #b45309 100%); }
-.admin-card-preview.green { background: linear-gradient(135deg, #161b30 0%, #047857 100%); }
-.admin-card-preview.purple { background: linear-gradient(135deg, #161b30 0%, #6d28d9 100%); }
+.admin-card-preview.blue { background: linear-gradient(135deg, #0b1120 0%, #1e293b 55%, #312e81 100%); }
+.admin-card-preview.amber { background: linear-gradient(135deg, #0b1120 0%, #1e293b 55%, #78350f 100%); }
+.admin-card-preview.green { background: linear-gradient(135deg, #0b1120 0%, #1e293b 55%, #064e3b 100%); }
+.admin-card-preview.purple { background: linear-gradient(135deg, #0b1120 0%, #1e293b 55%, #4c1d95 100%); }
 
 .admin-card-preview-icon {
   position: absolute;
@@ -4603,28 +4603,28 @@ img {
   display: flex;
   flex-direction: column;
   background: var(--bg-alt);
-  border: 2px solid rgba(99, 91, 255, 0.35);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 14px;
   overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   text-decoration: none;
   color: inherit;
   position: relative;
-  box-shadow: 0 1px 3px rgba(11, 15, 28, 0.08), 0 0 0 1px rgba(99, 91, 255, 0.10);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 [data-theme="dark"] .course-card-link {
-  border-color: rgba(139, 158, 255, 0.45);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 158, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .course-card-link:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 28px -8px rgba(99, 91, 255, 0.55), 0 0 0 1px rgba(99, 91, 255, 0.40);
-  border-color: var(--primary);
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.25);
+  border-color: rgba(99, 91, 255, 0.45);
 }
 [data-theme="dark"] .course-card-link:hover {
-  border-color: rgba(139, 158, 255, 0.85);
-  box-shadow: 0 10px 28px -8px rgba(139, 158, 255, 0.65), 0 0 0 1px rgba(139, 158, 255, 0.55);
+  border-color: rgba(139, 158, 255, 0.55);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.6);
 }
 
 .course-card-link:hover .course-card-arrow {
@@ -4654,20 +4654,22 @@ img {
   z-index: 0;
 }
 
+/* Course card placeholder gradients — sophisticated slate-navy base
+   with a deep, muted accent in the corner. No more candy-bright fades. */
 .course-card-img.blue {
-  background: linear-gradient(135deg, #161b30 0%, #5b6ee8 100%);
+  background: linear-gradient(135deg, #0b1120 0%, #1e293b 55%, #312e81 100%);
 }
 
 .course-card-img.amber {
-  background: linear-gradient(135deg, #161b30 0%, #b45309 100%);
+  background: linear-gradient(135deg, #0b1120 0%, #1e293b 55%, #78350f 100%);
 }
 
 .course-card-img.green {
-  background: linear-gradient(135deg, #161b30 0%, #047857 100%);
+  background: linear-gradient(135deg, #0b1120 0%, #1e293b 55%, #064e3b 100%);
 }
 
 .course-card-img.purple {
-  background: linear-gradient(135deg, #161b30 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #0b1120 0%, #1e293b 55%, #4c1d95 100%);
 }
 
 .course-card-icon {
