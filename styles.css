@@ -4418,7 +4418,7 @@ img {
 
 /* Body section under the image — mirrors student-side .course-card-body */
 .admin-card-body {
-  padding: 22px 18px 26px;
+  padding: 22px 18px 26px 30px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -4428,12 +4428,12 @@ img {
   background: var(--bg-alt);
 }
 .admin-card-body h3 {
-  font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: none;
   margin: 0;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
   line-height: 1.25;
   color: var(--text);
 }
@@ -4698,9 +4698,10 @@ img {
 }
 
 /* Card body — tight Skool-style. Padding kept generous so the card
-   keeps the same vertical footprint as when the phase pill was here. */
+   keeps the same vertical footprint as when the phase pill was here.
+   Slight extra left padding so the title sits indented from the edge. */
 .course-card-body {
-  padding: 22px 18px 26px;
+  padding: 22px 18px 26px 30px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -4732,14 +4733,15 @@ img {
 [data-theme="dark"] .course-card-tag.purple { background: rgba(139, 158, 255, 0.15); color: #c5cbf5; }
 
 .course-card-body h3 {
-  /* Playfair Display — classic high-contrast serif. Editorial,
-     timeless, small but unmistakeable. Title case, not uppercase. */
-  font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  /* Montserrat — same body family the rest of the site uses. Quiet,
+     modern, geometric. Sized small so the title sits cleanly under
+     the cover image. */
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: none;
   margin: 0;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
   line-height: 1.25;
   color: var(--text);
   /* Clamp to 2 lines */
