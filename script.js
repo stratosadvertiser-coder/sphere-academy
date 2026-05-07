@@ -335,11 +335,23 @@ const USER_SYNC = {
         if (quizRaw[k] && typeof quizRaw[k].percentage === 'number') quizScores[k] = quizRaw[k].percentage;
         if (quizRaw[k] && typeof quizRaw[k].attempts === 'number') quizAttempts[k] = quizRaw[k].attempts;
       });
-      // Assignments: { w1: true, ... } — just whether submitted (strip file data)
+      // Assignments: full submission detail — files (metadata only) + links — so the
+      // admin can review what each student submitted. Bytes are not included
+      // (we never had them anyway), but filenames, sizes, types, link URLs and
+      // submittedAt timestamps all sync.
       const asgnRaw = (typeof ASSIGNMENTS !== 'undefined') ? ASSIGNMENTS.getAll() : {};
-      const assignments = {};
+      const assignments = {};         // legacy: { w1: true, ... } for fast checks
+      const assignmentDetails = {};   // new:    { w1: { files, links, submittedAt }, ... }
       Object.keys(asgnRaw).forEach(k => {
-        if (asgnRaw[k] && asgnRaw[k].submitted) assignments[k] = true;
+        const sub = asgnRaw[k];
+        if (sub && sub.submitted) {
+          assignments[k] = true;
+          assignmentDetails[k] = {
+            files: Array.isArray(sub.files) ? sub.files : [],
+            links: Array.isArray(sub.links) ? sub.links : [],
+            submittedAt: sub.submittedAt || null
+          };
+        }
       });
       // Activity-by-day rollup (last 30 days) for engagement chart
       const activity = (typeof ACTIVITY !== 'undefined') ? ACTIVITY.getAll() : [];
@@ -365,6 +377,7 @@ const USER_SYNC = {
         quizScores,
         quizAttempts,
         assignments,
+        assignmentDetails,
         activityByDay,
         earnedBadges,
         lastActive: firebase.firestore.FieldValue.serverTimestamp()
@@ -3789,6 +3802,9 @@ if (currentPage === 'lesson.html') {
             }));
             ASSIGNMENTS.submit(weekId, fileData, linkData);
             if (typeof checkBadges === 'function') checkBadges();
+            // Force-flush the user snapshot so the admin sees the new
+            // submission immediately, not after the 5s throttle.
+            try { if (typeof USER_SYNC !== 'undefined') USER_SYNC.save(true); } catch (e) {}
             // Reload to show submitted state
             window.location.reload();
           });
@@ -9723,9 +9739,22 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           + '<td><div class="students-progress"><div class="students-progress-bar"><div class="students-progress-fill" style="width:' + pct + '%"></div></div><span>' + completed + '/16</span></div></td>'
           + '<td>' + (avgQuiz != null ? avgQuiz + '%' : '—') + '</td>'
           + '<td>' + fmtDate(r.lastLogin || r.lastActive || r.registeredAt) + '</td>'
-          + '<td>' + (r.role !== 'admin' ? '<button class="students-delete-btn" data-username="' + escS(r.username) + '" title="Remove">Remove</button>' : '') + '</td>'
+          + '<td>'
+          +   '<button class="students-view-btn" data-username="' + escS(r.username) + '" title="View submissions">View</button>'
+          +   (r.role !== 'admin' ? ' <button class="students-delete-btn" data-username="' + escS(r.username) + '" title="Remove">Remove</button>' : '')
+          + '</td>'
           + '</tr>';
       }).join('');
+
+      // Wire View Submissions buttons → open the inspector modal
+      studentsTbody.querySelectorAll('.students-view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const username = btn.dataset.username;
+          if (!username) return;
+          const row = rows.find(r => r.username === username);
+          if (row) openSubmissionInspector(row);
+        });
+      });
 
       // Wire delete buttons
       studentsTbody.querySelectorAll('.students-delete-btn').forEach(btn => {
@@ -9748,6 +9777,136 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           loadStudents();
         });
       });
+    }
+
+    // ============================================================
+    // SUBMISSION INSPECTOR — modal showing every assignment a single
+    // student has submitted, walked through all 16 lessons. Pulls
+    // assignmentDetails (synced via USER_SYNC) so files + paste-links
+    // are visible. Lessons with no submission show a "Not submitted"
+    // placeholder so admin can scan completion at a glance.
+    // ============================================================
+    function openSubmissionInspector(student) {
+      // Tear down any existing modal first
+      closeSubmissionInspector();
+
+      const modal = document.createElement('div');
+      modal.className = 'sub-inspector-overlay';
+      modal.id = 'subInspectorOverlay';
+
+      const safeName = (student.displayName || student.username || '?').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const initials = (student.displayName || student.username || '?').split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
+
+      const details = student.assignmentDetails || {};
+      const completed = student.progress ? Object.values(student.progress).filter(Boolean).length : 0;
+      const submittedCount = Object.keys(details).length;
+
+      // Build per-lesson rows for w1..w16
+      const lessonsList = (typeof LESSONS !== 'undefined' && LESSONS.getAll) ? LESSONS.getAll() : [];
+      function lessonTitle(weekId) {
+        const m = lessonsList.find(l => l.id === weekId);
+        return m ? ('W' + (m.week || weekId.replace('w', '')) + ': ' + (m.title || '')) : weekId.toUpperCase();
+      }
+
+      const rowsHtml = [];
+      for (let i = 1; i <= 16; i++) {
+        const wid = 'w' + i;
+        const sub = details[wid];
+        const title = lessonTitle(wid);
+        if (!sub) {
+          rowsHtml.push(
+            '<div class="sub-row sub-row-empty">'
+            + '<div class="sub-row-head"><span class="sub-row-week">Lesson ' + i + '</span><span class="sub-row-status not-submitted">Not submitted</span></div>'
+            + '<div class="sub-row-title">' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+            + '</div>'
+          );
+          continue;
+        }
+        const files = Array.isArray(sub.files) ? sub.files : [];
+        const links = Array.isArray(sub.links) ? sub.links : [];
+        const subDate = sub.submittedAt ? new Date(sub.submittedAt) : null;
+        const dateStr = subDate ? subDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+
+        let body = '';
+        if (files.length === 0 && links.length === 0) {
+          body = '<div class="sub-row-empty-note">Submitted with no files or links.</div>';
+        } else {
+          body = '<div class="sub-row-items">';
+          files.forEach(f => {
+            const fName = String(f.name || 'file').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const fSize = String(f.size || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const ftype = String(f.type || '').toLowerCase();
+            const icon = ftype.startsWith('image') ? '🖼️' : ftype.startsWith('video') ? '🎬' : '📄';
+            body += '<div class="sub-item"><span class="sub-item-icon">' + icon + '</span>'
+              + '<div class="sub-item-meta"><div class="sub-item-name">' + fName + '</div>'
+              + '<div class="sub-item-sub">File · ' + fSize + '</div></div>'
+              + '<span class="sub-item-tag" title="The platform stores filenames + sizes only, not the file bytes.">Metadata</span></div>';
+          });
+          links.forEach(linkObj => {
+            const url = (typeof linkObj === 'string') ? linkObj : (linkObj && linkObj.url) || '';
+            if (!url) return;
+            const safeUrl = url.replace(/"/g, '&quot;');
+            const display = url.length > 80 ? url.substring(0, 80) + '…' : url;
+            const safeDisplay = display.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            body += '<div class="sub-item"><span class="sub-item-icon">🔗</span>'
+              + '<div class="sub-item-meta"><div class="sub-item-name"><a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + safeDisplay + '</a></div>'
+              + '<div class="sub-item-sub">External link</div></div>'
+              + '<a class="sub-item-open" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">Open ↗</a></div>';
+          });
+          body += '</div>';
+        }
+
+        rowsHtml.push(
+          '<div class="sub-row sub-row-submitted">'
+          + '<div class="sub-row-head">'
+          +   '<span class="sub-row-week">Lesson ' + i + '</span>'
+          +   '<span class="sub-row-status submitted">Submitted</span>'
+          +   (dateStr ? '<span class="sub-row-date">' + dateStr + '</span>' : '')
+          + '</div>'
+          + '<div class="sub-row-title">' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+          + body
+          + '</div>'
+        );
+      }
+
+      modal.innerHTML =
+        '<div class="sub-inspector" role="dialog" aria-modal="true" aria-label="Submissions for ' + safeName + '">'
+        +   '<header class="sub-inspector-head">'
+        +     '<div class="sub-inspector-avatar">' + initials + '</div>'
+        +     '<div class="sub-inspector-meta">'
+        +       '<h3>' + safeName + '</h3>'
+        +       '<p>@' + (student.username || '') + ' · ' + completed + '/16 lessons completed · ' + submittedCount + '/16 assignments submitted</p>'
+        +     '</div>'
+        +     '<button type="button" class="sub-inspector-close" aria-label="Close">&times;</button>'
+        +   '</header>'
+        +   '<div class="sub-inspector-body">'
+        +     rowsHtml.join('')
+        +   '</div>'
+        + '</div>';
+
+      document.body.appendChild(modal);
+      // Trigger entry animation
+      requestAnimationFrame(() => modal.classList.add('is-open'));
+
+      // Wire close
+      modal.querySelector('.sub-inspector-close').addEventListener('click', closeSubmissionInspector);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeSubmissionInspector();
+      });
+      // ESC closes it too
+      document.addEventListener('keydown', _subInspectorEsc);
+    }
+
+    function _subInspectorEsc(e) {
+      if (e.key === 'Escape') closeSubmissionInspector();
+    }
+
+    function closeSubmissionInspector() {
+      const m = document.getElementById('subInspectorOverlay');
+      if (!m) return;
+      m.classList.remove('is-open');
+      document.removeEventListener('keydown', _subInspectorEsc);
+      setTimeout(() => { if (m.parentNode) m.parentNode.removeChild(m); }, 220);
     }
 
     function exportCSV() {
