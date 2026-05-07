@@ -57,22 +57,26 @@ https://console.firebase.google.com/project/marketing-intern-54252/firestore
 ## Part 3: Configure Firestore Security Rules (2 min)
 
 By default, Firestore blocks ALL reads/writes. We need to allow:
-- **Everyone** can read lesson/site data
-- **Authenticated users** can write (your admin logins are authenticated via Google)
+- **Everyone** can read shared content
+- **Authenticated users** can write (anonymous auth from `DATA_SYNC.init()` covers this)
+
+> ⚠ **IMPORTANT:** The original rules only allowed `sphere_lms`. If you only have that one rule, **community features (Feed, Announcements, Wins, Chat, FAQs, Members, Events) will silently fail across accounts** — each student will only see their own localStorage copy. Use the full rule set below.
 
 1. In Firestore, go to the **"Rules"** tab
-2. Replace the existing rules with:
+2. Replace the existing rules with the contents of [`firestore.rules`](./firestore.rules), or copy this:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read of shared content (lessons, settings, card images, emojis)
-    // Allow any authenticated user to write (admin will be the one editing)
-    match /sphere_lms/{docId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
+    match /sphere_lms/{docId}           { allow read: if true; allow write: if request.auth != null; }
+    match /sphere_posts/{docId}         { allow read: if true; allow write: if request.auth != null; }
+    match /sphere_wins/{docId}          { allow read: if true; allow write: if request.auth != null; }
+    match /sphere_announcements/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /sphere_faqs/{docId}          { allow read: if true; allow write: if request.auth != null; }
+    match /sphere_chat/{docId}          { allow read: if true; allow write: if request.auth != null; }
+    match /sphere_users/{docId}         { allow read: if true; allow write: if request.auth != null; }
+    match /sphere_events/{docId}        { allow read: if true; allow write: if request.auth != null; }
   }
 }
 ```

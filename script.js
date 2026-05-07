@@ -453,7 +453,7 @@ const PRESENCE = {
         });
       });
       onUpdate(users);
-    }, err => console.warn('[PRESENCE] listener error:', err.message));
+    }, err => _handleSyncError('PRESENCE', err));
     return this._unsub;
   },
 
@@ -718,6 +718,51 @@ function _mergeById(remote, local) {
   return merged;
 }
 
+// ============================================================
+// SYNC ERROR HANDLER
+// Firestore writes fail SILENTLY when security rules block the
+// collection — every browser ends up showing only its own
+// localStorage copy. We surface the first permission-denied (or any
+// other) error to the admin/student so they know to fix the rules.
+// One alert per session per error code, so we don't spam.
+// ============================================================
+const _SYNC_ERROR_SEEN = {};
+function _handleSyncError(moduleName, err) {
+  const code = (err && err.code) || 'unknown';
+  const msg = (err && err.message) || String(err);
+  console.warn('[' + moduleName + '] sync failed (' + code + '):', msg);
+  if (_SYNC_ERROR_SEEN[code]) return;
+  _SYNC_ERROR_SEEN[code] = true;
+
+  // Only show the in-page banner on dashboard pages where the user
+  // is actively trying to post community content.
+  if (code === 'permission-denied') {
+    const banner = _ensureSyncErrorBanner();
+    if (banner) {
+      banner.innerHTML = '<strong>⚠ Posts aren\'t syncing across accounts.</strong> '
+        + 'Firestore security rules are blocking <code>' + moduleName + '</code> writes. '
+        + 'See <code>FIREBASE_SETUP.md</code> Part 3 for the rules to publish in the Firebase console.';
+      banner.style.display = 'block';
+    }
+  }
+}
+
+function _ensureSyncErrorBanner() {
+  let banner = document.getElementById('syncErrorBanner');
+  if (banner) return banner;
+  if (!document.body) return null;
+  banner = document.createElement('div');
+  banner.id = 'syncErrorBanner';
+  banner.style.cssText = 'position:fixed; bottom:20px; left:20px; right:20px; max-width:560px; '
+    + 'margin:0 auto; padding:14px 18px; border-radius:12px; background:#fef3c7; '
+    + 'color:#78350f; border:1px solid #f59e0b; box-shadow:0 10px 30px -8px rgba(0,0,0,0.25); '
+    + 'font-size:0.88rem; z-index:9999; display:none;';
+  banner.addEventListener('click', () => { banner.style.display = 'none'; });
+  banner.title = 'Click to dismiss';
+  document.body.appendChild(banner);
+  return banner;
+}
+
 // ===== POSTS — Community feed (Home tab) =====
 const POSTS = {
   STORAGE_KEY: 'community_posts',
@@ -763,7 +808,7 @@ const POSTS = {
         const sizeApprox = JSON.stringify(remoteCopy).length;
         if (sizeApprox <= this.FIRESTORE_DOC_LIMIT) {
           DATA_SYNC.db.collection(this.COLLECTION).doc(post.id).set(remoteCopy)
-            .catch(e => console.warn('[POSTS] sync failed:', e.message));
+            .catch(e => _handleSyncError('POSTS', e));
         } else {
           console.warn('[POSTS] payload too large (' + sizeApprox + 'B) — saved locally only');
         }
@@ -806,7 +851,7 @@ const POSTS = {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
         DATA_SYNC.db.collection(this.COLLECTION).doc(postId).set(
           { comments: all[idx].comments }, { merge: true }
-        ).catch(e => console.warn('[POSTS] comment sync:', e.message));
+        ).catch(e => _handleSyncError('POSTS', e));
       }
     } catch (e) {}
     return comment;
@@ -861,7 +906,7 @@ const POSTS = {
           const merged = _mergeById(remote, local);
           safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
           if (typeof onUpdate === 'function') onUpdate(this.getAll());
-        }, err => console.warn('[POSTS] listener:', err.message));
+        }, err => _handleSyncError('POSTS', err));
     } catch (e) { console.warn('[POSTS] startLiveListener:', e.message); }
   },
 
@@ -912,7 +957,7 @@ const WINS = {
         const sizeApprox = JSON.stringify(remoteCopy).length;
         if (sizeApprox <= 900 * 1024) {
           DATA_SYNC.db.collection(this.COLLECTION).doc(win.id).set(remoteCopy)
-            .catch(e => console.warn('[WINS] sync failed:', e.message));
+            .catch(e => _handleSyncError('WINS', e));
         } else {
           console.warn('[WINS] payload too large (' + sizeApprox + 'B) — saved locally only');
         }
@@ -964,7 +1009,7 @@ const WINS = {
           const merged = _mergeById(remote, local);
           safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
           if (typeof onUpdate === 'function') onUpdate(this.getAll());
-        }, err => console.warn('[WINS] listener:', err.message));
+        }, err => _handleSyncError('WINS', err));
     } catch (e) { console.warn('[WINS] startLiveListener:', e.message); }
   },
 
@@ -1003,7 +1048,7 @@ const EVENTS = {
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
         DATA_SYNC.db.collection(this.COLLECTION).doc(ev.id).set(ev)
-          .catch(e => console.warn('[EVENTS] sync failed:', e.message));
+          .catch(e => _handleSyncError('EVENTS', e));
       }
     } catch (e) {}
     return ev;
@@ -1065,7 +1110,7 @@ const ANNOUNCEMENTS = {
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
         DATA_SYNC.db.collection(this.COLLECTION).doc(ann.id).set(ann)
-          .catch(e => console.warn('[ANNOUNCEMENTS] sync:', e.message));
+          .catch(e => _handleSyncError('ANNOUNCEMENTS', e));
       }
     } catch (e) {}
     return ann;
@@ -1111,7 +1156,7 @@ const ANNOUNCEMENTS = {
           const merged = _mergeById(remote, safeGetJSON(this.STORAGE_KEY, []));
           safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
           if (typeof onUpdate === 'function') onUpdate(this.getAll());
-        }, err => console.warn('[ANNOUNCEMENTS] listener:', err.message));
+        }, err => _handleSyncError('ANNOUNCEMENTS', err));
     } catch (e) { console.warn('[ANNOUNCEMENTS] startLiveListener:', e.message); }
   },
 
@@ -1150,7 +1195,7 @@ const FAQS = {
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
         DATA_SYNC.db.collection(this.COLLECTION).doc(faq.id).set(faq)
-          .catch(e => console.warn('[FAQS] sync:', e.message));
+          .catch(e => _handleSyncError('FAQS', e));
       }
     } catch (e) {}
     return faq;
@@ -1194,7 +1239,7 @@ const FAQS = {
           const merged = _mergeById(remote, this.getAll());
           safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
           if (typeof onUpdate === 'function') onUpdate(this.getAll());
-        }, err => console.warn('[FAQS] listener:', err.message));
+        }, err => _handleSyncError('FAQS', err));
     } catch (e) { console.warn('[FAQS] startLiveListener:', e.message); }
   },
 
@@ -1247,7 +1292,7 @@ const CHAT = {
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
         DATA_SYNC.db.collection(this.COLLECTION).doc(msg.id).set(msg)
-          .catch(e => console.warn('[CHAT] sync:', e.message));
+          .catch(e => _handleSyncError('CHAT', e));
       }
     } catch (e) {}
     return msg;
@@ -1278,7 +1323,7 @@ const CHAT = {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
         DATA_SYNC.db.collection(this.COLLECTION).doc(messageId).set(
           { reactions: msg.reactions || {} }, { merge: true }
-        ).catch(e => console.warn('[CHAT] react sync:', e.message));
+        ).catch(e => _handleSyncError('CHAT', e));
       }
     } catch (e) {}
   },
@@ -1315,7 +1360,7 @@ const CHAT = {
           merged.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
           safeSetItem(this.STORAGE_KEY, JSON.stringify(merged.slice(-200)));
           if (typeof onUpdate === 'function') onUpdate(this.getAll());
-        }, err => console.warn('[CHAT] listener:', err.message));
+        }, err => _handleSyncError('CHAT', err));
     } catch (e) { console.warn('[CHAT] startLiveListener:', e.message); }
   },
 

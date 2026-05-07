@@ -1,0 +1,65 @@
+// Sphere Academy — Firestore security rules
+//
+// DEPLOY THESE IN THE FIREBASE CONSOLE:
+//   1. Go to https://console.firebase.google.com/project/marketing-intern-54252/firestore/rules
+//   2. Replace ALL existing rules with the contents of this file
+//   3. Click "Publish"
+//
+// Why this matters: Without these rules, ONLY the sphere_lms collection works.
+// All community features (Feed, Announcements, Wins, Chat, FAQs, Members presence,
+// Events) silently fail to write to Firestore — so each browser only ever sees
+// its own localStorage copy. That's why other students don't see admin posts.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Shared lesson + site content authored by admin
+    match /sphere_lms/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Community feed (timeline posts + comments + reactions)
+    match /sphere_posts/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Wins (celebrations)
+    match /sphere_wins/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Announcements (admin → all students)
+    match /sphere_announcements/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // FAQs (admin authored)
+    match /sphere_faqs/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Group chat messages
+    match /sphere_chat/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Per-user docs (progress, presence/lastSeen, profile, analytics snapshot)
+    match /sphere_users/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Events (workshops, deadlines)
+    match /sphere_events/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
