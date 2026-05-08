@@ -6430,6 +6430,27 @@ if (currentPage === 'index.html') {
   const sectionTitleEl = document.querySelector('.features-header .section-title');
   if (sectionTitleEl) sectionTitleEl.textContent = SITE_SETTINGS.getTitle();
 
+  // Wire the bento "Live now" card to the real PRESENCE data — counts
+  // members whose lastSeen falls inside the online window. Stays in
+  // sync via a Firestore listener so visitors see the count update
+  // live without reloading. Falls back to a generic 'Live community'
+  // label when the PRESENCE module isn't available.
+  function bindBentoLiveCount() {
+    const el = document.getElementById('bentoLiveCount');
+    if (!el || typeof PRESENCE === 'undefined') return;
+    PRESENCE.startLiveListener((users) => {
+      const onlineCount = (users || []).filter(u => PRESENCE.isOnline(u)).length;
+      if (onlineCount === 0) {
+        el.textContent = 'Live community';
+      } else if (onlineCount === 1) {
+        el.textContent = '1 member online';
+      } else {
+        el.textContent = onlineCount + ' members online';
+      }
+    });
+  }
+  setTimeout(bindBentoLiveCount, 1200);
+
   // 3D tilt on mouse-move parallax — reusable for hero card + testimonial cards
   function applyTilt(el, options) {
     if (!el) return;
