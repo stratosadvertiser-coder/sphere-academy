@@ -11010,27 +11010,47 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
 }
 
-/* Centered single-column hero: title → CTAs → branded card → status.
+/* Centered single-column hero with tight vertical rhythm.
+   Reading order top → bottom:
+     1. Eyebrow pill (chip)
+     2. Title (BIG)
+     3. Sub (calm)
+     4. CTAs (the ask)
+     5. Sphere Academy badge card (the brand)
+     6. 2-card status row (the proof)
+     7. Trust avatars + caption (the people)
    Each child shrinks to its own content + self-centers via the flex
    column's align-items: center. Wide elements (title, sub, mini-cards,
-   centered logo card) explicitly opt back into spanning the column
-   width so their content wraps properly. */
+   centered logo card) opt back into spanning the column. */
 .hero-centered {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 760px;
+  max-width: 720px;
   margin: 0 auto;
+  gap: 0;
 }
-.hero-centered > * { max-width: 720px; }
+.hero-centered > * { max-width: 100%; }
+
+/* Vertical rhythm — each element controls its own bottom margin so
+   the sections breathe without feeling cramped or gapped. */
+.hero-centered .hero-eyebrow      { margin: 0 auto 24px; }
+.hero-centered .hero-title        { margin: 0 0 18px; }
+.hero-centered .hero-sub          { margin: 0 auto 32px; }
+.hero-centered .hero-actions      { margin: 0 auto 40px; }
+.hero-centered .bento-logo-centered { margin: 0 auto 14px; }
+.hero-centered .hero-mini-cards   { margin: 0 auto 28px; }
+.hero-centered .hero-trust        { margin: 0 auto; }
+
 /* Elements that need full column width for proper wrapping */
 .hero-centered .hero-title,
-.hero-centered .hero-sub,
-.hero-centered .bento-logo-centered,
-.hero-centered .hero-mini-cards {
+.hero-centered .hero-sub {
   width: 100%;
 }
+.hero-centered .bento-logo-centered { width: 100%; max-width: 380px; }
+.hero-centered .hero-mini-cards     { width: 100%; max-width: 540px; }
+
 /* Elements that should self-center (size to content) */
 /* Force these to size to their content, then center as a block.
    width: fit-content is more reliable than width: auto for flex
