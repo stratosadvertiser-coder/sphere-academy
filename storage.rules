@@ -1,0 +1,27 @@
+// Sphere Academy — Firebase Storage rules
+//
+// DEPLOY THESE IN THE FIREBASE CONSOLE:
+//   1. Go to https://console.firebase.google.com/project/marketing-intern-54252/storage/rules
+//   2. Replace ALL existing rules with the contents of this file
+//   3. Click "Publish"
+//
+// Without these rules, assignment file uploads from the Weekly Assignment
+// dropzone will fail silently — students will see the submission go through
+// but the admin's submission inspector will only show 'Metadata only' tags
+// instead of openable Open buttons.
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Assignment uploads — admin needs to be able to read what students
+    // submit, and students need to be able to upload their own files.
+    // Path scheme: assignments/<username>/<weekId>/<timestamp>_<filename>
+    match /assignments/{username}/{weekId}/{fileName} {
+      allow read: if true;
+      // 50 MB ceiling so a runaway upload can't trash the free tier.
+      allow write: if request.auth != null
+                   && request.resource.size < 50 * 1024 * 1024;
+    }
+  }
+}

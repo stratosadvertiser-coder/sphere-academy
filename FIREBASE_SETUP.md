@@ -88,6 +88,47 @@ service cloud.firestore {
 
 ---
 
+## Part 3.5: Enable Firebase Storage (3 min) — required for assignment file uploads
+
+Without this, file uploads in the Weekly Assignment dropzone will save metadata only (filename + size) — admins won't be able to open the actual files. Pasted links continue to work either way.
+
+**👉 Direct link:**
+```
+https://console.firebase.google.com/project/marketing-intern-54252/storage
+```
+
+1. Click **"Get started"** (skip if already set up)
+2. **Start in production mode** → click Next
+3. **Pick a location** (use the same region as Firestore, e.g. `asia-southeast1`)
+4. Click **"Done"** — Storage provisions in ~30 seconds
+
+Now configure Storage rules:
+
+5. Go to the **"Rules"** tab
+6. Replace the existing rules with:
+
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Assignment uploads: any authenticated user (incl. anonymous)
+    // can read + write under assignments/. Admin and student can both
+    // open the file via the resulting download URL.
+    match /assignments/{username}/{weekId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 50 * 1024 * 1024;
+    }
+  }
+}
+```
+
+7. Click **"Publish"**
+
+> ⚠ Storage has its own rules separate from Firestore. Both must be configured.
+
+---
+
 ## Part 4: Authorized Domains (1 min)
 
 Make sure your app's domain is authorized for OAuth:

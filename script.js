@@ -122,6 +122,7 @@ const ACTIVITY = {
 // ============================================================
 const DATA_SYNC = {
   db: null,
+  storage: null,
   COLLECTION: 'sphere_lms',
   loaded: false,
 
@@ -139,6 +140,13 @@ const DATA_SYNC = {
         firebase.initializeApp(FIREBASE_CONFIG);
       }
       this.db = firebase.firestore();
+      // Storage — used by assignment uploads so the admin inspector can
+      // open the actual file (not just see metadata). Optional: if the
+      // SDK isn't loaded on this page, this stays null and the upload
+      // helper falls back to metadata-only.
+      try {
+        if (firebase.storage) this.storage = firebase.storage();
+      } catch (e) { console.warn('[SYNC] Storage init failed:', e.message); }
 
       // Sign in anonymously so Firestore writes work (required for rule "request.auth != null")
       // Only if no user is already signed in (e.g. via Google OAuth)
@@ -668,6 +676,50 @@ const DATA_SYNC_READY = (async () => {
 })();
 
 // ===== ASSIGNMENTS STORAGE =====
+// ============================================================
+// uploadAssignmentFile — pushes a single assignment file to Firebase
+// Storage and returns the download URL. Falls back to null if Storage
+// isn't configured / available, in which case the submission still
+// goes through with metadata-only.
+// Path scheme: assignments/<username>/<weekId>/<timestamp>_<safeFilename>
+// ============================================================
+async function uploadAssignmentFile(file, username, weekId, onProgress) {
+  if (!file || !username || !weekId) return null;
+  if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.storage) {
+    console.warn('[ASSIGNMENT] Storage not available — saving metadata only.');
+    return null;
+  }
+  try {
+    const safe = String(file.name || 'file').replace(/[^\w.\-]/g, '_').slice(0, 80);
+    const path = 'assignments/' + username + '/' + weekId + '/' + Date.now() + '_' + safe;
+    const ref = DATA_SYNC.storage.ref().child(path);
+    // Use the resumable task so we can stream progress
+    const task = ref.put(file);
+    return await new Promise((resolve, reject) => {
+      task.on('state_changed',
+        (snap) => {
+          if (typeof onProgress === 'function' && snap.totalBytes > 0) {
+            onProgress(snap.bytesTransferred / snap.totalBytes);
+          }
+        },
+        (err) => {
+          console.warn('[ASSIGNMENT] upload failed for', file.name, err);
+          reject(err);
+        },
+        async () => {
+          try {
+            const url = await task.snapshot.ref.getDownloadURL();
+            resolve(url);
+          } catch (e) { reject(e); }
+        }
+      );
+    });
+  } catch (e) {
+    console.warn('[ASSIGNMENT] upload exception:', e.message || e);
+    return null;
+  }
+}
+
 const ASSIGNMENTS = {
   STORAGE_KEY: 'assignment_submissions',
 
@@ -3609,7 +3661,14 @@ if (currentPage === 'lesson.html') {
           asgnHtml += '<div class="assignment-file">';
           asgnHtml += '<div class="assignment-file-icon ' + cls + '">' + icon + '</div>';
           asgnHtml += '<div class="assignment-file-info">';
-          asgnHtml += '<div class="assignment-file-name">' + f.name + '</div>';
+          // If we have a downloadURL (Storage upload succeeded), make
+          // the filename a link. Else just show the text.
+          if (f.downloadURL) {
+            const safeUrl = String(f.downloadURL).replace(/"/g, '&quot;');
+            asgnHtml += '<div class="assignment-file-name"><a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + f.name + '</a></div>';
+          } else {
+            asgnHtml += '<div class="assignment-file-name">' + f.name + '</div>';
+          }
           asgnHtml += '<div class="assignment-file-size">' + f.size + '</div>';
           asgnHtml += '</div></div>';
         });
@@ -3779,33 +3838,50 @@ if (currentPage === 'lesson.html') {
         }
 
         if (submitBtn) {
-          submitBtn.addEventListener('click', () => {
+          submitBtn.addEventListener('click', async () => {
             if (pendingFiles.length === 0 && pendingLinks.length === 0) return;
-            submitBtn.textContent = 'Submitting...';
             submitBtn.disabled = true;
 
-            // Convert files to storable format (metadata only)
-            const fileData = pendingFiles.map(file => {
+            const username = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+
+            // Upload each file to Firebase Storage so the admin can
+            // actually open it later. If Storage is unavailable or a
+            // single upload fails, we still save metadata + whatever
+            // links were pasted — submission never silently disappears.
+            const fileData = [];
+            for (let i = 0; i < pendingFiles.length; i++) {
+              const file = pendingFiles[i];
               const sizeStr = file.size < 1024 * 1024
                 ? (file.size / 1024).toFixed(1) + ' KB'
                 : (file.size / (1024 * 1024)).toFixed(1) + ' MB';
-              return {
+              submitBtn.textContent = 'Uploading ' + (i + 1) + ' of ' + pendingFiles.length + '… 0%';
+              let downloadURL = null;
+              try {
+                downloadURL = await uploadAssignmentFile(file, username, weekId, (frac) => {
+                  const pct = Math.round(frac * 100);
+                  submitBtn.textContent = 'Uploading ' + (i + 1) + ' of ' + pendingFiles.length + '… ' + pct + '%';
+                });
+              } catch (err) {
+                console.warn('[ASSIGNMENT] file failed, falling back to metadata-only:', file.name);
+              }
+              fileData.push({
                 name: file.name,
                 size: sizeStr,
                 type: file.type,
-                date: new Date().toISOString()
-              };
-            });
+                date: new Date().toISOString(),
+                downloadURL: downloadURL || null
+              });
+            }
+
             const linkData = pendingLinks.map(url => ({
               url: url,
               date: new Date().toISOString()
             }));
+
+            submitBtn.textContent = 'Saving…';
             ASSIGNMENTS.submit(weekId, fileData, linkData);
             if (typeof checkBadges === 'function') checkBadges();
-            // Force-flush the user snapshot so the admin sees the new
-            // submission immediately, not after the 5s throttle.
             try { if (typeof USER_SYNC !== 'undefined') USER_SYNC.save(true); } catch (e) {}
-            // Reload to show submitted state
             window.location.reload();
           });
         }
@@ -10058,10 +10134,21 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
             const fSize = String(f.size || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const ftype = String(f.type || '').toLowerCase();
             const icon = ftype.startsWith('image') ? '🖼️' : ftype.startsWith('video') ? '🎬' : '📄';
+            // If we have a downloadURL (Storage-backed submission), show
+            // a real Open button. Otherwise fall back to the legacy
+            // 'Metadata' label so the admin knows the file isn't
+            // retrievable from this submission.
+            const safeUrl = f.downloadURL ? String(f.downloadURL).replace(/"/g, '&quot;') : '';
+            const trailing = safeUrl
+              ? '<a class="sub-item-open" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" download>Open ↗</a>'
+              : '<span class="sub-item-tag" title="This submission predates file storage — only filename + size are saved. Ask the student to re-submit so you can open the file.">Metadata only</span>';
             bodyHtml += '<div class="sub-item"><span class="sub-item-icon">' + icon + '</span>'
-              + '<div class="sub-item-meta"><div class="sub-item-name">' + fName + '</div>'
-              + '<div class="sub-item-sub">File · ' + fSize + '</div></div>'
-              + '<span class="sub-item-tag" title="The platform stores filenames + sizes only, not the file bytes.">Metadata</span></div>';
+              + '<div class="sub-item-meta">'
+              +   '<div class="sub-item-name">' + (safeUrl ? '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + fName + '</a>' : fName) + '</div>'
+              +   '<div class="sub-item-sub">File · ' + fSize + '</div>'
+              + '</div>'
+              + trailing
+              + '</div>';
           });
           links.forEach(linkObj => {
             const url = (typeof linkObj === 'string') ? linkObj : (linkObj && linkObj.url) || '';
