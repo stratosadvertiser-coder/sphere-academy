@@ -11032,11 +11032,19 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   width: 100%;
 }
 /* Elements that should self-center (size to content) */
-.hero-centered .hero-eyebrow,
-.hero-centered .hero-actions,
-.hero-centered .hero-trust {
-  width: auto;
+/* Force these to size to their content, then center as a block.
+   width: fit-content is more reliable than width: auto for flex
+   items; auto-margins guarantee horizontal centering even if a
+   later rule re-specifies display. Higher specificity (.hero.hero-v2)
+   beats any cascading width: 100% from older hero rules. */
+.hero.hero-v2 .hero-centered .hero-eyebrow,
+.hero.hero-v2 .hero-centered .hero-actions,
+.hero.hero-v2 .hero-centered .hero-trust {
+  width: fit-content;
+  max-width: 100%;
   align-self: center;
+  margin-left: auto;
+  margin-right: auto;
   justify-content: center;
 }
 
