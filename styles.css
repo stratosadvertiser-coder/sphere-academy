@@ -10975,13 +10975,13 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 }
 .mesh-blob-b {
   width: 560px; height: 560px;
-  background: #e879a8;
+  background: #4c1d95;
   top: 30%; right: -180px;
   animation-delay: -8s;
 }
 .mesh-blob-c {
   width: 380px; height: 380px;
-  background: #00d4a8;
+  background: #8b9eff;
   bottom: -100px; left: 32%;
   animation-delay: -15s;
 }
@@ -11092,13 +11092,13 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.20);
+  background: #635bff;
+  box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.20);
   animation: heroPulse 2s ease-in-out infinite;
 }
 @keyframes heroPulse {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.20); }
-  50%      { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.06); }
+  0%, 100% { box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.20); }
+  50%      { box-shadow: 0 0 0 8px rgba(99, 91, 255, 0.06); }
 }
 
 /* Editorial headline — big, tight tracking */
@@ -11110,19 +11110,30 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   margin: 0 0 22px;
   color: var(--text);
 }
+/* Animated gradient on 'Roadmap' — continuous left-to-right shimmer
+   through the indigo family (deep → mid → pale → mid → deep) so it
+   reads as motion without the green/pink off-tones. */
 .hero-title-gradient {
-  background: linear-gradient(120deg, #635bff 0%, #e879a8 50%, #00d4a8 100%);
-  background-size: 200% 100%;
+  background: linear-gradient(90deg,
+    #312e81 0%,
+    #635bff 25%,
+    #8b9eff 50%,
+    #c5cbf5 65%,
+    #8b9eff 80%,
+    #635bff 95%,
+    #312e81 100%
+  );
+  background-size: 250% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: gradientShift 6s ease-in-out infinite;
+  animation: gradientShift 5s linear infinite;
   display: inline-block;
 }
 @keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
+  0%   { background-position: 250% 50%; }
+  100% { background-position: -250% 50%; }
 }
 
 .hero-sub {
@@ -11370,10 +11381,10 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #10b981;
+  background: #635bff;
   flex-shrink: 0;
   position: relative;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.20);
+  box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.20);
   animation: heroPulse 2s ease-in-out infinite;
 }
 .bento-live-meta {
@@ -11392,30 +11403,30 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   color: var(--text-light);
 }
 
-/* Outcome card — graduate */
+/* Outcome card — graduate (indigo accent, aligned with hero palette) */
 .bento-outcome {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, var(--bg) 80%);
-  border-color: rgba(16, 185, 129, 0.30);
+  background: linear-gradient(135deg, rgba(99, 91, 255, 0.06) 0%, var(--bg) 80%);
+  border-color: rgba(99, 91, 255, 0.30);
 }
 [data-theme="dark"] .bento-outcome {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.10) 0%, rgba(255, 255, 255, 0.02) 80%);
+  background: linear-gradient(135deg, rgba(99, 91, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 80%);
 }
 .bento-outcome-icon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(16, 185, 129, 0.18);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #059669;
+  background: rgba(99, 91, 255, 0.18);
+  border: 1px solid rgba(99, 91, 255, 0.35);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-[data-theme="dark"] .bento-outcome-icon { color: #34d399; }
+[data-theme="dark"] .bento-outcome-icon { color: #c5cbf5; }
 .bento-outcome-text {
   display: flex;
   flex-direction: column;
