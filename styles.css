@@ -11429,16 +11429,13 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   color: var(--text-light);
 }
 
-/* Outcome card — graduate (indigo accent, aligned with hero palette) */
+/* Outcome card — graduate. Same surface as the Live community card
+   (plain bento default) so the two cards visually match; the indigo
+   accent lives on the small icon tile, not the card background. */
 .bento-outcome {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, rgba(99, 91, 255, 0.06) 0%, var(--bg) 80%);
-  border-color: rgba(99, 91, 255, 0.30);
-}
-[data-theme="dark"] .bento-outcome {
-  background: linear-gradient(135deg, rgba(99, 91, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 80%);
 }
 .bento-outcome-icon {
   width: 40px;
