@@ -10961,8 +10961,8 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 .hero-mesh-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.55;
+  filter: blur(120px);
+  opacity: 0.22;
   animation: meshDrift 22s ease-in-out infinite;
   will-change: transform;
 }
