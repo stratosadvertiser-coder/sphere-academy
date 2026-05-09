@@ -10945,7 +10945,7 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 
 .hero.hero-v2 {
   position: relative;
-  padding: clamp(90px, 13vw, 160px) 0 clamp(40px, 6vw, 80px);
+  padding: clamp(140px, 18vw, 220px) 0 clamp(40px, 6vw, 80px);
   overflow: hidden;
   isolation: isolate;
 }
