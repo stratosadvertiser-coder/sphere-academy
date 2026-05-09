@@ -11258,17 +11258,19 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 
 /* Centered variant — sits on its own under the CTAs as a branded
    badge card. Inherits the default light bento surface so the logo
-   + name read against the page rather than a dark gradient. Hover
-   gets a soft indigo glow. */
+   + name read against the page rather than a dark gradient. Inner
+   flex content (logo + meta) is centered horizontally so the card
+   reads as a balanced badge, not a left-aligned chip. */
 .bento-logo-centered {
   grid-column: auto;
   max-width: 360px;
   margin: 0 auto 16px;
-  text-align: left;
+  text-align: center;
   padding: 18px 24px;
   background: var(--bg);
   border-color: var(--border);
   color: var(--text);
+  justify-content: center;
 }
 [data-theme="dark"] .bento-logo-centered {
   background: rgba(255, 255, 255, 0.03);
