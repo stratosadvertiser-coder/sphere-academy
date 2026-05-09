@@ -6430,26 +6430,106 @@ if (currentPage === 'index.html') {
   const sectionTitleEl = document.querySelector('.features-header .section-title');
   if (sectionTitleEl) sectionTitleEl.textContent = SITE_SETTINGS.getTitle();
 
-  // Wire the bento "Live now" card to the real PRESENCE data — counts
-  // members whose lastSeen falls inside the online window. Stays in
-  // sync via a Firestore listener so visitors see the count update
-  // live without reloading. Falls back to a generic 'Live community'
-  // label when the PRESENCE module isn't available.
-  function bindBentoLiveCount() {
-    const el = document.getElementById('bentoLiveCount');
-    if (!el || typeof PRESENCE === 'undefined') return;
+  // Wire the bento "Live now" card AND the hero trust strip to real
+  // PRESENCE data. One listener updates both: live count for the bento,
+  // and real student avatars (with initials fallback) for the trust
+  // strip. Falls back to placeholders if PRESENCE isn't available or
+  // there are no registered users yet.
+  function bindHeroLiveData() {
+    const liveEl = document.getElementById('bentoLiveCount');
+    const trustEl = document.querySelector('.hero-trust-avatars');
+    const trustCaptionEl = document.querySelector('.hero-trust p');
+    if (typeof PRESENCE === 'undefined') return;
+    if (!liveEl && !trustEl) return;
+
+    // Same indigo-family gradients we use elsewhere — pick one based on
+    // a stable hash of the username so the same student always renders
+    // with the same fallback color.
+    const FALLBACK_GRADIENTS = [
+      'linear-gradient(135deg,#635bff,#8b9eff)',
+      'linear-gradient(135deg,#4c1d95,#635bff)',
+      'linear-gradient(135deg,#312e81,#8b9eff)',
+      'linear-gradient(135deg,#5b21b6,#a78bfa)',
+      'linear-gradient(135deg,#1e1b4b,#635bff)'
+    ];
+    function pickGradient(username) {
+      let hash = 0;
+      for (let i = 0; i < (username || '').length; i++) {
+        hash = ((hash << 5) - hash) + username.charCodeAt(i);
+        hash |= 0;
+      }
+      return FALLBACK_GRADIENTS[Math.abs(hash) % FALLBACK_GRADIENTS.length];
+    }
+    function _esc(s) {
+      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function initialsFor(name) {
+      const parts = String(name || '?').trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
     PRESENCE.startLiveListener((users) => {
-      const onlineCount = (users || []).filter(u => PRESENCE.isOnline(u)).length;
-      if (onlineCount === 0) {
-        el.textContent = 'Live community';
-      } else if (onlineCount === 1) {
-        el.textContent = '1 member online';
-      } else {
-        el.textContent = onlineCount + ' members online';
+      const list = Array.isArray(users) ? users : [];
+
+      // Live count update
+      if (liveEl) {
+        const onlineCount = list.filter(u => PRESENCE.isOnline(u)).length;
+        if (onlineCount === 0) liveEl.textContent = 'Live community';
+        else if (onlineCount === 1) liveEl.textContent = '1 member online';
+        else liveEl.textContent = onlineCount + ' members online';
+      }
+
+      // Trust strip — pick up to 3 most-recently-active students,
+      // prefer ones with avatars uploaded
+      if (trustEl) {
+        const sorted = list.slice().sort((a, b) => {
+          // Avatar-having users first, then by recent activity
+          if (!!a.avatar !== !!b.avatar) return a.avatar ? -1 : 1;
+          return (b.lastSeenMs || 0) - (a.lastSeenMs || 0);
+        });
+        const top = sorted.slice(0, 3);
+        const extra = Math.max(0, list.length - top.length);
+
+        if (top.length === 0) {
+          // Keep the existing fallback markup if no users yet
+          return;
+        }
+
+        let html = '';
+        top.forEach(u => {
+          const display = u.displayName || u.username || '?';
+          const safeName = _esc(display);
+          if (u.avatar) {
+            html += '<span class="trust-avatar trust-avatar-photo" title="' + safeName + '">'
+                  +   '<img src="' + _esc(u.avatar) + '" alt="' + safeName + '">'
+                  + '</span>';
+          } else {
+            html += '<span class="trust-avatar" title="' + safeName + '" '
+                  +   'style="background:' + pickGradient(u.username || display) + '">'
+                  +   _esc(initialsFor(display))
+                  + '</span>';
+          }
+        });
+        // "+N more" or "+" if the count is small
+        html += '<span class="trust-avatar trust-avatar-more">'
+              + (extra > 0 ? '+' + extra : '+')
+              + '</span>';
+        trustEl.innerHTML = html;
+
+        // Caption — reflect real student count
+        if (trustCaptionEl) {
+          const total = list.length;
+          if (total > 0) {
+            trustCaptionEl.textContent = total === 1
+              ? '1 marketing intern training the Stratos way'
+              : total + ' marketing interns training the Stratos way';
+          }
+        }
       }
     });
   }
-  setTimeout(bindBentoLiveCount, 1200);
+  setTimeout(bindHeroLiveData, 1200);
 
   // 3D tilt on mouse-move parallax — reusable for hero card + testimonial cards
   function applyTilt(el, options) {
