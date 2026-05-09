@@ -11257,33 +11257,24 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 }
 
 /* Centered variant — sits on its own under the CTAs as a compact
-   branded badge card. Hugs the logo + name tightly so it reads as a
-   chip, not a card. */
+   branded badge card. Hugs the logo + name with snug padding instead
+   of stretching across the column. */
 .bento-logo-centered {
   grid-column: auto;
   width: fit-content;
   max-width: 100%;
   margin: 0 auto 16px;
   text-align: center;
-  padding: 8px 14px;
-  gap: 10px;
+  padding: 12px 18px;
+  gap: 12px;
   background: var(--bg);
   border-color: var(--border);
   color: var(--text);
   justify-content: center;
 }
 .bento-logo-centered .bento-logo-img {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-}
-.bento-logo-centered .bento-logo-meta strong {
-  font-size: 0.92rem;
-  line-height: 1.2;
-}
-.bento-logo-centered .bento-logo-meta span {
-  font-size: 0.7rem;
-  letter-spacing: 0.2px;
+  width: 44px;
+  height: 44px;
 }
 [data-theme="dark"] .bento-logo-centered {
   background: rgba(255, 255, 255, 0.03);
