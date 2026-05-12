@@ -8880,7 +8880,10 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 
 /* Sticky Actions column — pins View/Make Admin/Remove to the right edge so
    they remain visible while the rest of the wide table scrolls horizontally.
-   Without this, the buttons fall off-screen on smaller laptops. */
+   Without this, the buttons fall off-screen on smaller laptops.
+   Note: we DON'T set display:flex on the td itself — that strips it from the
+   table-row layout and the buttons drift away from their row. Instead, we
+   keep the cell as a table-cell and rely on inline-block buttons + nowrap. */
 .students-table thead th:last-child,
 .students-table tbody td.students-actions-cell {
   position: sticky;
@@ -8889,10 +8892,15 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   background: var(--card-bg, var(--bg));
   /* faint left edge so the sticky column feels separated from the scrolling area */
   box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.08);
-  min-width: 320px;
+  min-width: 260px;
+  white-space: nowrap;
+  text-align: right;
+  vertical-align: middle;
 }
 .students-table thead th:last-child {
   background: var(--bg-alt);
+  text-align: right;
+  padding-right: 18px;
 }
 .students-table tbody tr:hover td.students-actions-cell {
   background: var(--bg-alt);
@@ -8901,18 +8909,15 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 [data-theme="dark"] .students-table tbody td.students-actions-cell {
   box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.4);
 }
-/* Force every action button onto one row, side-by-side. Without this rule the
-   buttons inside the cell could break onto multiple lines on narrow widths. */
-.students-actions-cell {
-  display: flex !important;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-}
+/* Action buttons inside the sticky cell — explicit inline-block so they
+   always render side-by-side, never stack. Small gap controlled by the
+   leading space in the JS-emitted HTML. */
 .students-actions-cell > button {
-  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 4px;
 }
+.students-actions-cell > button:first-child { margin-left: 0; }
 
 /* Role-toggle button (Make Admin / Make Student). Direction-coded:
    - .to-admin = positive promotion → indigo (matches primary action)
