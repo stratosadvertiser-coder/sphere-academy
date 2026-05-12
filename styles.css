@@ -11037,7 +11037,11 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 
 .hero.hero-v2 {
   position: relative;
-  padding: clamp(140px, 18vw, 220px) 0 clamp(40px, 6vw, 80px);
+  /* Top padding trimmed: was clamp(140px, 18vw, 220px) which left a huge
+     blank gap between navbar and the eyebrow on desktop. New value still
+     clears the fixed navbar (~70px) but pulls the eyebrow + title up so
+     the fold feels packed. */
+  padding: clamp(80px, 9vw, 120px) 0 clamp(40px, 6vw, 80px);
   overflow: hidden;
   isolation: isolate;
 }
