@@ -10011,6 +10011,9 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         return;
       }
 
+      // Who's looking at this table? Used to disable role-toggle for self.
+      const meUsername = (typeof AUTH !== 'undefined' && AUTH.getUser) ? (AUTH.getUser() || '') : '';
+
       studentsTbody.innerHTML = rows.map(r => {
         const completed = r.progress ? Object.values(r.progress).filter(Boolean).length : 0;
         const pct = Math.round((completed / 16) * 100);
@@ -10021,6 +10024,20 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         const statusBadge = loggedIn
           ? '<span class="status-badge active"><span class="status-dot"></span>Logged in</span>'
           : '<span class="status-badge pending"><span class="status-dot"></span>Not yet</span>';
+
+        // Role-toggle button — promote student → admin or demote admin → student.
+        // Safety: hide for self (no self-demote) and the primary `admin` account
+        // (avoid bricking the org if it's the only admin left).
+        const isMe = !!meUsername && meUsername.toLowerCase() === (r.username || '').toLowerCase();
+        const isPrimaryAdmin = (r.username || '').toLowerCase() === 'admin';
+        const canToggleRole = !isMe && !isPrimaryAdmin;
+        const nextRole = r.role === 'admin' ? 'student' : 'admin';
+        const roleBtnLabel = r.role === 'admin' ? 'Make Student' : 'Make Admin';
+        const roleBtnClass = r.role === 'admin' ? 'to-student' : 'to-admin';
+        const roleToggleHtml = canToggleRole
+          ? ' <button class="students-role-btn ' + roleBtnClass + '" data-username="' + escS(r.username) + '" data-next-role="' + nextRole + '" title="' + roleBtnLabel + '">' + roleBtnLabel + '</button>'
+          : '';
+
         return '<tr data-username="' + escS(r.username) + '">'
           + '<td><div class="students-avatar">' + escS(initials) + '</div></td>'
           + '<td><strong>' + escS(r.displayName) + '</strong></td>'
@@ -10031,8 +10048,9 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           + '<td><div class="students-progress"><div class="students-progress-bar"><div class="students-progress-fill" style="width:' + pct + '%"></div></div><span>' + completed + '/16</span></div></td>'
           + '<td>' + (avgQuiz != null ? avgQuiz + '%' : '—') + '</td>'
           + '<td>' + fmtDate(r.lastLogin || r.lastActive || r.registeredAt) + '</td>'
-          + '<td>'
+          + '<td class="students-actions-cell" style="white-space:nowrap;">'
           +   '<button class="students-view-btn" data-username="' + escS(r.username) + '" title="View submissions">View</button>'
+          +   roleToggleHtml
           +   (r.role !== 'admin' ? ' <button class="students-delete-btn" data-username="' + escS(r.username) + '" title="Remove">Remove</button>' : '')
           + '</td>'
           + '</tr>';
@@ -10067,6 +10085,53 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           } catch (e) {}
           // Refresh
           loadStudents();
+        });
+      });
+
+      // Wire role-toggle buttons (Make Admin / Make Student).
+      // Writes the new role to Firestore (so the student picks it up on next
+      // login from any device) AND patches this browser's local user list so
+      // the table reflects the change immediately.
+      studentsTbody.querySelectorAll('.students-role-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const username = btn.dataset.username;
+          const nextRole = btn.dataset.nextRole;
+          if (!username || !nextRole) return;
+
+          const confirmMsg = nextRole === 'admin'
+            ? 'Promote @' + username + ' to ADMIN?\n\nThey will get full admin access — editing lessons, managing students, viewing all submissions, etc.\n\nThis takes effect on their next login.'
+            : 'Demote @' + username + ' to STUDENT?\n\nThey will lose admin access and see the regular student dashboard.\n\nThis takes effect on their next login.';
+          if (!confirm(confirmMsg)) return;
+
+          // Lock button while writing
+          const origLabel = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'Updating…';
+
+          // 1) Firestore — primary source of truth across devices
+          try {
+            if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+              await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(username)
+                .set({ role: nextRole }, { merge: true });
+            }
+          } catch (e) {
+            console.warn('[ROLE] Firestore write failed:', e.message);
+            alert('Failed to save the role change to the server.\n\n' + (e.message || 'Unknown error') + '\n\nThe local view will still update, but please retry to sync across devices.');
+          }
+
+          // 2) localStorage — so this admin's view updates instantly
+          try {
+            const users = AUTH.getAllUsers();
+            const idx = users.findIndex(u => (u.username || '').toLowerCase() === username.toLowerCase());
+            if (idx !== -1) {
+              users[idx].role = nextRole;
+              safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+            }
+          } catch (e) { /* non-fatal */ }
+
+          // Toast-style feedback before refresh
+          btn.textContent = nextRole === 'admin' ? '✓ Promoted' : '✓ Demoted';
+          setTimeout(() => loadStudents(), 600);
         });
       });
     }

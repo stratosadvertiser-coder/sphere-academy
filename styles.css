@@ -8878,6 +8878,80 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   color: #fca5a5;
 }
 
+/* Sticky Actions column — pins View/Make Admin/Remove to the right edge so
+   they remain visible while the rest of the wide table scrolls horizontally.
+   Without this, the buttons fall off-screen on smaller laptops. */
+.students-table thead th:last-child,
+.students-table tbody td.students-actions-cell {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: var(--card-bg, var(--bg));
+  /* faint left edge so the sticky column feels separated from the scrolling area */
+  box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.08);
+  min-width: 320px;
+}
+.students-table thead th:last-child {
+  background: var(--bg-alt);
+}
+.students-table tbody tr:hover td.students-actions-cell {
+  background: var(--bg-alt);
+}
+[data-theme="dark"] .students-table thead th:last-child,
+[data-theme="dark"] .students-table tbody td.students-actions-cell {
+  box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.4);
+}
+/* Force every action button onto one row, side-by-side. Without this rule the
+   buttons inside the cell could break onto multiple lines on narrow widths. */
+.students-actions-cell {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+.students-actions-cell > button {
+  flex-shrink: 0;
+}
+
+/* Role-toggle button (Make Admin / Make Student). Direction-coded:
+   - .to-admin = positive promotion → indigo (matches primary action)
+   - .to-student = cautionary demotion → amber so admin pauses before clicking */
+.students-role-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-light);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  margin-left: 4px;
+}
+.students-role-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.students-role-btn.to-admin:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.students-role-btn.to-student:hover {
+  border-color: #ca8a04;
+  background: #fef9c3;
+  color: #854d0e;
+}
+[data-theme="dark"] .students-role-btn.to-admin:hover {
+  background: rgba(99, 91, 255, 0.18);
+  color: #c5cbf5;
+}
+[data-theme="dark"] .students-role-btn.to-student:hover {
+  background: rgba(234, 179, 8, 0.18);
+  color: #fde68a;
+}
+
 @media (max-width: 768px) {
   .students-table thead { display: none; }
   .students-table tbody td {
