@@ -377,10 +377,16 @@ const USER_SYNC = {
           earnedBadges = Array.from(BADGES.evaluate());
         }
       } catch (e) { /* non-fatal */ }
+      // Include the user's avatar (base64 data URL) so it syncs across
+      // devices and shows up in the admin's All Students table. Without
+      // this, every student card falls back to initials even when they've
+      // uploaded a profile picture.
+      const avatar = (AUTH.getAvatarImage && AUTH.getAvatarImage()) || null;
       return {
         username,
         displayName: (AUTH.getDisplayName && AUTH.getDisplayName()) || username,
         role: (AUTH.isAdmin && AUTH.isAdmin()) ? 'admin' : 'student',
+        avatar,
         progress,
         quizScores,
         quizAttempts,
@@ -9909,11 +9915,16 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       local.forEach(u => {
         const key = (u.username || '').toLowerCase();
         if (!key) return;
+        // Local fallback for avatar: per-user key stored by AUTH when
+        // someone uploads a pic. Only this admin's own avatar will hit
+        // this branch — everyone else's photo comes from Firestore below.
+        const localAvatar = safeGetItem('avatar_' + u.username) || null;
         byUser[key] = {
           username: u.username,
           displayName: u.fullName || u.username,
           email: u.email || '',
           role: u.role || 'student',
+          avatar: u.avatar || localAvatar,
           source: 'local',
           progress: {},
           quizScores: {},
@@ -9932,6 +9943,9 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           displayName: r.displayName || ex.displayName || r.username || r.id,
           email: r.email || ex.email || '',
           role: r.role || ex.role || 'student',
+          // Avatar: Firestore is source of truth, fall back to whatever
+          // local had. Without this, the table only ever showed initials.
+          avatar: r.avatar || ex.avatar || null,
           source: ex.source ? 'local+remote' : 'remote',
           provider: r.provider || null,
           progress: r.progress || {},
@@ -10038,8 +10052,15 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           ? ' <button class="students-role-btn ' + roleBtnClass + '" data-username="' + escS(r.username) + '" data-next-role="' + nextRole + '" title="' + roleBtnLabel + '">' + roleBtnLabel + '</button>'
           : '';
 
+        // Avatar cell: prefer the real profile picture, fall back to initials
+        // when the student hasn't uploaded one yet. Stable color hash on the
+        // fallback so each student keeps the same colored badge.
+        const avatarHtml = r.avatar
+          ? '<img class="students-avatar-img" src="' + escS(r.avatar) + '" alt="' + escS(r.displayName) + '" loading="lazy" onerror="this.outerHTML=\'<div class=&quot;students-avatar&quot;>' + escS(initials) + '</div>\'">'
+          : '<div class="students-avatar">' + escS(initials) + '</div>';
+
         return '<tr data-username="' + escS(r.username) + '">'
-          + '<td><div class="students-avatar">' + escS(initials) + '</div></td>'
+          + '<td>' + avatarHtml + '</td>'
           + '<td><strong>' + escS(r.displayName) + '</strong></td>'
           + '<td><code>@' + escS(r.username) + '</code></td>'
           + '<td>' + escS(r.email || '—') + '</td>'
@@ -10431,8 +10452,37 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
     if (studentsSortBy) studentsSortBy.addEventListener('change', render);
     const studentsStatusFilter = document.getElementById('studentsStatusFilter');
     if (studentsStatusFilter) studentsStatusFilter.addEventListener('change', render);
-    if (studentsRefreshBtn) studentsRefreshBtn.addEventListener('click', loadStudents);
+    if (studentsRefreshBtn) {
+      studentsRefreshBtn.addEventListener('click', async () => {
+        const orig = studentsRefreshBtn.textContent;
+        studentsRefreshBtn.disabled = true;
+        studentsRefreshBtn.textContent = 'Refreshing…';
+        await loadStudents();
+        studentsRefreshBtn.textContent = '✓ Updated';
+        setTimeout(() => {
+          studentsRefreshBtn.textContent = orig;
+          studentsRefreshBtn.disabled = false;
+        }, 1200);
+      });
+    }
     if (studentsExportBtn) studentsExportBtn.addEventListener('click', exportCSV);
+
+    // Live auto-refresh — listen to sphere_users so the table reflects new
+    // signups, avatar changes, role promotions, lesson completions, etc.
+    // without the admin needing to click Refresh. Debounced so a flurry of
+    // writes (e.g. someone finishing a quiz) only triggers one re-render.
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        let debounceTimer = null;
+        DATA_SYNC.db.collection(USER_SYNC.COLLECTION).onSnapshot(
+          () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => { loadStudents(); }, 800);
+          },
+          (err) => console.warn('[STUDENTS] live listener failed:', err.message)
+        );
+      }
+    } catch (e) { console.warn('[STUDENTS] could not attach live listener:', e.message); }
 
     // Reset all student accounts — keeps the admin entry only.
     // Also wipes any community content authored by non-admin users

@@ -8813,6 +8813,19 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   flex-shrink: 0;
 }
 [data-theme="dark"] .students-avatar { color: var(--bg); }
+/* Real profile picture variant — same footprint as the initials badge but
+   renders the actual uploaded photo. object-fit:cover keeps non-square
+   uploads from stretching. */
+.students-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: block;
+}
 
 .role-badge {
   display: inline-block;
