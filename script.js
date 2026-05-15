@@ -2756,6 +2756,272 @@ const LESSONS = {
         safeSetItem(this.STORAGE_KEY, JSON.stringify(stored));
       }
     } catch (e) { /* non-fatal */ }
+
+    // One-time content seed for Phase 2-4 (W5-W16). Only fills lessons
+    // whose sections array is empty, so any admin-customized content is
+    // preserved. Idempotent — re-runs are no-ops once content is in place.
+    try {
+      const stored = safeGetJSON(this.STORAGE_KEY, null);
+      if (!Array.isArray(stored)) return;
+      const seed = this.PHASE_2_4_SEED || {};
+      let seedChanged = false;
+      stored.forEach(l => {
+        if (!l || !l.id || !seed[l.id]) return;
+        const empty = !Array.isArray(l.sections) || l.sections.length === 0;
+        if (empty) {
+          const s = seed[l.id];
+          l.sections = s.sections || [];
+          l.keyTakeaways = s.keyTakeaways || [];
+          l.proTip = s.proTip || '';
+          seedChanged = true;
+        }
+      });
+      if (seedChanged) {
+        safeSetItem(this.STORAGE_KEY, JSON.stringify(stored));
+      }
+    } catch (e) { /* non-fatal */ }
+  },
+
+  // Phase 2-4 content library — written for Filipino marketing interns
+  // building skills toward agency / freelance work. Each lesson follows
+  // the same shape: 4-5 sections, 5-7 takeaways, 1 pro tip.
+  PHASE_2_4_SEED: {
+    // =========================================================
+    // PHASE 2 — CREATIVES + AI (W5–W8)
+    // =========================================================
+    w5: {
+      sections: [
+        { heading: 'Why Critique Comes Before More Creating', content: '<p>Most beginners keep making new creatives without ever reviewing the old ones. That\'s why they plateau at "okay" forever. This week we slow down and audit everything you made in Phase 1 — every image post, banner, and story. The goal: spot the pattern in your weak spots so the next batch jumps a level.</p>' },
+        { heading: 'The CAT Framework — Clear, Attractive, Targeted', content: '<p>Every creative gets scored on three axes:</p><ul><li><strong>Clear</strong> — Can a stranger understand the offer in 3 seconds? If the headline takes effort, it fails.</li><li><strong>Attractive</strong> — Does it stop the scroll? Color contrast, faces, motion, and curiosity gaps drive this.</li><li><strong>Targeted</strong> — Does it speak to ONE specific person, not "everyone"? Generic = invisible.</li></ul><p>Rate each of your Phase 1 deliverables 1-5 on each axis. Anything below 4 needs a redo.</p>' },
+        { heading: 'AI as Your Creative Co-Pilot', content: '<p>Use these to speed up the rework — not replace your judgment:</p><ul><li><strong>ChatGPT / Gemini</strong> — draft 10 headline variations for your offer in 30 seconds.</li><li><strong>Midjourney / DALL-E</strong> — generate background visuals, product mockups, lifestyle scenes.</li><li><strong>Canva Magic Studio</strong> — instant background remover, text-to-image, brand kit auto-apply.</li><li><strong>Remove.bg</strong> — clean product cutouts in one click.</li></ul><p>Rule of thumb: AI for the first draft, your taste for the final cut.</p>' },
+        { heading: 'Brand Kit Discipline', content: '<p>If your three Phase 1 deliverables look like they came from three different brands, that\'s your #1 fix. Lock these in Canva\'s Brand Kit:</p><ul><li>Primary + secondary colors (max 3-4 hex codes)</li><li>Two fonts max — one for headlines, one for body</li><li>Logo files (light + dark versions)</li><li>3-5 reusable templates</li></ul><p>Consistency builds recognition. Recognition builds trust. Trust converts.</p>' },
+        { heading: 'This Week\'s Rework Assignment', content: '<p>Take your three Phase 1 deliverables (product post, banner, story) and rebuild each one with the critique applied. Submit BEFORE + AFTER side by side. We want to see the upgrade.</p>' }
+      ],
+      keyTakeaways: [
+        'Critique before creating more — pattern-spot your weak spots.',
+        'Score every creative on Clear, Attractive, Targeted (CAT).',
+        'Use AI for first drafts only — keep your taste in the final approval.',
+        'Lock a Brand Kit (colors, fonts, logo) before next week.',
+        'Consistency across creatives is the difference between hobbyist and pro.',
+        'Always present BEFORE + AFTER when iterating — shows growth to clients.'
+      ],
+      proTip: 'Save your "before" files in a folder called <strong>archive/</strong> — don\'t delete them. Future clients love seeing your evolution, and you\'ll need them when building your portfolio in Phase 4.'
+    },
+
+    w6: {
+      sections: [
+        { heading: 'Why Video Beats Static — The Algorithm Says So', content: '<p>Meta, TikTok, and YouTube all reward video with higher reach. A decent video can hit 10× the impressions of a great static image — for free. This week you go deeper into video creatives, mastering the structure that wins attention in the first 3 seconds.</p>' },
+        { heading: 'The Hook-Body-CTA Formula (Deep Dive)', content: '<p>Every winning video has three parts:</p><ul><li><strong>Hook (0-3s)</strong> — Stop the scroll. Use a pattern interrupt: a shocking visual, a bold claim, a question, or an unexpected sound.</li><li><strong>Body (3-15s)</strong> — Deliver the promise. Show the product in action, explain the benefit, or tell the mini-story.</li><li><strong>CTA (15-30s)</strong> — Tell them exactly what to do next. "Shop now," "Message us," "Tap the link."</li></ul><p>If any of the three is weak, the whole video fails. Hook is non-negotiable.</p>' },
+        { heading: 'The 5 Hook Types That Always Work', content: '<ol><li><strong>Question hook</strong> — "Bakit may pimples ka pa rin kahit ginagamit mo na yung skincare mo?"</li><li><strong>Bold claim</strong> — "I tripled my sales in 30 days using THIS."</li><li><strong>Visual surprise</strong> — Pour something, drop something, reveal something.</li><li><strong>Listicle preview</strong> — "3 reasons your skincare isn\'t working."</li><li><strong>POV / story</strong> — "POV: you\'re finally seeing results after 3 months..."</li></ol>' },
+        { heading: 'Captions Are Non-Negotiable', content: '<p>85% of mobile video is watched on mute. No captions = no message. Tools that auto-caption (and let you style):</p><ul><li><strong>CapCut</strong> — free, auto-captions, trendy templates</li><li><strong>Canva Video</strong> — drag-and-drop, brand-kit aware</li><li><strong>Submagic / Captions</strong> — premium, viral-style word-by-word</li></ul><p>Style tip: bold word per beat, contrast color on key terms.</p>' },
+        { heading: 'AI Tools That Save You Hours', content: '<ul><li><strong>Runway ML / Pika</strong> — text-to-video for B-roll</li><li><strong>ChatGPT</strong> — write 10 hook variations in seconds</li><li><strong>CapCut AI Voiceover</strong> — natural-sounding VO without recording</li><li><strong>ElevenLabs</strong> — premium AI voices in Filipino + English</li></ul>' }
+      ],
+      keyTakeaways: [
+        'Hook is everything — first 3 seconds decide the next 27.',
+        'Memorize the 5 hook types. Rotate them every test.',
+        'Caption every video — 85% of viewers are on mute.',
+        'Use AI for hooks/B-roll, but record real product shots yourself.',
+        'Always test 2-3 hooks for the same body — same body, different hooks.',
+        'A great body with a weak hook is a wasted video.'
+      ],
+      proTip: 'Before you publish, watch your own video <strong>on mute, with the screen tilted away</strong>. If you can still follow the message, it\'s ready. If you can\'t, the captions or visuals need work.'
+    },
+
+    w7: {
+      sections: [
+        { heading: 'What Is a "Customer Angle"?', content: '<p>An angle is the specific reason a specific customer should buy. Not the product features — the personal pain or desire it solves. "Anti-acne cream" is a product. "Get clear skin before your sister\'s wedding in 30 days" is an angle. Angles convert. Features don\'t.</p>' },
+        { heading: 'The 5 Stages of Customer Awareness', content: '<p>(Eugene Schwartz framework — still the gold standard 60 years later)</p><ul><li><strong>Unaware</strong> — doesn\'t know they have the problem. Angle: introduce the pain.</li><li><strong>Problem-aware</strong> — knows the pain, not the solution. Angle: name + agitate the problem.</li><li><strong>Solution-aware</strong> — knows solutions exist, not yours. Angle: position your category.</li><li><strong>Product-aware</strong> — knows your product, hesitating. Angle: differentiation + proof.</li><li><strong>Most-aware</strong> — wants to buy, needs a reason now. Angle: offer + urgency.</li></ul><p>Most beginners write only at "most-aware" — that\'s why their ads only convert to people who already wanted to buy.</p>' },
+        { heading: 'Pain → Solution → Promise (PSP)', content: '<p>The fastest angle formula:</p><ol><li><strong>Pain</strong>: Name the specific pain in their words (not yours).</li><li><strong>Solution</strong>: Show why this product solves it differently.</li><li><strong>Promise</strong>: Paint the after-state — what life looks like once the pain is gone.</li></ol><p>Example for a coffee shop:<br/>Pain — "Tired of pa-uwi coffee na tamlay na?"<br/>Solution — "Beans roasted same-day, brewed in 60 seconds."<br/>Promise — "Café-quality coffee at home, every morning."</p>' },
+        { heading: 'Voice-of-Customer Mining', content: '<p>Stop guessing your customer\'s words. Steal them. Sources:</p><ul><li><strong>Shopee/Lazada reviews</strong> — read 50 reviews of competitor products. Note exact phrases.</li><li><strong>Facebook group comments</strong> — search PH groups for your niche, scroll the questions.</li><li><strong>YouTube comments</strong> — under reviews of competitor products.</li><li><strong>Messenger DMs / customer chats</strong> — your own conversations are gold.</li></ul><p>Copy their exact phrasing into your ad copy. It will outperform any clever copywriter line.</p>' },
+        { heading: 'This Week\'s Angle Exercise', content: '<p>Pick ONE product (your client\'s or a sample). Write 5 different angle scripts — one for each awareness stage. Same product, 5 personalities, 5 messages. This is the most repeated skill in performance marketing.</p>' }
+      ],
+      keyTakeaways: [
+        'Features tell. Angles sell.',
+        'Map every prospect to one of 5 awareness stages — write the right angle for each.',
+        'Pain → Solution → Promise (PSP) is the fastest angle template.',
+        'Steal exact customer phrases from reviews + comments — they outperform polished copy.',
+        'Write 5 angles per product before you build any creative.',
+        'Test angles, not designs. Same design with a new angle often beats new design + old angle.'
+      ],
+      proTip: 'Keep a <strong>swipe file</strong> — a Google Doc where you paste every winning headline you see in the wild (Meta Ad Library is gold). When you\'re stuck, browse the swipe file and adapt, never copy. Pros have 1000+ entries.'
+    },
+
+    w8: {
+      sections: [
+        { heading: 'From Single Creatives to Campaign Sets', content: '<p>Phase 1-2 you built one piece at a time. Real campaigns ship <strong>sets</strong> — coordinated assets that work together: a hero video, supporting images, story variants, banner. This week you produce your first integrated campaign set.</p>' },
+        { heading: 'Designing a Cohesive Set (Not Matchy-Matchy)', content: '<p>The set should feel like one family, not five clones. Rules:</p><ul><li>Same color palette across all assets</li><li>Same fonts (max 2)</li><li>Same hero shot / character recurs</li><li>Different formats / framings — variety inside consistency</li><li>One unified angle across all pieces (don\'t mix angles in a set)</li></ul>' },
+        { heading: 'A/B Testing Mindset', content: '<p>Stop building "the best" creative. Start building <strong>two creatives + a hypothesis</strong>:</p><ul><li>"Hook A: question vs Hook B: bold claim — same body."</li><li>"Visual A: product alone vs Visual B: product in use — same copy."</li><li>"CTA A: Shop now vs CTA B: Message us — same creative."</li></ul><p>Change ONE variable per test. Anything else is guessing.</p>' },
+        { heading: 'Peer Review — Critique Like a Pro', content: '<p>Show your set to a peer. Ask them three specific questions:</p><ol><li>"What\'s the offer?" (tests Clarity)</li><li>"Who is this for?" (tests Targeting)</li><li>"What stopped your scroll?" (tests Attraction)</li></ol><p>If they hesitate on any answer, that piece needs work. Don\'t accept "looks nice" — that\'s not feedback.</p>' },
+        { heading: 'Final Deliverable', content: '<p>Produce a 5-piece campaign set for ONE product or service:</p><ol><li>1 hero video (15-30s, hook + body + CTA)</li><li>1 product post (image, square)</li><li>1 banner (landscape, for feed/website)</li><li>1 story creative (vertical, with CTA tap)</li><li>1 video hook variation (same body, different hook — for A/B)</li></ol><p>All five must share one angle, one palette, one font family.</p>' }
+      ],
+      keyTakeaways: [
+        'Campaign sets > single creatives. Real client work is always in sets.',
+        'Cohesion ≠ identical. Same family, different formats.',
+        'Always test ONE variable at a time — that\'s how you learn what actually moves the needle.',
+        'Peer critique using three pointed questions (offer / who / scroll-stopper).',
+        'Never ship a set with mixed angles — pick one angle per campaign.',
+        'A/B is a habit, not a phase. Pros A/B everything, forever.'
+      ],
+      proTip: 'Build a <strong>master Canva template</strong> for your set — once it\'s dialed, you can crank out new campaigns in 30 minutes instead of 3 hours. Templating is how agencies stay profitable.'
+    },
+
+    // =========================================================
+    // PHASE 3 — TOOLS (W9–W12)
+    // =========================================================
+    w9: {
+      sections: [
+        { heading: 'Why Marketers Need Sheets', content: '<p>Sheets is the universal language of operations. Content calendars, ad performance trackers, customer lists, inventory, reports — all live in Sheets. If you can\'t Sheets, you can\'t scale. This week we cover only what marketers actually use, no accounting hell.</p>' },
+        { heading: 'The 8 Formulas You\'ll Use Daily', content: '<ul><li><strong>SUM</strong> — total spend, total orders</li><li><strong>AVERAGE</strong> — average CPC, ROAS</li><li><strong>IF</strong> — flag good vs bad rows ("=IF(ROAS&gt;2, \'Scale\', \'Kill\')")</li><li><strong>COUNTIF</strong> — count rows matching a condition</li><li><strong>VLOOKUP / XLOOKUP</strong> — pull data from another sheet</li><li><strong>UNIQUE</strong> — dedupe lists</li><li><strong>SORT / FILTER</strong> — clean up reports</li><li><strong>QUERY</strong> — SQL-style for advanced reports</li></ul><p>Master these 8 and you\'ll handle 95% of marketing data tasks.</p>' },
+        { heading: 'Pivot Tables — The Magic Lever', content: '<p>Pivot tables turn 1,000 rows of ad data into a 10-row insight in 30 seconds. Use case: paste your Meta Ads CSV → pivot by Campaign → SUM(Spend), SUM(Purchases), AVG(ROAS). Instant performance summary. No formulas needed.</p>' },
+        { heading: 'Templates You\'ll Build This Week', content: '<ol><li><strong>Content Calendar</strong> — Date, Channel, Topic, Status, Owner, Link. Color-code by status.</li><li><strong>Ad Performance Tracker</strong> — Date, Campaign, Spend, Impressions, Clicks, CTR, CPC, Purchases, ROAS. Auto-calc CTR + ROAS.</li><li><strong>Customer List</strong> — Name, Email, Phone, Order#, Date, Amount. Source for retargeting.</li><li><strong>Dashboard Sheet</strong> — auto-pulls from the tracker, shows weekly summary.</li></ol>' },
+        { heading: 'Sharing, Permissions, Comments', content: '<p>Common pitfall: sharing with "Anyone with link can EDIT" — disaster waiting. Default to View. Use Comments (highlight cell + Ctrl+Alt+M) for collaboration, not chat threads. Version History (File → Version History) is your "undo" insurance.</p>' }
+      ],
+      keyTakeaways: [
+        '8 formulas cover 95% of marketing work — master them, don\'t learn every function.',
+        'Pivot tables turn raw data into reports in 30 seconds.',
+        'Templating is leverage — build once, reuse for every client.',
+        'Always Share with View access by default. Promote to Edit only when needed.',
+        'Use Version History as your safety net.',
+        'A clean Sheet is a clean mind — color-coding + frozen header rows are non-negotiable.'
+      ],
+      proTip: 'Bookmark <strong>Google Sheets Keyboard Shortcuts</strong> (Cmd+/ or Ctrl+/ inside Sheets). Learning 5 shortcuts will save you 30 minutes a day. Start with Ctrl+Shift+V (paste values only).'
+    },
+
+    w10: {
+      sections: [
+        { heading: 'Why Messenger Marketing Owns the Philippines', content: '<p>Filipinos live in Messenger. 80%+ open rate on Messenger broadcasts vs ~20% on email. For PH SMEs, Messenger is the channel — and Botcake is one of the easiest no-code chatbot builders to drive sales through it.</p>' },
+        { heading: 'Botcake Interface Tour', content: '<p>Five things you need to know:</p><ul><li><strong>Connect Page</strong> — link your Facebook Page. Bot lives there.</li><li><strong>Flows</strong> — the conversation logic (like flowchart).</li><li><strong>Audience</strong> — your subscribers (everyone who messaged the bot).</li><li><strong>Broadcast</strong> — send messages to all/some subscribers.</li><li><strong>Tags</strong> — labels you stick on users for segmenting (e.g., "interested-product-A").</li></ul>' },
+        { heading: 'The 3 Must-Have Flows', content: '<ol><li><strong>Welcome Flow</strong> — fires when a new person messages the page. Greets them, offers a menu (Products / Promos / Order / Talk to human).</li><li><strong>Product Inquiry</strong> — when they tap "Products" they get a carousel of items with Buy buttons.</li><li><strong>Order Flow</strong> — collects name, address, item, payment method. Tags the user as "lead" or "buyer."</li></ol><p>Build these three and you have a 24/7 sales assistant.</p>' },
+        { heading: 'Tags + Segments = Targeted Broadcasts', content: '<p>Tag users by behavior:</p><ul><li>Tag "interested-skincare" when they tap skincare category</li><li>Tag "cart-abandoned" when they start order but don\'t finish</li><li>Tag "VIP" when they order more than 3 times</li></ul><p>Then broadcast ONLY to the relevant tag — much higher conversion than mass blasts. Bonus: lower chance of getting flagged by Facebook for spam.</p>' },
+        { heading: 'Facebook\'s 24-Hour Rule', content: '<p>You can only send promotional messages within 24 hours of a user\'s last interaction. After 24h, you need a <strong>Message Tag</strong> (e.g., POST_PURCHASE_UPDATE) or a paid Sponsored Message. Plan your flows around this rule or risk getting your bot banned.</p>' }
+      ],
+      keyTakeaways: [
+        'Messenger has 80%+ open rates — 4× better than email for PH market.',
+        'Build the 3 core flows: Welcome, Product Inquiry, Order.',
+        'Tags are your secret weapon — segment behavior to boost broadcast ROI.',
+        'Respect the 24-hour rule or your bot gets killed.',
+        'Always offer "Talk to human" — bots handle 80%, humans close the rest.',
+        'Connect the bot to your Pixel — every chat = retargeting audience.'
+      ],
+      proTip: 'Start broadcasts with a question, not an announcement. "Gusto mo ng promo this week?" gets 5× more replies than "Check out our new collection!" — and replies reset the 24-hour window.'
+    },
+
+    w11: {
+      sections: [
+        { heading: 'Botcake vs Chatfuel — When to Use Which', content: '<p>Both build Messenger bots, but:</p><ul><li><strong>Botcake</strong> — PH-grown, cheaper, simpler UI, perfect for SMEs.</li><li><strong>Chatfuel</strong> — global, more powerful AI features, deeper analytics, better for scaling brands + agencies.</li></ul><p>Many agencies run Botcake for small clients, Chatfuel for big ones. This week we use Chatfuel.</p>' },
+        { heading: 'AI-Powered Conversations', content: '<p>Chatfuel has built-in NLP (natural language processing). Instead of forcing users to tap buttons, your bot can understand free-text like "How much yung ___?" or "Saan kayo nag-deliver?" — and route to the right answer. Setup: AI Setup → Train phrases per intent → bot answers automatically.</p>' },
+        { heading: 'Cart Abandonment Recovery — The Money Flow', content: '<p>30-60% of online carts are abandoned. Recovery flow:</p><ol><li>User adds to cart, doesn\'t check out → tag "cart-abandoned"</li><li>15 min later: bot sends "Hey, nakita namin yung order mo — kailangan mo ng help?"</li><li>1 hour later: "Wait lang — may 10% off promo today if you check out"</li><li>24 hours later (using Message Tag): "Last call — your cart is expiring soon"</li></ol><p>This single flow can recover 15-25% of abandoned carts. Money on autopilot.</p>' },
+        { heading: 'Click-to-Messenger Ads (The Killer Combo)', content: '<p>Run a Facebook Ad with "Send Message" as the CTA. When user taps, they land in Messenger and your bot takes over. Why it\'s powerful:</p><ul><li>Conversation feels personal vs landing page</li><li>You capture them as a subscriber (future broadcasts)</li><li>Lead cost often 50% lower than form ads</li></ul><p>You\'ll set this up properly in Phase 4 Ads Manager.</p>' },
+        { heading: 'Analytics That Actually Matter', content: '<p>Don\'t drown in metrics. Watch only:</p><ul><li><strong>Open rate</strong> per broadcast — under 70% = something\'s off</li><li><strong>Click-through rate</strong> on buttons — improves with better copy</li><li><strong>Conversion rate</strong> from flow start to order — find the drop-off point and fix it</li><li><strong>Cost per acquired subscriber</strong> from ads — should beat email cost-per-lead</li></ul>' }
+      ],
+      keyTakeaways: [
+        'Botcake for SMEs, Chatfuel for scaling brands — pick by client size.',
+        'NLP makes bots feel human — train intents instead of forcing button clicks.',
+        'Cart-abandonment flow is the highest ROI bot you\'ll ever build.',
+        'Click-to-Messenger ads + bots = lowest lead cost in the PH market.',
+        'Only 4 metrics matter — open, CTR, conversion, CPA. Ignore the rest.',
+        'Test message variations like ad copy — the bot is your salesperson.'
+      ],
+      proTip: 'Pair every bot with a real human standby for the first month. Read every conversation — that\'s where you\'ll find the exact words customers use, which then become your best ad copy.'
+    },
+
+    w12: {
+      sections: [
+        { heading: 'Why POS + Pancake Matters for Marketers', content: '<p>You can drive 1000 orders a day with great marketing — but if the back office can\'t process them, the business dies. Marketers who understand the order flow (POS, inventory, shipping, CRM) are 10× more valuable than pure "creative" people. Pancake is the PH\'s #1 SME platform for this — owning ~70% of the chat-commerce stack.</p>' },
+        { heading: 'POS Basics for E-Commerce', content: '<p>POS = Point of Sale. For online sellers it tracks:</p><ul><li><strong>Inventory</strong> — what you have, what\'s reserved, what\'s sold</li><li><strong>Orders</strong> — pending, processing, shipped, delivered</li><li><strong>Payments</strong> — pending, paid, refunded</li><li><strong>Customer history</strong> — past orders, lifetime value</li></ul><p>Without POS, you\'re running on Notes app + screenshots = chaos at scale.</p>' },
+        { heading: 'Pancake Interface — The 5 Tabs', content: '<ul><li><strong>Inbox</strong> — unified Messenger/Page/Instagram chats with order context</li><li><strong>Orders</strong> — every order from any channel, in one list</li><li><strong>Products</strong> — your catalog with stock + pricing</li><li><strong>Customers</strong> — auto-built CRM, segmented by spend/behavior</li><li><strong>Marketing</strong> — broadcasts, automations, mini-CRM tools</li></ul>' },
+        { heading: 'Order Workflow End-to-End', content: '<ol><li>Customer messages your page → agent (or bot) confirms order</li><li>Order auto-created in Pancake with inventory deducted</li><li>Address + payment captured (COD or GCash/Maya/bank)</li><li>Shipping label printed → courier (Ninjavan / J&T / Lalamove) picks up</li><li>Tracking number auto-sent to customer via Messenger</li><li>Delivered → customer auto-tagged "buyer" → eligible for upsell broadcasts</li></ol>' },
+        { heading: 'Why CRM-Driven Marketing Wins', content: '<p>Once Pancake knows who bought what, when, how often — your marketing gets surgical:</p><ul><li>Broadcast skincare promo only to past skincare buyers</li><li>Send "we miss you" coupon to customers who haven\'t ordered in 60 days</li><li>VIP-tier early access for top 10% spenders</li></ul><p>Repeat-buyer marketing is 5-10× cheaper than new-customer acquisition. CRM data is gold.</p>' }
+      ],
+      keyTakeaways: [
+        'Marketing without ops knowledge = creating problems for the team. Learn POS basics.',
+        'Pancake = the standard PH platform for chat-commerce SMEs.',
+        'Inbox + Orders + Customers in one tool = no more "tagaan-tagaan" confusion.',
+        'Auto-tag customers by behavior — that\'s the seed of every great campaign.',
+        'Repeat customers cost 5-10× less than new ones. CRM marketing is highest ROI.',
+        'Test the full order flow yourself (place a fake order) before any client launch.'
+      ],
+      proTip: 'Spend a Saturday placing 5 test orders through a real Pancake-powered Page (any small PH brand will do). Note every friction point — slow reply, missing info, awkward CTA. These are exactly the bugs you\'ll fix for your future clients.'
+    },
+
+    // =========================================================
+    // PHASE 4 — ADS MANAGER (W13–W16)
+    // =========================================================
+    w13: {
+      sections: [
+        { heading: 'Meta Ads Manager — The Final Boss', content: '<p>Everything you\'ve learned (creatives, angles, tools) now meets paid distribution. Ads Manager is where small budgets become real revenue — or get burned. This week we tour the platform, no spending yet.</p>' },
+        { heading: 'Business Manager vs Ads Manager', content: '<p><strong>Business Manager (BM)</strong> is the parent — it holds your Pages, Pixels, Ad Accounts, team access. <strong>Ads Manager</strong> is the workspace inside it where you build campaigns. Always create BM first, then access Ads Manager via the BM. Never run client ads from your personal account — when the account dies (and it will), you lose everything.</p>' },
+        { heading: 'The 3-Level Account Structure', content: '<ul><li><strong>Campaign</strong> — the objective (Sales, Leads, Traffic, etc.) + budget level</li><li><strong>Ad Set</strong> — the WHO (audience, placement, schedule, budget)</li><li><strong>Ad</strong> — the WHAT (creative, copy, CTA, destination)</li></ul><p>One Campaign can have multiple Ad Sets. Each Ad Set can have multiple Ads. Master this hierarchy or your dashboard will look like spaghetti.</p>' },
+        { heading: 'Choosing the Right Objective', content: '<p>Top objectives for SMEs:</p><ul><li><strong>Sales</strong> — when Pixel is set up and you want purchases. Most powerful.</li><li><strong>Leads</strong> — collect contact info via form or Messenger.</li><li><strong>Engagement</strong> — build social proof, message volume, or video views.</li><li><strong>Traffic</strong> — drive clicks to website/Shopee/Lazada.</li></ul><p>Wrong objective = wrong audience. Meta optimizes toward whatever you pick — pick wisely.</p>' },
+        { heading: 'The Pixel — Your Most Important Asset', content: '<p>The Meta Pixel is a snippet of code on your site that tracks visitors, purchases, signups, etc. Why it matters:</p><ul><li>Lets Meta find people LIKE your buyers (Lookalike audiences)</li><li>Tracks ROAS accurately</li><li>Powers retargeting ("people who viewed product but didn\'t buy")</li></ul><p>For PH SMEs without a website: use Messenger as your "site" — Meta tracks chat events the same way.</p>' }
+      ],
+      keyTakeaways: [
+        'Always run client ads through Business Manager, never personal account.',
+        'Master Campaign → Ad Set → Ad hierarchy before clicking Build.',
+        'Pick objectives based on what you actually want — Meta optimizes accordingly.',
+        'Pixel = the single most valuable asset in your ad account.',
+        'Without Pixel data, your ads are flying blind. Set it up before spending a peso.',
+        'Get added to client\'s BM as Admin, not just Ad Account access — covers Pixels + Pages too.'
+      ],
+      proTip: 'Build a "<strong>BM Onboarding Checklist</strong>" for new clients: Page access, Pixel installed, Domain verified, Conversions API setup, Payment method added. Send it to every client before you accept the project. Saves 2 weeks of back-and-forth.'
+    },
+
+    w14: {
+      sections: [
+        { heading: 'Building Your First Real Campaign', content: '<p>This week you build a complete campaign in Ads Manager — every field, every option. No money spent yet, but every dropdown explained. This is the muscle memory you\'ll use forever.</p>' },
+        { heading: 'Ad Copy Anatomy', content: '<p>Three text fields per ad:</p><ul><li><strong>Primary Text</strong> — the body above the image (125 chars before "See more"). Lead with the hook.</li><li><strong>Headline</strong> — the bold line below the image (~27 chars). The promise.</li><li><strong>Description</strong> — the small text under the headline. Often hidden — don\'t put critical info here.</li></ul><p>CTA button — pick from Meta\'s preset list (Shop Now, Send Message, Sign Up, Learn More, etc.). Wrong CTA hurts conversion.</p>' },
+        { heading: 'Creative Best Practices', content: '<ul><li><strong>Square (1:1)</strong> for feed, <strong>vertical (4:5 or 9:16)</strong> for stories/reels — never use 16:9 on mobile placements</li><li>Text overlay under 20% of image area — Meta still penalizes (loosely) heavy text</li><li>Faces outperform product-only shots by ~30%</li><li>First 3 seconds of video must hook without sound</li><li>Always have 2-3 creative variants per ad set — let Meta auto-pick the winner</li></ul>' },
+        { heading: 'Placement Strategy', content: '<p>Default is "Advantage+ Placements" — Meta auto-spreads your ad across Feed, Reels, Stories, Marketplace, Audience Network. For beginners: KEEP IT. Meta\'s algorithm is smarter than your guesses. Manual placements only when you have data showing one placement performs 2× better.</p>' },
+        { heading: 'Naming Convention (Boring But Critical)', content: '<p>Future you (and your boss) will thank past you for clean names. Format:</p><p><code>Campaign: [Objective] - [Product] - [Audience] - [Date]</code><br/><code>Ad Set: [Cold/Warm/Hot] - [Interest/Lookalike] - [Age]</code><br/><code>Ad: [Format] - [Hook] - [v1/v2]</code></p><p>Example: <code>Sales - Glow Serum - LAL 3% - May2026</code>. After 50 ads in your account, you\'ll know why this matters.</p>' }
+      ],
+      keyTakeaways: [
+        'Master the 3 ad fields: Primary Text, Headline, Description.',
+        'Lead Primary Text with the hook — first 125 chars decide everything.',
+        'Square + vertical only. Forget 16:9 unless you\'re running YouTube ads.',
+        'Trust Meta\'s Advantage+ Placements until you have data to override.',
+        'Naming conventions save hours of "what is this ad doing?" later.',
+        'Always 2-3 creative variants per ad set — let Meta find the winner.'
+      ],
+      proTip: 'Build your campaign in <strong>Draft mode first</strong>, then walk through every screen with a senior marketer (or your admin) BEFORE you publish. 9 out of 10 first-time campaigns have at least one expensive misconfiguration that\'s caught in 30 seconds of review.'
+    },
+
+    w15: {
+      sections: [
+        { heading: 'Targeting — Where Money Is Won or Lost', content: '<p>The best creative dies in front of the wrong audience. Targeting is the lever that turns ₱500 a day into ₱5000 of revenue — or ₱0. This week we go deep on the 3 audience types and when to use each.</p>' },
+        { heading: 'Cold Audiences — Strangers Who Might Buy', content: '<p>People who\'ve never interacted with your brand. Built from:</p><ul><li><strong>Demographics</strong> — age, gender, location, language</li><li><strong>Interests</strong> — pages/topics they like (e.g., "Skincare," "Online shopping")</li><li><strong>Behaviors</strong> — purchase behavior, device, travel</li></ul><p>Modern Meta tip: <strong>broad targeting</strong> (only age + location + gender) often outperforms detailed interests because Meta\'s AI finds buyers faster when you give it room to explore. Try both.</p>' },
+        { heading: 'Custom Audiences — People Who Already Know You', content: '<p>Built from your own data:</p><ul><li>Website visitors (last 30/60/90 days, via Pixel)</li><li>Video viewers (anyone who watched 50%+ of your video)</li><li>Page engagers (commented, liked, messaged)</li><li>Customer list (upload CSV of emails/phones)</li><li>Messenger subscribers (from Botcake/Chatfuel)</li></ul><p>Highest converting audience type. Retargeting these = how the pros get 5-10× ROAS.</p>' },
+        { heading: 'Lookalike Audiences — Clones of Your Best Customers', content: '<p>Upload a custom audience of your best customers → Meta finds 1-3 million strangers who look + behave like them. The ratchet:</p><ul><li><strong>1% LAL</strong> — closest match, smallest pool, highest conversion</li><li><strong>3% LAL</strong> — wider net, still strong</li><li><strong>5-10% LAL</strong> — broadest, for scaling after 1% saturates</li></ul><p>Start with 1%, scale to 3%, then 5%. Always seed with a high-quality source list (50-500 best buyers, not random emails).</p>' },
+        { heading: 'Exclusions + Frequency Caps', content: '<p>Smart marketers exclude:</p><ul><li>Existing customers from cold campaigns (no point selling them what they already bought)</li><li>Recent buyers (last 30 days) from "win-back" campaigns</li><li>Lookalikes from cold audiences to avoid overlap</li></ul><p>Frequency cap: don\'t let any one person see your ad more than 2-3× per week. Ad fatigue = wasted spend.</p>' }
+      ],
+      keyTakeaways: [
+        'Targeting > creative > copy in order of importance for ROAS.',
+        'Cold = strangers, Custom = your audience, Lookalike = clones of buyers.',
+        'Broad audiences (age + location only) often beat narrow interests — let Meta\'s AI work.',
+        'Start LAL at 1%, scale to 3% then 5% as you grow budget.',
+        'Always exclude existing customers from cold campaigns.',
+        'Watch frequency — over 3× per week per person = burn-out.'
+      ],
+      proTip: 'Build <strong>5 saved audiences</strong> for every client and name them clearly (e.g., "Customers-Last90Days", "LAL-1-Buyers", "VideoView-50pct-30d"). Saved audiences let you spin up new campaigns in 60 seconds and ensure consistency across tests.'
+    },
+
+    w16: {
+      sections: [
+        { heading: 'The Final Project — Launching for Real', content: '<p>This is it. You\'ve learned creatives, angles, tools, and targeting. This week you put it ALL together: launch a real micro-campaign with a small real budget (₱500-2000), monitor it for 48 hours, and submit your analysis. Whether it makes money is less important than HOW you read it.</p>' },
+        { heading: 'Pre-Launch Checklist', content: '<p>Run through this BEFORE clicking publish:</p><ul><li>☐ Pixel firing correctly (test with Meta\'s Pixel Helper Chrome extension)</li><li>☐ Conversions API setup (server-side backup tracking)</li><li>☐ Payment method works + budget set correctly</li><li>☐ Campaign objective matches goal</li><li>☐ Audience size is healthy (1M+ for cold, 50K+ for retargeting)</li><li>☐ Creatives uploaded in correct aspect ratio</li><li>☐ Copy proofread — typos kill credibility</li><li>☐ UTM tags on all destination URLs</li><li>☐ Budget pacing makes sense (daily vs lifetime)</li><li>☐ Schedule includes start/end if applicable</li></ul>' },
+        { heading: 'Budget Strategy for Small Budgets', content: '<p>With ₱500-2000/day, you can\'t over-test. Rule:</p><ul><li>1 Campaign, 2-3 Ad Sets max</li><li>2 Ads per Ad Set</li><li>Use CBO (Campaign Budget Optimization) — let Meta auto-distribute</li><li>Run for minimum 3 days before judging (the algorithm needs ~50 conversions per ad set to optimize)</li></ul><p>Don\'t kill ads at Day 1. You\'re reading noise, not signal.</p>' },
+        { heading: 'The 5 Metrics That Matter', content: '<ul><li><strong>CPM</strong> (Cost per 1000 impressions) — is your audience expensive? Under ₱100 is healthy in PH.</li><li><strong>CTR</strong> (Click-through rate) — is your creative+copy stopping the scroll? Aim 1%+ feed, 2%+ for Reels.</li><li><strong>CPC</strong> (Cost per click) — under ₱5 is great in PH for most niches.</li><li><strong>CPA / Cost per Purchase</strong> — should be much less than profit per sale.</li><li><strong>ROAS</strong> (Return on ad spend) — total revenue ÷ ad spend. 2× minimum to call it working. 3-5× = scaling material.</li></ul>' },
+        { heading: 'Scale or Kill — The 48-Hour Decision', content: '<p>After 48 hours and at least ₱2000 spent (or 50 actions):</p><ul><li><strong>ROAS &gt; 2×</strong> — scale: increase budget 20% per day until ROAS drops</li><li><strong>ROAS 1-2×</strong> — break-even, test new creative/audience to improve</li><li><strong>ROAS &lt; 1×</strong> — kill. Don\'t hope. Don\'t "give it more time." Cut your losses, learn, relaunch.</li></ul><p>Emotional attachment to ads is the #1 killer of beginners\' budgets. Be ruthless with the data.</p>' }
+      ],
+      keyTakeaways: [
+        'Always run the pre-launch checklist. One missed item = wasted budget.',
+        'Small budget = small structure. 1 campaign, 2-3 ad sets, 2 ads each.',
+        'Wait 3 days minimum before judging — anything less is noise.',
+        '5 metrics: CPM, CTR, CPC, CPA, ROAS. Watch only these.',
+        'Scale at 2× ROAS, test at 1-2×, kill below 1×. No emotion.',
+        'Document every campaign — your "what worked" file becomes priceless after 50 launches.'
+      ],
+      proTip: 'After this campaign closes, write a <strong>1-page Campaign Report</strong>: Objective, Audience, Creative, Budget, Results, What I\'d Change. Show this in every client pitch from now on. Real launched campaigns + honest analysis is what separates "I took a course" from "I\'ve actually done this."'
+    }
   },
 
   getAll() {
