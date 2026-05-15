@@ -1335,12 +1335,23 @@ const WINS = {
     return win;
   },
 
+  // IDs we deleted locally but Firestore may not have fully propagated yet.
+  // The live listener filters these out so a just-deleted win can't snap
+  // back onto the screen during the 1–2 second sync window.
+  _pendingDeletes: new Set(),
+
   remove(id) {
+    if (!id) return;
     const all = safeGetJSON(this.STORAGE_KEY, []);
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all.filter(w => w.id !== id)));
+    // Hold the tombstone for 30s — well past Firestore's propagation window.
+    this._pendingDeletes.add(id);
+    setTimeout(() => this._pendingDeletes.delete(id), 30000);
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
-        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch((e) => {
+          console.warn('[WINS] Firestore delete failed:', e.message);
+        });
       }
     } catch (e) {}
   },
@@ -1351,7 +1362,13 @@ const WINS = {
       const snap = await DATA_SYNC.db.collection(this.COLLECTION)
         .orderBy('createdAt', 'desc').limit(50).get();
       const remote = [];
-      snap.forEach(d => remote.push(d.data()));
+      snap.forEach(d => {
+        const data = d.data();
+        // Skip wins the user just deleted — Firestore may still be
+        // serving them for a moment after the delete RPC.
+        if (data && data.id && this._pendingDeletes.has(data.id)) return;
+        remote.push(data);
+      });
       const local = safeGetJSON(this.STORAGE_KEY, []);
       const merged = _mergeById(remote, local);
       safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));
@@ -1373,7 +1390,12 @@ const WINS = {
         .orderBy('createdAt', 'desc').limit(50)
         .onSnapshot(snap => {
           const remote = [];
-          snap.forEach(d => remote.push(d.data()));
+          snap.forEach(d => {
+            const data = d.data();
+            // Tombstone guard — see fetchRemote() above for context.
+            if (data && data.id && this._pendingDeletes.has(data.id)) return;
+            remote.push(data);
+          });
           const local = safeGetJSON(this.STORAGE_KEY, []);
           const merged = _mergeById(remote, local);
           safeSetItem(this.STORAGE_KEY, JSON.stringify(merged));

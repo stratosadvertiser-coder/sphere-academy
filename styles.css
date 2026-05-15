@@ -7402,23 +7402,37 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 .win-author { font-weight: 600; }
 .win-delete-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: none;
-  background: transparent;
+  border: 1px solid var(--border);
+  background: var(--card-bg, var(--bg));
   color: var(--text-light);
   cursor: pointer;
-  font-size: 1.1rem;
-  opacity: 0;
-  transition: opacity 0.2s ease, background 0.2s ease;
+  font-size: 1.15rem;
+  line-height: 1;
+  /* Always visible (was opacity:0 + hover-only — invisible on mobile and
+     with tall image posts where you can't reach the corner without
+     scrolling past the X). */
+  opacity: 1;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
-.win-item:hover .win-delete-btn { opacity: 1; }
 .win-delete-btn:hover {
-  background: rgba(220, 38, 38, 0.15);
+  background: #fee2e2;
+  border-color: #ef4444;
   color: #991b1b;
+  transform: scale(1.05);
+}
+[data-theme="dark"] .win-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
 }
 
 /* Stack on mobile */
