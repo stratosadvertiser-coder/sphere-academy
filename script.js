@@ -2512,6 +2512,169 @@ if (currentPage === 'admin.html' && !AUTH.isAdmin()) {
   window.location.href = 'course.html';
 }
 
+// ============================================================
+// IDLE TIMEOUT — auto-logout after 30 min of zero activity.
+//
+//   - Any mousemove / keydown / scroll / touch / click resets the timer
+//     (throttled to once per second so we don't thrash localStorage).
+//   - At 28 min idle (2 min before timeout) a modal pops with a live
+//     countdown + "Stay signed in" button.
+//   - Cross-tab sync: the activity timestamp is shared via localStorage,
+//     so being active in ANY tab keeps every other tab alive.
+//   - If a user logs out (or is timed-out) in one tab, the storage event
+//     also boots stale tabs back to the login page.
+// ============================================================
+const IDLE_TIMEOUT = {
+  TIMEOUT_MS: 30 * 60 * 1000,    // 30 minutes
+  WARN_BEFORE_MS: 2 * 60 * 1000, // show warning 2 min before logout
+  THROTTLE_MS: 1000,             // ignore activity events within this window
+  STORAGE_KEY: 'auth_last_activity',
+
+  _timer: null,
+  _warnTimer: null,
+  _countdownInterval: null,
+  _lastReset: 0,
+  _warningOpen: false,
+  _started: false,
+
+  start() {
+    if (this._started) return;
+    if (typeof AUTH === 'undefined' || !AUTH.isLoggedIn || !AUTH.isLoggedIn()) return;
+    this._started = true;
+    this._resetTimer(true); // initial schedule
+
+    // Throttled activity listener — resets the countdown on user interaction.
+    const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(ev => {
+      window.addEventListener(ev, () => this._onActivity(), { passive: true });
+    });
+
+    // Cross-tab sync — other tabs publish activity via localStorage.
+    window.addEventListener('storage', (e) => {
+      if (e.key === this.STORAGE_KEY && e.newValue) {
+        this._resetTimer(true); // skipStorage so we don't loop
+        if (this._warningOpen) this._closeWarning();
+      }
+      // If auth was wiped in another tab (logout), bounce this tab too.
+      if (e.key === 'auth_logged_in' && !e.newValue) {
+        window.location.href = 'login.html';
+      }
+    });
+  },
+
+  _onActivity() {
+    const now = Date.now();
+    if (now - this._lastReset < this.THROTTLE_MS) return;
+    this._lastReset = now;
+    this._resetTimer();
+    if (this._warningOpen) this._closeWarning();
+  },
+
+  _resetTimer(skipStorage) {
+    if (this._timer) clearTimeout(this._timer);
+    if (this._warnTimer) clearTimeout(this._warnTimer);
+
+    if (!skipStorage) {
+      try { localStorage.setItem(this.STORAGE_KEY, String(Date.now())); } catch (e) {}
+    }
+
+    this._warnTimer = setTimeout(() => this._showWarning(), this.TIMEOUT_MS - this.WARN_BEFORE_MS);
+    this._timer = setTimeout(() => this._doLogout(), this.TIMEOUT_MS);
+  },
+
+  _showWarning() {
+    if (this._warningOpen) return;
+    this._warningOpen = true;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'idleWarnOverlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(10,10,30,0.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;animation:idleFadeIn 0.25s ease;';
+
+    const isDark = (document.documentElement.getAttribute('data-theme') === 'dark');
+    const cardBg = isDark ? '#18181b' : '#ffffff';
+    const cardText = isDark ? '#fafafa' : '#0a0a0a';
+    const cardSub = isDark ? '#a3a3a3' : '#737373';
+    const cardBorder = isDark ? '#262626' : '#e5e5e5';
+
+    let countdown = Math.floor(this.WARN_BEFORE_MS / 1000);
+    overlay.innerHTML = (
+      '<div style="background:' + cardBg + ';color:' + cardText + ';padding:36px 32px;border-radius:20px;max-width:420px;width:100%;border:1px solid ' + cardBorder + ';box-shadow:0 24px 80px rgba(0,0,0,0.4);text-align:center;font-family:Montserrat,system-ui,sans-serif;">'
+      + '<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#635bff,#4c1d95);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">'
+      +   '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+      + '</div>'
+      + '<h3 style="font-family:Fraunces,Playfair Display,serif;font-size:22px;font-weight:700;margin:0 0 8px;letter-spacing:-0.01em;">Still there?</h3>'
+      + '<p style="color:' + cardSub + ';font-size:14px;line-height:1.6;margin:0 0 24px;">You\'ll be logged out in <strong id="idleCountdown" style="color:' + cardText + ';font-variant-numeric:tabular-nums;">' + countdown + '</strong> seconds due to inactivity.<br>Click the button below to stay signed in.</p>'
+      + '<button id="idleStayBtn" style="padding:12px 28px;background:linear-gradient(135deg,#635bff,#4c1d95);color:white;border:none;border-radius:10px;font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(99,91,255,0.35);transition:transform 0.15s ease;">Stay signed in</button>'
+      + '<button id="idleLogoutBtn" style="display:block;margin:14px auto 0;background:none;border:none;color:' + cardSub + ';font-family:inherit;font-size:12px;cursor:pointer;text-decoration:underline;">Or log out now</button>'
+      + '</div>'
+    );
+    document.body.appendChild(overlay);
+
+    // Live countdown — updates the visible seconds-left number every 1s.
+    this._countdownInterval = setInterval(() => {
+      countdown--;
+      const el = document.getElementById('idleCountdown');
+      if (el) el.textContent = Math.max(0, countdown);
+      if (countdown <= 0) clearInterval(this._countdownInterval);
+    }, 1000);
+
+    document.getElementById('idleStayBtn').addEventListener('click', () => {
+      this._closeWarning();
+      this._onActivity();
+    });
+    document.getElementById('idleLogoutBtn').addEventListener('click', () => {
+      this._doLogout(true);
+    });
+  },
+
+  _closeWarning() {
+    const overlay = document.getElementById('idleWarnOverlay');
+    if (overlay) overlay.remove();
+    if (this._countdownInterval) {
+      clearInterval(this._countdownInterval);
+      this._countdownInterval = null;
+    }
+    this._warningOpen = false;
+  },
+
+  _doLogout(userInitiated) {
+    try { localStorage.removeItem(this.STORAGE_KEY); } catch (e) {}
+    this._closeWarning();
+    if (typeof AUTH !== 'undefined' && AUTH.logout) {
+      if (!userInitiated) {
+        // Quick toast-style notice before redirect so the user knows why.
+        try {
+          const note = document.createElement('div');
+          note.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999999;background:#0a0a0a;color:#fff;padding:14px 22px;border-radius:12px;font-family:Montserrat,sans-serif;font-size:14px;font-weight:600;box-shadow:0 8px 28px rgba(0,0,0,0.4);';
+          note.textContent = 'Signed out — 30 minutes of inactivity';
+          document.body.appendChild(note);
+        } catch (e) {}
+      }
+      setTimeout(() => AUTH.logout(), userInitiated ? 0 : 600);
+    }
+  }
+};
+
+// Inject the fade-in animation once.
+(function injectIdleStyles() {
+  if (document.getElementById('idle-timeout-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'idle-timeout-styles';
+  style.textContent = '@keyframes idleFadeIn{from{opacity:0;}to{opacity:1;}}';
+  document.head.appendChild(style);
+})();
+
+// Kick off the idle timer on protected pages (any logged-in session).
+if (protectedPages.includes(currentPage) && AUTH.isLoggedIn()) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => IDLE_TIMEOUT.start());
+  } else {
+    IDLE_TIMEOUT.start();
+  }
+}
+
 // ===== LESSONS DATA STORE =====
 const LESSONS = {
   STORAGE_KEY: 'lessons_data',
