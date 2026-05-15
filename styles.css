@@ -11677,3 +11677,189 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   .tool-chip { font-size: 0.88rem; }
   .tools-marquee-list { gap: 20px; padding-right: 20px; }
 }
+
+/* ============================================================
+   MOBILE APP POLISH — Phase 1 fixes for native-app feel on phones
+   Audit: 2026-05-15. Fixes iOS zoom, touch targets, hover-only UI,
+   safe areas, reduced-motion, and several mobile-only layout bugs.
+   ============================================================ */
+
+/* 1. iOS Safari zooms on focus when input font < 16px. Forcing 16px
+   below 768px is the global one-liner fix. Keeps the design's
+   smaller sizes for desktop. */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  /* Re-shrink the search input's visual padding so it still feels compact */
+  .auth-form input,
+  .auth-form textarea {
+    padding: 12px 14px;
+  }
+}
+
+/* 2. Always-visible delete buttons (was hover-only — unreachable on touch).
+   Same treatment as .win-delete-btn (already fixed). */
+.post-delete-btn,
+.ann-delete-btn,
+.faq-delete-btn,
+.chat-delete-btn {
+  opacity: 0.55;
+  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.post-delete-btn:hover,
+.ann-delete-btn:hover,
+.faq-delete-btn:hover,
+.chat-delete-btn:hover {
+  opacity: 1;
+}
+@media (max-width: 768px) {
+  /* Touch devices — full opacity so users can see + tap reliably */
+  .post-delete-btn,
+  .ann-delete-btn,
+  .faq-delete-btn,
+  .chat-delete-btn,
+  .win-delete-btn {
+    opacity: 1 !important;
+  }
+  /* Touch-target bump to 40px on phones */
+  .post-delete-btn,
+  .ann-delete-btn,
+  .faq-delete-btn {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 1.25rem !important;
+  }
+  .chat-delete-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
+/* 3. Safe-area insets — keep fixed elements clear of iOS notch + home bar.
+   `env()` falls back to 0 on browsers without notches. */
+.navbar {
+  padding-top: env(safe-area-inset-top, 0);
+}
+.back-to-top,
+.sidebar-toggle,
+.badge-toast,
+.unsaved-banner,
+.sticky-bar {
+  bottom: calc(var(--btt-bottom, 28px) + env(safe-area-inset-bottom, 0));
+}
+/* For elements that explicitly set `bottom` we just stack the safe-area on top */
+.back-to-top { --btt-bottom: 28px; }
+.sidebar-toggle { --btt-bottom: 24px; }
+
+/* 4. Notification dropdown — fit-on-screen on phones */
+@media (max-width: 480px) {
+  .notif-dropdown {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    right: 12px !important;
+    left: 12px !important;
+  }
+  .notif-list { max-height: 60vh; }
+}
+
+/* 5. Admin Students table — undo desktop sticky on phones (sticky col
+   makes the scroll behavior weird on small screens). Let the whole
+   table scroll horizontally instead — cleaner on touch. */
+@media (max-width: 768px) {
+  .students-table thead th:last-child,
+  .students-table tbody td.students-actions-cell {
+    position: static !important;
+    box-shadow: none !important;
+    min-width: 220px !important;
+  }
+  .students-actions-cell {
+    text-align: left !important;
+  }
+  .students-progress {
+    min-width: 100px !important;
+  }
+}
+
+/* 6. Generic touch-target bump for icon buttons on phones */
+@media (max-width: 768px) {
+  .btn,
+  .nav-tab-item,
+  .members-tab,
+  .hamburger,
+  .theme-toggle,
+  .notif-btn,
+  .back-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* 7. Respect prefers-reduced-motion across decorative animations.
+   Was only applied to outcome-carousel; now blanket-applies to mesh,
+   marquee, glows, pulses. Keeps the site usable for motion-sensitive
+   users + saves battery on phones. */
+@media (prefers-reduced-motion: reduce) {
+  .tools-marquee-track,
+  .hero-mesh-blob,
+  .bento-logo-glow,
+  .notif-badge,
+  .bento-live-pulse,
+  .hero-title-gradient,
+  .hero-blob,
+  .blob-a,
+  .blob-b,
+  .blob-c,
+  .live-pulse-dot {
+    animation: none !important;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 8. Tap feedback for cards — touch devices have no :hover, so :active
+   gives an instant "I pressed it" cue. */
+@media (hover: none) and (pointer: coarse) {
+  .bento-card:active,
+  .feature-card:active,
+  .event-card:active,
+  .about-pillar:active,
+  .course-card:active,
+  .post:active,
+  .win-item:active,
+  .ann-item:active {
+    transform: scale(0.985);
+    transition: transform 0.08s ease;
+  }
+}
+
+/* 9. Modals + bottom sheets — full-screen on phones for breathing room.
+   Avatar adjuster + submission inspector were too narrow on small screens. */
+@media (max-width: 480px) {
+  .sub-inspector,
+  .avatar-adjuster {
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100vh - 32px) !important;
+    margin: 8px;
+  }
+  .avatar-adjuster-viewport {
+    max-width: calc(100vw - 64px);
+  }
+}
+
+/* 10. Forms — full-width buttons and inputs on mobile for thumb reach */
+@media (max-width: 480px) {
+  .auth-form .btn,
+  .auth-form input,
+  .auth-form textarea {
+    width: 100%;
+  }
+  .auth-card {
+    padding: 28px 22px;
+    margin: 16px;
+  }
+}

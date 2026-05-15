@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S + Ring — Logo Variations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --indigo-50:  #eef0ff;
+      --indigo-100: #e0e4ff;
+      --indigo-200: #c5cbf5;
+      --indigo-300: #a5acff;
+      --indigo-400: #8b9eff;
+      --indigo-500: #635bff;
+      --indigo-600: #4f46e5;
+      --indigo-700: #4338ca;
+      --indigo-800: #312e81;
+      --violet-700: #6d28d9;
+      --violet-800: #4c1d95;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --ink: #0a0a0a;
+      --ink-2: #404040;
+      --ink-3: #737373;
+      --line: #e5e5e5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Montserrat', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      padding: 40px 24px 80px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      margin-bottom: 56px;
+      padding: 56px 32px;
+      background: linear-gradient(135deg, #0a0a0a 0%, #312e81 50%, #4c1d95 100%);
+      border-radius: 24px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(139, 158, 255, 0.3), transparent 50%),
+                  radial-gradient(circle at 70% 70%, rgba(99, 91, 255, 0.3), transparent 50%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: #c5cbf5;
+      margin-bottom: 16px;
+      padding: 6px 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 100px;
+      backdrop-filter: blur(10px);
+    }
+    .hero h1 {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: clamp(36px, 6vw, 56px);
+      letter-spacing: -0.025em;
+      margin-bottom: 16px;
+      line-height: 1.05;
+      position: relative;
+    }
+    .hero p {
+      max-width: 620px;
+      margin: 0 auto;
+      color: rgba(255,255,255,0.75);
+      font-size: 16px;
+      line-height: 1.7;
+      position: relative;
+    }
+
+    /* CONCEPT CARD */
+    .concept {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 40px;
+      margin-bottom: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+    }
+    @media (max-width: 720px) { .concept { padding: 28px 22px; } }
+
+    .concept-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 28px;
+      padding-bottom: 24px;
+      border-bottom: 1px dashed var(--line);
+    }
+    @media (max-width: 720px) { .concept-header { flex-direction: column; } }
+
+    .concept-num-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Fraunces', serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--indigo-500);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .concept-num-tag::before {
+      content: '';
+      width: 24px;
+      height: 1px;
+      background: var(--indigo-500);
+    }
+    .concept-title {
+      font-family: 'Fraunces', serif;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+    .concept-tagline {
+      color: var(--ink-3);
+      font-size: 15px;
+      font-style: italic;
+    }
+    .concept-vibe {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 100px;
+      background: var(--indigo-50);
+      color: var(--indigo-600);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      align-self: flex-start;
+    }
+
+    .designer-note {
+      background: linear-gradient(135deg, #fafafa, #f5f5f7);
+      border-left: 3px solid var(--indigo-500);
+      padding: 16px 20px;
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 24px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .designer-note-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--indigo-600);
+      margin-bottom: 8px;
+    }
+
+    /* SHOWCASE */
+    .showcase {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 720px) { .showcase { grid-template-columns: 1fr; } }
+
+    .stage {
+      border-radius: 16px;
+      padding: 36px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stage.light {
+      background: linear-gradient(135deg, #ffffff 0%, #f5f5f7 100%);
+      border: 1px solid var(--line);
+    }
+    .stage.dark {
+      background: linear-gradient(135deg, #0a0a0a 0%, #18181b 100%);
+      border: 1px solid #262626;
+    }
+    .stage-label {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.55;
+    }
+    .stage.light .stage-label { color: var(--ink-2); }
+    .stage.dark .stage-label { color: #a3a3a3; }
+
+    /* LOCKUP */
+    .lockup {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .lockup-text {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .stage.light .lockup-text { color: #0a0a0a; }
+    .stage.dark .lockup-text { color: #fafafa; }
+    .lockup-sub {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .stage.light .lockup-sub { color: var(--ink-3); }
+    .stage.dark .lockup-sub { color: #737373; }
+    .lockup-stack { display: flex; flex-direction: column; }
+
+    /* HERO LOGO display */
+    .hero-display {
+      background: linear-gradient(135deg, #fafafa, #ffffff);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 60px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .hero-display.dark {
+      background: linear-gradient(135deg, #0a0a0a, #18181b);
+      border-color: #262626;
+    }
+
+    /* SIZES */
+    .sizes-panel {
+      background: linear-gradient(135deg, #fafafa, #f5f5f7);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .size-cell { text-align: center; }
+    .size-cell-svg-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 64px;
+    }
+    .size-cell-label {
+      font-size: 10px;
+      color: var(--ink-3);
+      margin-top: 8px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* META BLOCKS */
+    .meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 13px;
+    }
+    @media (max-width: 720px) { .meta { grid-template-columns: 1fr; } }
+    .meta-block {
+      padding: 16px 18px;
+      border-radius: 12px;
+      background: #fafafa;
+      border: 1px solid var(--line);
+      line-height: 1.6;
+    }
+    .meta-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .meta-block.pro .meta-label { color: #16a34a; }
+    .meta-block.use .meta-label { color: var(--indigo-600); }
+
+    .footer-cta {
+      text-align: center;
+      color: var(--ink-2);
+      font-size: 14px;
+      margin-top: 32px;
+      padding: 28px 24px;
+      background: white;
+      border: 2px dashed var(--indigo-200);
+      border-radius: 16px;
+      line-height: 1.7;
+    }
+    .footer-cta strong { color: var(--ink); font-family: 'Fraunces', serif; font-size: 17px; }
+    .footer-cta code {
+      background: var(--indigo-50);
+      color: var(--indigo-700);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-family: 'Monaco', monospace;
+      font-size: 12px;
+    }
+
+    /* Animated orbit (concept 03) */
+    @keyframes orbit-spin {
+      from { transform: rotate(-25deg); }
+      to { transform: rotate(335deg); }
+    }
+    .orbit-anim { animation: orbit-spin 12s linear infinite; transform-origin: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- HERO -->
+    <header class="hero">
+      <span class="hero-eyebrow">S + Ring · Refined Direction</span>
+      <h1>Visible "S".<br/>Ring around it.</h1>
+      <p>You knew what you wanted — five executions of the same idea, each with a different personality. The "S" stays the hero, the ring frames it. Pick the geometry that feels most "you."</p>
+    </header>
+
+    <!-- ========== VARIATION A: Classic Seal ========== -->
+    <section class="concept">
+      <div class="concept-header">
+        <div>
+          <div class="concept-num-tag">Variation A</div>
+          <h2 class="concept-title">Classic Seal</h2>
+          <p class="concept-tagline">Solid indigo orb, clean white S inside, single ring framing it like a stamp.</p>
+        </div>
+        <span class="concept-vibe">Timeless · Authoritative</span>
+      </div>
+
+      <div class="designer-note">
+        <span class="designer-note-label">Designer's note</span>
+        The most timeless of the variations — reads as "official seal of an academy." The ring acts as a frame, the gap between ring and sphere creates breathing room (the "halo"). This is the safest, most graduate-coded execution. Will look gorgeous on certificates.
+      </div>
+
+      <div class="hero-display">
+        <svg width="160" height="160" viewBox="0 0 88 88">
+          <defs>
+            <linearGradient id="A-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#635bff"/>
+              <stop offset="100%" stop-color="#312e81"/>
+            </linearGradient>
+          </defs>
+          <!-- outer ring -->
+          <circle cx="44" cy="44" r="42" fill="none" stroke="url(#A-grad)" stroke-width="1.5"/>
+          <!-- inner sphere -->
+          <circle cx="44" cy="44" r="34" fill="url(#A-grad)"/>
+          <!-- the S -->
+          <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48"
+                stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+
+      <div class="showcase">
+        <div class="stage light">
+          <span class="stage-label">Light · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="48" height="48" viewBox="0 0 88 88">
+              <circle cx="44" cy="44" r="42" fill="none" stroke="url(#A-grad)" stroke-width="1.5"/>
+              <circle cx="44" cy="44" r="34" fill="url(#A-grad)"/>
+              <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+        <div class="stage dark">
+          <span class="stage-label">Dark · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="48" height="48" viewBox="0 0 88 88">
+              <defs>
+                <linearGradient id="A-grad-d" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#a5acff"/>
+                  <stop offset="100%" stop-color="#635bff"/>
+                </linearGradient>
+              </defs>
+              <circle cx="44" cy="44" r="42" fill="none" stroke="url(#A-grad-d)" stroke-width="1.5"/>
+              <circle cx="44" cy="44" r="34" fill="url(#A-grad-d)"/>
+              <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sizes-panel">
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="64" height="64" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="42" fill="none" stroke="url(#A-grad)" stroke-width="1.5"/>
+            <circle cx="44" cy="44" r="34" fill="url(#A-grad)"/>
+            <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">64px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="32" height="32" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="42" fill="none" stroke="url(#A-grad)" stroke-width="2"/>
+            <circle cx="44" cy="44" r="34" fill="url(#A-grad)"/>
+            <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">32px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="16" height="16" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="42" fill="none" stroke="url(#A-grad)" stroke-width="3"/>
+            <circle cx="44" cy="44" r="32" fill="url(#A-grad)"/>
+            <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48" stroke="white" stroke-width="6" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">16px favicon</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="32" height="32" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="42" fill="none" stroke="#000" stroke-width="2"/>
+            <circle cx="44" cy="44" r="34" fill="#000"/>
+            <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">Mono</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="meta-block pro"><div class="meta-label">+ Strengths</div>Most certificate-ready. Ring frames the S beautifully. Reads as "academy seal." Survives at all sizes including favicon.</div>
+        <div class="meta-block use"><div class="meta-label">→ Best for</div>The default everywhere. Navbar, favicon, certificates, app icon, social profile.</div>
+      </div>
+    </section>
+
+    <!-- ========== VARIATION B: Outline Ring ========== -->
+    <section class="concept">
+      <div class="concept-header">
+        <div>
+          <div class="concept-num-tag">Variation B</div>
+          <h2 class="concept-title">Outlined Ring</h2>
+          <p class="concept-tagline">Ring as outline, no fill — S floats inside in full indigo gradient. Lighter, more modern.</p>
+        </div>
+        <span class="concept-vibe">Modern · Minimal</span>
+      </div>
+
+      <div class="designer-note">
+        <span class="designer-note-label">Designer's note</span>
+        Same idea as Variation A but inverted weight: instead of solid sphere with white S, we get an open ring containing a gradient S. Feels lighter, more contemporary, more "tech startup." Perfect when you want the S to feel like the protagonist, not a passenger.
+      </div>
+
+      <div class="hero-display">
+        <svg width="160" height="160" viewBox="0 0 88 88">
+          <defs>
+            <linearGradient id="B-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#635bff"/>
+              <stop offset="100%" stop-color="#4c1d95"/>
+            </linearGradient>
+          </defs>
+          <circle cx="44" cy="44" r="40" fill="none" stroke="url(#B-grad)" stroke-width="2.5"/>
+          <path d="M58 28 C58 22 52 19 44 19 C36 19 30 22 30 28 C30 34 36 37 44 39 C52 41 58 44 58 50 C58 56 52 59 44 59 C36 59 30 56 30 50" stroke="url(#B-grad)" stroke-width="6" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+
+      <div class="showcase">
+        <div class="stage light">
+          <span class="stage-label">Light · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="48" height="48" viewBox="0 0 88 88">
+              <circle cx="44" cy="44" r="40" fill="none" stroke="url(#B-grad)" stroke-width="2.5"/>
+              <path d="M58 28 C58 22 52 19 44 19 C36 19 30 22 30 28 C30 34 36 37 44 39 C52 41 58 44 58 50 C58 56 52 59 44 59 C36 59 30 56 30 50" stroke="url(#B-grad)" stroke-width="6" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+        <div class="stage dark">
+          <span class="stage-label">Dark · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="48" height="48" viewBox="0 0 88 88">
+              <defs>
+                <linearGradient id="B-grad-d" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#a5acff"/>
+                  <stop offset="100%" stop-color="#635bff"/>
+                </linearGradient>
+              </defs>
+              <circle cx="44" cy="44" r="40" fill="none" stroke="url(#B-grad-d)" stroke-width="2.5"/>
+              <path d="M58 28 C58 22 52 19 44 19 C36 19 30 22 30 28 C30 34 36 37 44 39 C52 41 58 44 58 50 C58 56 52 59 44 59 C36 59 30 56 30 50" stroke="url(#B-grad-d)" stroke-width="6" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sizes-panel">
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="64" height="64" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="40" fill="none" stroke="url(#B-grad)" stroke-width="2.5"/>
+            <path d="M58 28 C58 22 52 19 44 19 C36 19 30 22 30 28 C30 34 36 37 44 39 C52 41 58 44 58 50 C58 56 52 59 44 59 C36 59 30 56 30 50" stroke="url(#B-grad)" stroke-width="6" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">64px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="32" height="32" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="40" fill="none" stroke="url(#B-grad)" stroke-width="3.5"/>
+            <path d="M58 28 C58 22 52 19 44 19 C36 19 30 22 30 28 C30 34 36 37 44 39 C52 41 58 44 58 50 C58 56 52 59 44 59 C36 59 30 56 30 50" stroke="url(#B-grad)" stroke-width="7" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">32px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="16" height="16" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="38" fill="none" stroke="url(#B-grad)" stroke-width="6"/>
+            <path d="M58 28 C58 22 52 19 44 19 C36 19 30 22 30 28 C30 34 36 37 44 39 C52 41 58 44 58 50 C58 56 52 59 44 59 C36 59 30 56 30 50" stroke="url(#B-grad)" stroke-width="9" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">16px favicon</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="32" height="32" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="40" fill="none" stroke="#000" stroke-width="3.5"/>
+            <path d="M58 28 C58 22 52 19 44 19 C36 19 30 22 30 28 C30 34 36 37 44 39 C52 41 58 44 58 50 C58 56 52 59 44 59 C36 59 30 56 30 50" stroke="#000" stroke-width="7" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">Mono</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="meta-block pro"><div class="meta-label">+ Strengths</div>Lighter visual weight — won't dominate UI. Modern, breathable. Same gradient on both elements = unified mark.</div>
+        <div class="meta-block use"><div class="meta-label">→ Best for</div>Modern dashboards, app UI, when you want the S to feel like the hero element.</div>
+      </div>
+    </section>
+
+    <!-- ========== VARIATION C: Planet Ring (Saturn) ========== -->
+    <section class="concept">
+      <div class="concept-header">
+        <div>
+          <div class="concept-num-tag">Variation C</div>
+          <h2 class="concept-title">Planet Ring</h2>
+          <p class="concept-tagline">Like Saturn — sphere with a tilted orbital ring around it. Cosmic, distinctive.</p>
+        </div>
+        <span class="concept-vibe">Cosmic · Storytelling</span>
+      </div>
+
+      <div class="designer-note">
+        <span class="designer-note-label">Designer's note</span>
+        This is the most narratively rich. The ring is no longer just a frame — it's an <em>orbit</em>. The S sits at the heart of a planet, encircled by its student satellites/journey. Direct nod to "Stratos" (sky/space). The ellipse tilt adds dimension and movement that flat circles can't.
+      </div>
+
+      <div class="hero-display">
+        <svg width="180" height="160" viewBox="0 0 100 88">
+          <defs>
+            <linearGradient id="C-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#635bff"/>
+              <stop offset="100%" stop-color="#312e81"/>
+            </linearGradient>
+            <linearGradient id="C-ring" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#a5acff" stop-opacity="0.4"/>
+              <stop offset="50%" stop-color="#635bff"/>
+              <stop offset="100%" stop-color="#a5acff" stop-opacity="0.4"/>
+            </linearGradient>
+            <mask id="C-ring-mask">
+              <rect width="100" height="88" fill="white"/>
+              <ellipse cx="50" cy="44" rx="28" ry="28" fill="black"/>
+            </mask>
+          </defs>
+          <!-- back of ring (behind sphere) -->
+          <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring)" stroke-width="2" transform="rotate(-18 50 44)" opacity="0.5"/>
+          <!-- sphere -->
+          <circle cx="50" cy="44" r="28" fill="url(#C-grad)"/>
+          <!-- the S -->
+          <path d="M60 32 C60 27 55 25 50 25 C45 25 40 27 40 32 C40 36 44 38 50 40 C56 42 60 44 60 49 C60 54 55 56 50 56 C45 56 40 54 40 49" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <!-- front of ring (in front of sphere, tilted) -->
+          <g mask="url(#C-ring-mask)">
+            <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring)" stroke-width="2.5" transform="rotate(-18 50 44)"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="showcase">
+        <div class="stage light">
+          <span class="stage-label">Light · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="56" height="48" viewBox="0 0 100 88">
+              <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring)" stroke-width="2" transform="rotate(-18 50 44)" opacity="0.5"/>
+              <circle cx="50" cy="44" r="28" fill="url(#C-grad)"/>
+              <path d="M60 32 C60 27 55 25 50 25 C45 25 40 27 40 32 C40 36 44 38 50 40 C56 42 60 44 60 49 C60 54 55 56 50 56 C45 56 40 54 40 49" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+              <g mask="url(#C-ring-mask)">
+                <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring)" stroke-width="2.5" transform="rotate(-18 50 44)"/>
+              </g>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+        <div class="stage dark">
+          <span class="stage-label">Dark · Navbar lockup (animated orbit)</span>
+          <div class="lockup">
+            <svg width="56" height="48" viewBox="0 0 100 88">
+              <defs>
+                <linearGradient id="C-grad-d" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#a5acff"/>
+                  <stop offset="100%" stop-color="#635bff"/>
+                </linearGradient>
+                <linearGradient id="C-ring-d" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#a5acff" stop-opacity="0.3"/>
+                  <stop offset="50%" stop-color="#a5acff"/>
+                  <stop offset="100%" stop-color="#a5acff" stop-opacity="0.3"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring-d)" stroke-width="2" transform="rotate(-18 50 44)" opacity="0.5"/>
+              <circle cx="50" cy="44" r="28" fill="url(#C-grad-d)"/>
+              <path d="M60 32 C60 27 55 25 50 25 C45 25 40 27 40 32 C40 36 44 38 50 40 C56 42 60 44 60 49 C60 54 55 56 50 56 C45 56 40 54 40 49" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+              <g mask="url(#C-ring-mask)">
+                <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring-d)" stroke-width="2.5" transform="rotate(-18 50 44)"/>
+              </g>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sizes-panel">
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="80" height="64" viewBox="0 0 100 88">
+            <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring)" stroke-width="2" transform="rotate(-18 50 44)" opacity="0.5"/>
+            <circle cx="50" cy="44" r="28" fill="url(#C-grad)"/>
+            <path d="M60 32 C60 27 55 25 50 25 C45 25 40 27 40 32 C40 36 44 38 50 40 C56 42 60 44 60 49 C60 54 55 56 50 56 C45 56 40 54 40 49" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            <g mask="url(#C-ring-mask)">
+              <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring)" stroke-width="2.5" transform="rotate(-18 50 44)"/>
+            </g>
+          </svg></div>
+          <div class="size-cell-label">64px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="40" height="32" viewBox="0 0 100 88">
+            <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring)" stroke-width="3" transform="rotate(-18 50 44)" opacity="0.5"/>
+            <circle cx="50" cy="44" r="28" fill="url(#C-grad)"/>
+            <path d="M60 32 C60 27 55 25 50 25 C45 25 40 27 40 32 C40 36 44 38 50 40 C56 42 60 44 60 49 C60 54 55 56 50 56 C45 56 40 54 40 49" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+            <g mask="url(#C-ring-mask)">
+              <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="url(#C-ring)" stroke-width="4" transform="rotate(-18 50 44)"/>
+            </g>
+          </svg></div>
+          <div class="size-cell-label">32px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="16" height="16" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="34" fill="url(#C-grad)"/>
+            <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48" stroke="white" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">16px (no ring)</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="40" height="32" viewBox="0 0 100 88">
+            <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="#000" stroke-width="2" transform="rotate(-18 50 44)" opacity="0.5"/>
+            <circle cx="50" cy="44" r="28" fill="#000"/>
+            <path d="M60 32 C60 27 55 25 50 25 C45 25 40 27 40 32 C40 36 44 38 50 40 C56 42 60 44 60 49 C60 54 55 56 50 56 C45 56 40 54 40 49" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            <g mask="url(#C-ring-mask)">
+              <ellipse cx="50" cy="44" rx="46" ry="13" fill="none" stroke="#000" stroke-width="2.5" transform="rotate(-18 50 44)"/>
+            </g>
+          </svg></div>
+          <div class="size-cell-label">Mono</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="meta-block pro"><div class="meta-label">+ Strengths</div>Most distinctive — no other LMS has this. Strong cosmic story (Stratos). Animatable (ring rotates). Wider canvas adds presence.</div>
+        <div class="meta-block use"><div class="meta-label">→ Best for</div>Hero, splash screens, video bumpers. Use circle-only fallback for favicon.</div>
+      </div>
+    </section>
+
+    <!-- ========== VARIATION D: Double Orbit ========== -->
+    <section class="concept">
+      <div class="concept-header">
+        <div>
+          <div class="concept-num-tag">Variation D</div>
+          <h2 class="concept-title">Double Orbit</h2>
+          <p class="concept-tagline">Two rings at different angles — atomic energy. The S sits at the nucleus.</p>
+        </div>
+        <span class="concept-vibe">Dynamic · Tech</span>
+      </div>
+
+      <div class="designer-note">
+        <span class="designer-note-label">Designer's note</span>
+        Two intersecting elliptical rings — gives the mark the energy of an atom diagram or a spinning gyroscope. Most "tech-coded" of the variations. Reads as "knowledge in motion." Pair this with subtle hover animation (rings spin) and it becomes alive.
+      </div>
+
+      <div class="hero-display">
+        <svg width="160" height="160" viewBox="0 0 88 88">
+          <defs>
+            <linearGradient id="D-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#635bff"/>
+              <stop offset="100%" stop-color="#312e81"/>
+            </linearGradient>
+          </defs>
+          <!-- ring 1 (left tilt) -->
+          <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad)" stroke-width="1.5" transform="rotate(35 44 44)" opacity="0.7"/>
+          <!-- ring 2 (right tilt) -->
+          <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad)" stroke-width="1.5" transform="rotate(-35 44 44)" opacity="0.7"/>
+          <!-- nucleus sphere -->
+          <circle cx="44" cy="44" r="22" fill="url(#D-grad)"/>
+          <!-- the S -->
+          <path d="M52 33 C52 29 48 27 44 27 C40 27 36 29 36 33 C36 37 40 38 44 39 C48 40 52 42 52 46 C52 50 48 52 44 52 C40 52 36 50 36 46" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+
+      <div class="showcase">
+        <div class="stage light">
+          <span class="stage-label">Light · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="48" height="48" viewBox="0 0 88 88">
+              <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad)" stroke-width="1.5" transform="rotate(35 44 44)" opacity="0.7"/>
+              <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad)" stroke-width="1.5" transform="rotate(-35 44 44)" opacity="0.7"/>
+              <circle cx="44" cy="44" r="22" fill="url(#D-grad)"/>
+              <path d="M52 33 C52 29 48 27 44 27 C40 27 36 29 36 33 C36 37 40 38 44 39 C48 40 52 42 52 46 C52 50 48 52 44 52 C40 52 36 50 36 46" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+        <div class="stage dark">
+          <span class="stage-label">Dark · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="48" height="48" viewBox="0 0 88 88">
+              <defs>
+                <linearGradient id="D-grad-d" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#a5acff"/>
+                  <stop offset="100%" stop-color="#635bff"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad-d)" stroke-width="1.5" transform="rotate(35 44 44)" opacity="0.7"/>
+              <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad-d)" stroke-width="1.5" transform="rotate(-35 44 44)" opacity="0.7"/>
+              <circle cx="44" cy="44" r="22" fill="url(#D-grad-d)"/>
+              <path d="M52 33 C52 29 48 27 44 27 C40 27 36 29 36 33 C36 37 40 38 44 39 C48 40 52 42 52 46 C52 50 48 52 44 52 C40 52 36 50 36 46" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sizes-panel">
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="64" height="64" viewBox="0 0 88 88">
+            <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad)" stroke-width="1.5" transform="rotate(35 44 44)" opacity="0.7"/>
+            <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad)" stroke-width="1.5" transform="rotate(-35 44 44)" opacity="0.7"/>
+            <circle cx="44" cy="44" r="22" fill="url(#D-grad)"/>
+            <path d="M52 33 C52 29 48 27 44 27 C40 27 36 29 36 33 C36 37 40 38 44 39 C48 40 52 42 52 46 C52 50 48 52 44 52 C40 52 36 50 36 46" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">64px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="32" height="32" viewBox="0 0 88 88">
+            <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad)" stroke-width="2.5" transform="rotate(35 44 44)" opacity="0.7"/>
+            <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="url(#D-grad)" stroke-width="2.5" transform="rotate(-35 44 44)" opacity="0.7"/>
+            <circle cx="44" cy="44" r="22" fill="url(#D-grad)"/>
+            <path d="M52 33 C52 29 48 27 44 27 C40 27 36 29 36 33 C36 37 40 38 44 39 C48 40 52 42 52 46 C52 50 48 52 44 52 C40 52 36 50 36 46" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">32px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="16" height="16" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="32" fill="url(#D-grad)"/>
+            <path d="M54 30 C54 25 49 23 44 23 C39 23 34 25 34 30 C34 34 38 36 44 38 C50 40 54 42 54 47 C54 53 49 55 44 55 C39 55 34 53 34 48" stroke="white" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">16px (no rings)</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="32" height="32" viewBox="0 0 88 88">
+            <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="#000" stroke-width="2.5" transform="rotate(35 44 44)" opacity="0.7"/>
+            <ellipse cx="44" cy="44" rx="38" ry="14" fill="none" stroke="#000" stroke-width="2.5" transform="rotate(-35 44 44)" opacity="0.7"/>
+            <circle cx="44" cy="44" r="22" fill="#000"/>
+            <path d="M52 33 C52 29 48 27 44 27 C40 27 36 29 36 33 C36 37 40 38 44 39 C48 40 52 42 52 46 C52 50 48 52 44 52 C40 52 36 50 36 46" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">Mono</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="meta-block pro"><div class="meta-label">+ Strengths</div>Most kinetic feel. Atomic/molecular metaphor (knowledge as energy). Beautifully animatable (rings spin opposite directions).</div>
+        <div class="meta-block use"><div class="meta-label">→ Best for</div>Loading states, video intro stings, dashboard hero. Drop rings for favicon size.</div>
+      </div>
+    </section>
+
+    <!-- ========== VARIATION E: Halo / Floating S ========== -->
+    <section class="concept">
+      <div class="concept-header">
+        <div>
+          <div class="concept-num-tag">Variation E</div>
+          <h2 class="concept-title">Halo</h2>
+          <p class="concept-tagline">Sphere with a thin floating ring above it — like a graduate's cap halo. Subtle but iconic.</p>
+        </div>
+        <span class="concept-vibe">Iconic · Memorable</span>
+      </div>
+
+      <div class="designer-note">
+        <span class="designer-note-label">Designer's note</span>
+        Different from the rest — the ring isn't around the whole sphere, it's <em>floating above it</em> like a halo. Reads as "graduate," "achievement," "blessed." Subtle but the silhouette is unforgettable. Think Notion's icon energy: just a ball and a cap. Quiet brilliance.
+      </div>
+
+      <div class="hero-display">
+        <svg width="160" height="160" viewBox="0 0 88 88">
+          <defs>
+            <linearGradient id="E-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#635bff"/>
+              <stop offset="100%" stop-color="#312e81"/>
+            </linearGradient>
+          </defs>
+          <!-- halo (tilted ellipse above sphere) -->
+          <ellipse cx="44" cy="14" rx="22" ry="4" fill="none" stroke="url(#E-grad)" stroke-width="2.5"/>
+          <!-- sphere -->
+          <circle cx="44" cy="48" r="28" fill="url(#E-grad)"/>
+          <!-- the S -->
+          <path d="M54 36 C54 31 49 29 44 29 C39 29 34 31 34 36 C34 40 38 42 44 44 C50 46 54 48 54 53 C54 58 49 60 44 60 C39 60 34 58 34 53" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+
+      <div class="showcase">
+        <div class="stage light">
+          <span class="stage-label">Light · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="48" height="48" viewBox="0 0 88 88">
+              <ellipse cx="44" cy="14" rx="22" ry="4" fill="none" stroke="url(#E-grad)" stroke-width="2.5"/>
+              <circle cx="44" cy="48" r="28" fill="url(#E-grad)"/>
+              <path d="M54 36 C54 31 49 29 44 29 C39 29 34 31 34 36 C34 40 38 42 44 44 C50 46 54 48 54 53 C54 58 49 60 44 60 C39 60 34 58 34 53" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+        <div class="stage dark">
+          <span class="stage-label">Dark · Navbar lockup</span>
+          <div class="lockup">
+            <svg width="48" height="48" viewBox="0 0 88 88">
+              <defs>
+                <linearGradient id="E-grad-d" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#a5acff"/>
+                  <stop offset="100%" stop-color="#635bff"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="44" cy="14" rx="22" ry="4" fill="none" stroke="url(#E-grad-d)" stroke-width="2.5"/>
+              <circle cx="44" cy="48" r="28" fill="url(#E-grad-d)"/>
+              <path d="M54 36 C54 31 49 29 44 29 C39 29 34 31 34 36 C34 40 38 42 44 44 C50 46 54 48 54 53 C54 58 49 60 44 60 C39 60 34 58 34 53" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="lockup-stack">
+              <div class="lockup-text">Sphere Academy</div>
+              <div class="lockup-sub">by Stratos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sizes-panel">
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="64" height="64" viewBox="0 0 88 88">
+            <ellipse cx="44" cy="14" rx="22" ry="4" fill="none" stroke="url(#E-grad)" stroke-width="2.5"/>
+            <circle cx="44" cy="48" r="28" fill="url(#E-grad)"/>
+            <path d="M54 36 C54 31 49 29 44 29 C39 29 34 31 34 36 C34 40 38 42 44 44 C50 46 54 48 54 53 C54 58 49 60 44 60 C39 60 34 58 34 53" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">64px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="32" height="32" viewBox="0 0 88 88">
+            <ellipse cx="44" cy="14" rx="22" ry="4" fill="none" stroke="url(#E-grad)" stroke-width="3"/>
+            <circle cx="44" cy="48" r="28" fill="url(#E-grad)"/>
+            <path d="M54 36 C54 31 49 29 44 29 C39 29 34 31 34 36 C34 40 38 42 44 44 C50 46 54 48 54 53 C54 58 49 60 44 60 C39 60 34 58 34 53" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">32px</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="16" height="16" viewBox="0 0 88 88">
+            <circle cx="44" cy="48" r="34" fill="url(#E-grad)"/>
+            <path d="M54 36 C54 31 49 29 44 29 C39 29 34 31 34 36 C34 40 38 42 44 44 C50 46 54 48 54 53 C54 58 49 60 44 60 C39 60 34 58 34 53" stroke="white" stroke-width="6" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">16px (no halo)</div>
+        </div>
+        <div class="size-cell"><div class="size-cell-svg-wrap">
+          <svg width="32" height="32" viewBox="0 0 88 88">
+            <ellipse cx="44" cy="14" rx="22" ry="4" fill="none" stroke="#000" stroke-width="3"/>
+            <circle cx="44" cy="48" r="28" fill="#000"/>
+            <path d="M54 36 C54 31 49 29 44 29 C39 29 34 31 34 36 C34 40 38 42 44 44 C50 46 54 48 54 53 C54 58 49 60 44 60 C39 60 34 58 34 53" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+          </svg></div>
+          <div class="size-cell-label">Mono</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="meta-block pro"><div class="meta-label">+ Strengths</div>Strongest emotional read — "graduate halo." Most unique silhouette. Memorable from far away.</div>
+        <div class="meta-block use"><div class="meta-label">→ Best for</div>The whole brand. Especially good on graduate certificates and post-graduation ceremony banners.</div>
+      </div>
+    </section>
+
+    <!-- DESIGNER VERDICT -->
+    <div style="background: linear-gradient(135deg, #0a0a0a, #312e81); color: white; padding: 48px 40px; border-radius: 24px; margin-top: 56px; position: relative; overflow: hidden;">
+      <div style="position:absolute; inset:0; background: radial-gradient(circle at 80% 20%, rgba(99, 91, 255, 0.3), transparent 50%); pointer-events:none;"></div>
+      <span style="display:inline-block; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#a5acff; margin-bottom:12px; font-weight:600; position:relative;">Designer's pick</span>
+      <h2 style="font-family:'Fraunces', serif; font-size:32px; letter-spacing:-0.02em; margin-bottom:24px; line-height:1.15; position:relative;">My honest call:</h2>
+
+      <div style="padding:20px 0; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; gap:20px; align-items:flex-start; position:relative;">
+        <div style="flex-shrink:0; width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, #635bff, #4c1d95); display:flex; align-items:center; justify-content:center; font-family:'Fraunces', serif; font-weight:700; font-size:16px;">1</div>
+        <div>
+          <div style="font-family:'Fraunces', serif; font-size:18px; font-weight:700; margin-bottom:4px;">Variation A — Classic Seal</div>
+          <p style="color:rgba(255,255,255,0.7); font-size:14px; line-height:1.6;">If you only pick one, pick this. Survives every size. Looks correct everywhere — navbar, favicon, certificate, app icon. The ring as a frame is the most timeless treatment. <strong>Lowest risk, highest "feels right."</strong></p>
+        </div>
+      </div>
+
+      <div style="padding:20px 0; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; gap:20px; align-items:flex-start; position:relative;">
+        <div style="flex-shrink:0; width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, #635bff, #4c1d95); display:flex; align-items:center; justify-content:center; font-family:'Fraunces', serif; font-weight:700; font-size:16px;">2</div>
+        <div>
+          <div style="font-family:'Fraunces', serif; font-size:18px; font-weight:700; margin-bottom:4px;">Variation C — Planet Ring</div>
+          <p style="color:rgba(255,255,255,0.7); font-size:14px; line-height:1.6;">If you want personality. The Saturn-style tilted ring tells the Stratos story without explaining anything. <strong>Highest distinctiveness</strong> — no one will confuse this with another LMS.</p>
+        </div>
+      </div>
+
+      <div style="padding:20px 0; display:flex; gap:20px; align-items:flex-start; position:relative;">
+        <div style="flex-shrink:0; width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, #635bff, #4c1d95); display:flex; align-items:center; justify-content:center; font-family:'Fraunces', serif; font-weight:700; font-size:16px;">3</div>
+        <div>
+          <div style="font-family:'Fraunces', serif; font-size:18px; font-weight:700; margin-bottom:4px;">Variation E — Halo</div>
+          <p style="color:rgba(255,255,255,0.7); font-size:14px; line-height:1.6;">Wildcard pick. Reads as "graduate halo" — perfectly on-message for an academy. The single floating ring above the sphere is unforgettable once you see it. <strong>Most emotionally resonant.</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-cta">
+      <strong>Pumili ka na lang ng letter.</strong><br/>
+      Sabihin mo lang yung variation (e.g., <code>"go A"</code> o <code>"variation C"</code>) at gagawin ko nang actual SVG logo na palit sa <code>logo.png</code> + <code>favicon.png</code> ng website.<br/>
+      Kung may gusto ka ipa-tweak (kulay, S thickness, ring tilt) — sabihin mo lang.
+    </div>
+
+  </div>
+</body>
+</html>
