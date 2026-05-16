@@ -2760,6 +2760,7 @@ const LESSONS = {
     // One-time content seed for Phase 2-4 (W5-W16). Only fills lessons
     // whose sections array is empty, so any admin-customized content is
     // preserved. Idempotent — re-runs are no-ops once content is in place.
+    // Also seeds duration + assignment config when missing.
     try {
       const stored = safeGetJSON(this.STORAGE_KEY, null);
       if (!Array.isArray(stored)) return;
@@ -2767,12 +2768,31 @@ const LESSONS = {
       let seedChanged = false;
       stored.forEach(l => {
         if (!l || !l.id || !seed[l.id]) return;
-        const empty = !Array.isArray(l.sections) || l.sections.length === 0;
-        if (empty) {
-          const s = seed[l.id];
+        const s = seed[l.id];
+        // Content sections — only seed when totally empty
+        const emptySections = !Array.isArray(l.sections) || l.sections.length === 0;
+        if (emptySections) {
           l.sections = s.sections || [];
           l.keyTakeaways = s.keyTakeaways || [];
           l.proTip = s.proTip || '';
+          seedChanged = true;
+        }
+        // Duration — fill in if missing/default
+        if (s.duration && (!l.duration || l.duration === '45:00')) {
+          l.duration = s.duration;
+          seedChanged = true;
+        }
+        // Video metadata — leave URL empty for admin to paste, but flag
+        // the lesson as a video lesson with the right type. Admin can
+        // upload via Admin → Edit Lesson → Video URL.
+        if (s.videoType && !l.videoType) {
+          l.videoType = s.videoType;
+          seedChanged = true;
+        }
+        // Assignment — only seed when the admin hasn't enabled one yet.
+        const hasAssignment = l.assignment && (l.assignment.enabled || (l.assignment.title || '').trim() !== '');
+        if (s.assignment && !hasAssignment) {
+          l.assignment = JSON.parse(JSON.stringify(s.assignment)); // deep clone
           seedChanged = true;
         }
       });
@@ -2790,6 +2810,14 @@ const LESSONS = {
     // PHASE 2 — CREATIVES + AI (W5–W8)
     // =========================================================
     w5: {
+      duration: '32:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'Phase 1 Rework — Apply the CAT Framework',
+        description: 'Take your three Phase 1 deliverables (product post, banner, story) and rebuild each one applying the CAT framework (Clear, Attractive, Targeted). Submit BEFORE + AFTER side by side — 6 images total (3 before + 3 after). Include a short PDF note (max 1 page) explaining what you changed on each piece and why. Use the BEFORE+AFTER format because clients hire marketers who can show growth, not just polish.',
+        fileTypes: { image: true, video: false, pdf: true }
+      },
       sections: [
         { heading: 'Why Critique Comes Before More Creating', content: '<p>Most beginners keep making new creatives without ever reviewing the old ones. That\'s why they plateau at "okay" forever. This week we slow down and audit everything you made in Phase 1 — every image post, banner, and story. The goal: spot the pattern in your weak spots so the next batch jumps a level.</p>' },
         { heading: 'The CAT Framework — Clear, Attractive, Targeted', content: '<p>Every creative gets scored on three axes:</p><ul><li><strong>Clear</strong> — Can a stranger understand the offer in 3 seconds? If the headline takes effort, it fails.</li><li><strong>Attractive</strong> — Does it stop the scroll? Color contrast, faces, motion, and curiosity gaps drive this.</li><li><strong>Targeted</strong> — Does it speak to ONE specific person, not "everyone"? Generic = invisible.</li></ul><p>Rate each of your Phase 1 deliverables 1-5 on each axis. Anything below 4 needs a redo.</p>' },
@@ -2809,6 +2837,14 @@ const LESSONS = {
     },
 
     w6: {
+      duration: '38:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'Three Hooks, One Body — Video A/B Test',
+        description: 'Create 3 short videos (15-30s each) for the SAME product, but with 3 DIFFERENT hooks. Use any of the 5 hook formulas from this lesson (question, bold claim, visual surprise, listicle preview, POV/story). Rules: same product, same body, same CTA — only the hook changes. Caption every video. Export as MP4, vertical 9:16 (1080×1920). This trains the most important muscle in performance marketing: variation testing.',
+        fileTypes: { image: false, video: true, pdf: false }
+      },
       sections: [
         { heading: 'Why Video Beats Static — The Algorithm Says So', content: '<p>Meta, TikTok, and YouTube all reward video with higher reach. A decent video can hit 10× the impressions of a great static image — for free. This week you go deeper into video creatives, mastering the structure that wins attention in the first 3 seconds.</p>' },
         { heading: 'The Hook-Body-CTA Formula (Deep Dive)', content: '<p>Every winning video has three parts:</p><ul><li><strong>Hook (0-3s)</strong> — Stop the scroll. Use a pattern interrupt: a shocking visual, a bold claim, a question, or an unexpected sound.</li><li><strong>Body (3-15s)</strong> — Deliver the promise. Show the product in action, explain the benefit, or tell the mini-story.</li><li><strong>CTA (15-30s)</strong> — Tell them exactly what to do next. "Shop now," "Message us," "Tap the link."</li></ul><p>If any of the three is weak, the whole video fails. Hook is non-negotiable.</p>' },
@@ -2828,6 +2864,14 @@ const LESSONS = {
     },
 
     w7: {
+      duration: '42:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: '5 Angles for ONE Product',
+        description: 'Pick ONE real product (your client\'s, a sample, or invented). Write 5 different ad scripts — one for each awareness stage (Unaware, Problem-aware, Solution-aware, Product-aware, Most-aware). Each script must include: opening hook (1 line), body (3-5 lines), CTA (1 line). Submit as a single PDF with all 5 angles labeled by awareness stage. Include 1 short paragraph at the top describing your customer avatar (age, situation, pain). This exact exercise is what senior marketers do every campaign.',
+        fileTypes: { image: false, video: false, pdf: true }
+      },
       sections: [
         { heading: 'What Is a "Customer Angle"?', content: '<p>An angle is the specific reason a specific customer should buy. Not the product features — the personal pain or desire it solves. "Anti-acne cream" is a product. "Get clear skin before your sister\'s wedding in 30 days" is an angle. Angles convert. Features don\'t.</p>' },
         { heading: 'The 5 Stages of Customer Awareness', content: '<p>(Eugene Schwartz framework — still the gold standard 60 years later)</p><ul><li><strong>Unaware</strong> — doesn\'t know they have the problem. Angle: introduce the pain.</li><li><strong>Problem-aware</strong> — knows the pain, not the solution. Angle: name + agitate the problem.</li><li><strong>Solution-aware</strong> — knows solutions exist, not yours. Angle: position your category.</li><li><strong>Product-aware</strong> — knows your product, hesitating. Angle: differentiation + proof.</li><li><strong>Most-aware</strong> — wants to buy, needs a reason now. Angle: offer + urgency.</li></ul><p>Most beginners write only at "most-aware" — that\'s why their ads only convert to people who already wanted to buy.</p>' },
@@ -2847,6 +2891,14 @@ const LESSONS = {
     },
 
     w8: {
+      duration: '40:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: '5-Piece Campaign Set — One Product, Full Output',
+        description: 'Produce a complete campaign set for ONE product: (1) hero video 15-30s, (2) square product post (1:1 image), (3) landscape banner (16:9 image), (4) vertical story creative (9:16 image with CTA), (5) alt video hook version of #1 — same body, new hook. All 5 must share ONE angle, ONE color palette, ONE font family. Submit all 5 files + a 1-page brand brief (PDF) explaining the chosen angle, target customer, and why this set holds together. This is your end-of-Phase-2 portfolio piece — clients will see it.',
+        fileTypes: { image: true, video: true, pdf: true }
+      },
       sections: [
         { heading: 'From Single Creatives to Campaign Sets', content: '<p>Phase 1-2 you built one piece at a time. Real campaigns ship <strong>sets</strong> — coordinated assets that work together: a hero video, supporting images, story variants, banner. This week you produce your first integrated campaign set.</p>' },
         { heading: 'Designing a Cohesive Set (Not Matchy-Matchy)', content: '<p>The set should feel like one family, not five clones. Rules:</p><ul><li>Same color palette across all assets</li><li>Same fonts (max 2)</li><li>Same hero shot / character recurs</li><li>Different formats / framings — variety inside consistency</li><li>One unified angle across all pieces (don\'t mix angles in a set)</li></ul>' },
@@ -2869,6 +2921,14 @@ const LESSONS = {
     // PHASE 3 — TOOLS (W9–W12)
     // =========================================================
     w9: {
+      duration: '35:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'Build Your Marketer\'s Sheet Stack',
+        description: 'Create a Google Sheets workbook with 3 tabs: (1) Content Calendar — Date, Channel, Topic, Status, Owner — minimum 10 sample posts, color-coded by status. (2) Ad Performance Tracker — 10 sample rows with auto-calculated CTR, CPC, and ROAS via formulas. (3) Customer List — 10 sample customers with no duplicates (use UNIQUE or COUNTIF). Share with "anyone with link can view," paste the shareable URL in the assignment note, and upload either a PDF export or screenshots of all 3 tabs.',
+        fileTypes: { image: true, video: false, pdf: true }
+      },
       sections: [
         { heading: 'Why Marketers Need Sheets', content: '<p>Sheets is the universal language of operations. Content calendars, ad performance trackers, customer lists, inventory, reports — all live in Sheets. If you can\'t Sheets, you can\'t scale. This week we cover only what marketers actually use, no accounting hell.</p>' },
         { heading: 'The 8 Formulas You\'ll Use Daily', content: '<ul><li><strong>SUM</strong> — total spend, total orders</li><li><strong>AVERAGE</strong> — average CPC, ROAS</li><li><strong>IF</strong> — flag good vs bad rows ("=IF(ROAS&gt;2, \'Scale\', \'Kill\')")</li><li><strong>COUNTIF</strong> — count rows matching a condition</li><li><strong>VLOOKUP / XLOOKUP</strong> — pull data from another sheet</li><li><strong>UNIQUE</strong> — dedupe lists</li><li><strong>SORT / FILTER</strong> — clean up reports</li><li><strong>QUERY</strong> — SQL-style for advanced reports</li></ul><p>Master these 8 and you\'ll handle 95% of marketing data tasks.</p>' },
@@ -2888,6 +2948,14 @@ const LESSONS = {
     },
 
     w10: {
+      duration: '45:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'Build Your First Botcake Bot',
+        description: 'Create a free Botcake account, connect to a test Facebook Page (yours or a sandbox), and build 3 flows: (1) Welcome Flow with a 4-button menu (Products / Promos / Order / Talk to human). (2) Product Inquiry showing 3 sample products as a carousel with Buy buttons. (3) Order Flow capturing name + address + chosen item. Test all 3 flows by messaging your page from another account. Submit: 5+ screenshots showing each flow working end-to-end, plus a 30-60s screen recording of the Welcome Flow in action.',
+        fileTypes: { image: true, video: true, pdf: false }
+      },
       sections: [
         { heading: 'Why Messenger Marketing Owns the Philippines', content: '<p>Filipinos live in Messenger. 80%+ open rate on Messenger broadcasts vs ~20% on email. For PH SMEs, Messenger is the channel — and Botcake is one of the easiest no-code chatbot builders to drive sales through it.</p>' },
         { heading: 'Botcake Interface Tour', content: '<p>Five things you need to know:</p><ul><li><strong>Connect Page</strong> — link your Facebook Page. Bot lives there.</li><li><strong>Flows</strong> — the conversation logic (like flowchart).</li><li><strong>Audience</strong> — your subscribers (everyone who messaged the bot).</li><li><strong>Broadcast</strong> — send messages to all/some subscribers.</li><li><strong>Tags</strong> — labels you stick on users for segmenting (e.g., "interested-product-A").</li></ul>' },
@@ -2907,6 +2975,14 @@ const LESSONS = {
     },
 
     w11: {
+      duration: '40:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'Cart-Abandonment Recovery Flow',
+        description: 'Using Chatfuel (free tier), build a 3-step cart-abandonment recovery sequence: (1) First reminder 15 minutes after the abandon trigger — friendly check-in tone. (2) Promo message at 1 hour — include a coupon or incentive. (3) Last-call message at 24 hours using a proper Message Tag (e.g., POST_PURCHASE_UPDATE) to stay compliant. Screenshot each step in the flow builder. Test the flow yourself and screenshot the resulting conversation. Submit 4-6 images + a 1-page PDF brief on what you\'d improve and how you\'d measure success (open rate, click-through, recovery %).',
+        fileTypes: { image: true, video: false, pdf: true }
+      },
       sections: [
         { heading: 'Botcake vs Chatfuel — When to Use Which', content: '<p>Both build Messenger bots, but:</p><ul><li><strong>Botcake</strong> — PH-grown, cheaper, simpler UI, perfect for SMEs.</li><li><strong>Chatfuel</strong> — global, more powerful AI features, deeper analytics, better for scaling brands + agencies.</li></ul><p>Many agencies run Botcake for small clients, Chatfuel for big ones. This week we use Chatfuel.</p>' },
         { heading: 'AI-Powered Conversations', content: '<p>Chatfuel has built-in NLP (natural language processing). Instead of forcing users to tap buttons, your bot can understand free-text like "How much yung ___?" or "Saan kayo nag-deliver?" — and route to the right answer. Setup: AI Setup → Train phrases per intent → bot answers automatically.</p>' },
@@ -2926,6 +3002,14 @@ const LESSONS = {
     },
 
     w12: {
+      duration: '38:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'Mock Pancake Store Setup',
+        description: 'Sign up for a free Pancake account (free trial works). Build a mock store with: (1) 3 sample products including price, description, and stock. (2) 5 sample customer chats simulating order inquiries (use Pancake\'s Inbox). (3) 5 sample customers with at least 2 segment tags each (e.g., "VIP," "skincare-buyer"). Document the full setup with 6+ screenshots covering: Products page, Orders page, Customers page, Marketing tab. Submit screenshots + a 1-page PDF explaining how you\'d onboard a real PH client to Pancake — what info you\'d ask, what\'d you set up Day 1.',
+        fileTypes: { image: true, video: false, pdf: true }
+      },
       sections: [
         { heading: 'Why POS + Pancake Matters for Marketers', content: '<p>You can drive 1000 orders a day with great marketing — but if the back office can\'t process them, the business dies. Marketers who understand the order flow (POS, inventory, shipping, CRM) are 10× more valuable than pure "creative" people. Pancake is the PH\'s #1 SME platform for this — owning ~70% of the chat-commerce stack.</p>' },
         { heading: 'POS Basics for E-Commerce', content: '<p>POS = Point of Sale. For online sellers it tracks:</p><ul><li><strong>Inventory</strong> — what you have, what\'s reserved, what\'s sold</li><li><strong>Orders</strong> — pending, processing, shipped, delivered</li><li><strong>Payments</strong> — pending, paid, refunded</li><li><strong>Customer history</strong> — past orders, lifetime value</li></ul><p>Without POS, you\'re running on Notes app + screenshots = chaos at scale.</p>' },
@@ -2948,6 +3032,14 @@ const LESSONS = {
     // PHASE 4 — ADS MANAGER (W13–W16)
     // =========================================================
     w13: {
+      duration: '36:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'Business Manager Setup + Pixel Walkthrough',
+        description: 'Create a free Meta Business Manager account. Set up: (1) Business Profile (name, address, industry). (2) Ad Account in your local currency. (3) Pixel — install on any test domain you control, or use a placeholder URL. (4) Add a test team member with limited (Analyst) permissions. Submit 5+ screenshots showing each step — BM dashboard, Ad Account creation, Pixel install code page, team permissions screen. Plus a 1-page PDF brief titled "How I\'d Onboard a New Client to BM" — what info you\'d collect, what permissions you\'d set, and why each step matters.',
+        fileTypes: { image: true, video: false, pdf: true }
+      },
       sections: [
         { heading: 'Meta Ads Manager — The Final Boss', content: '<p>Everything you\'ve learned (creatives, angles, tools) now meets paid distribution. Ads Manager is where small budgets become real revenue — or get burned. This week we tour the platform, no spending yet.</p>' },
         { heading: 'Business Manager vs Ads Manager', content: '<p><strong>Business Manager (BM)</strong> is the parent — it holds your Pages, Pixels, Ad Accounts, team access. <strong>Ads Manager</strong> is the workspace inside it where you build campaigns. Always create BM first, then access Ads Manager via the BM. Never run client ads from your personal account — when the account dies (and it will), you lose everything.</p>' },
@@ -2967,6 +3059,14 @@ const LESSONS = {
     },
 
     w14: {
+      duration: '44:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'Build a Complete Campaign in Draft Mode',
+        description: 'In Ads Manager, build (but DO NOT PUBLISH — keep in Draft) a full Sales campaign with this exact structure: 1 Campaign, 2 Ad Sets targeting different audiences, 2 Ads per Ad Set (4 ads total). Use real-looking creatives — reuse the W8 5-piece set if you have it. Apply the naming convention from the lesson. Submit 8+ screenshots: Campaign settings, both Ad Set configurations, all 4 Ads with previews, and the final review screen. Include a 1-page PDF justifying your audience picks + which creative variants you\'re A/B testing and why.',
+        fileTypes: { image: true, video: false, pdf: true }
+      },
       sections: [
         { heading: 'Building Your First Real Campaign', content: '<p>This week you build a complete campaign in Ads Manager — every field, every option. No money spent yet, but every dropdown explained. This is the muscle memory you\'ll use forever.</p>' },
         { heading: 'Ad Copy Anatomy', content: '<p>Three text fields per ad:</p><ul><li><strong>Primary Text</strong> — the body above the image (125 chars before "See more"). Lead with the hook.</li><li><strong>Headline</strong> — the bold line below the image (~27 chars). The promise.</li><li><strong>Description</strong> — the small text under the headline. Often hidden — don\'t put critical info here.</li></ul><p>CTA button — pick from Meta\'s preset list (Shop Now, Send Message, Sign Up, Learn More, etc.). Wrong CTA hurts conversion.</p>' },
@@ -2986,6 +3086,14 @@ const LESSONS = {
     },
 
     w15: {
+      duration: '42:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: '5 Saved Audiences for a Sample Brand',
+        description: 'Pick a sample brand (your client\'s, a real PH SME, or one you invent). In Ads Manager, build and SAVE 5 different audiences: (1) Cold-broad — age + location only, no interests. (2) Cold-interests — 3-5 specific behavioral interests. (3) Custom: Video Viewers 50%+ from the last 30 days. (4) Lookalike 1% based on buyers (use a placeholder customer list if no real data). (5) Custom: Page Engagers from the last 60 days. Use the proper naming convention. Submit a screenshot of each audience setup screen + a 1-page PDF strategy doc explaining when you\'d use each audience type and which one you\'d test first.',
+        fileTypes: { image: true, video: false, pdf: true }
+      },
       sections: [
         { heading: 'Targeting — Where Money Is Won or Lost', content: '<p>The best creative dies in front of the wrong audience. Targeting is the lever that turns ₱500 a day into ₱5000 of revenue — or ₱0. This week we go deep on the 3 audience types and when to use each.</p>' },
         { heading: 'Cold Audiences — Strangers Who Might Buy', content: '<p>People who\'ve never interacted with your brand. Built from:</p><ul><li><strong>Demographics</strong> — age, gender, location, language</li><li><strong>Interests</strong> — pages/topics they like (e.g., "Skincare," "Online shopping")</li><li><strong>Behaviors</strong> — purchase behavior, device, travel</li></ul><p>Modern Meta tip: <strong>broad targeting</strong> (only age + location + gender) often outperforms detailed interests because Meta\'s AI finds buyers faster when you give it room to explore. Try both.</p>' },
@@ -3005,6 +3113,14 @@ const LESSONS = {
     },
 
     w16: {
+      duration: '50:00',
+      videoType: 'youtube',
+      assignment: {
+        enabled: true,
+        title: 'FINAL PROJECT — Launch a ₱500-2000 Campaign + Analysis Report',
+        description: 'This is your graduation project. Launch a REAL micro-campaign with budget ₱500-2000 (your own funds, a sandbox business, or a sample client\'s with permission). Run it for a MINIMUM of 48 hours before analyzing. Submit a 2-page PDF Campaign Report that covers: (1) Objective + Audience + Creative + Budget choices and why. (2) Pre-launch checklist screenshots showing every step completed. (3) 48-hour Results with screenshots — CPM, CTR, CPC, CPA, and ROAS. (4) Decision: Scale, Test, or Kill — with data-backed reasoning, not feelings. (5) "What I\'d change next launch" reflection. Bonus: attach a 30-60s screen recording walking through Ads Manager. THIS is the project you show every future client to prove you\'ve actually done it.',
+        fileTypes: { image: true, video: true, pdf: true }
+      },
       sections: [
         { heading: 'The Final Project — Launching for Real', content: '<p>This is it. You\'ve learned creatives, angles, tools, and targeting. This week you put it ALL together: launch a real micro-campaign with a small real budget (₱500-2000), monitor it for 48 hours, and submit your analysis. Whether it makes money is less important than HOW you read it.</p>' },
         { heading: 'Pre-Launch Checklist', content: '<p>Run through this BEFORE clicking publish:</p><ul><li>☐ Pixel firing correctly (test with Meta\'s Pixel Helper Chrome extension)</li><li>☐ Conversions API setup (server-side backup tracking)</li><li>☐ Payment method works + budget set correctly</li><li>☐ Campaign objective matches goal</li><li>☐ Audience size is healthy (1M+ for cold, 50K+ for retargeting)</li><li>☐ Creatives uploaded in correct aspect ratio</li><li>☐ Copy proofread — typos kill credibility</li><li>☐ UTM tags on all destination URLs</li><li>☐ Budget pacing makes sense (daily vs lifetime)</li><li>☐ Schedule includes start/end if applicable</li></ul>' },
