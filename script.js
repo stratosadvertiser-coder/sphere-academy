@@ -4026,17 +4026,31 @@ if (currentPage === 'lesson.html') {
     // Update body
     const body = document.querySelector('.lesson-body');
     if (body && lesson.sections && lesson.sections.length > 0) {
+      // Render admin/seed content as real HTML instead of escaping it.
+      // Block-level wrapper (<p>, <ul>, <ol>, <div>, <h1>-<h6>) at the
+      // start = content already supplies its own block — drop straight
+      // in. Otherwise wrap in a <p> so inline tags (<strong>, <em>) and
+      // plain text both render with paragraph spacing + line breaks.
+      const startsWithBlock = (s) => /^\s*<(p|ul|ol|div|h[1-6]|blockquote|pre|table|figure)\b/i.test(String(s || ''));
       let html = '';
       lesson.sections.forEach((sec, i) => {
         if (sec.heading) {
           html += '<h2>' + (i < 9 ? '0' : '') + (i + 1) + ' &mdash; ' + sec.heading + '</h2>';
         }
         if (sec.content) {
-          html += '<p style="white-space:pre-line;">' + sec.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+          if (startsWithBlock(sec.content)) {
+            html += '<div class="lesson-section-body">' + sec.content + '</div>';
+          } else {
+            html += '<p style="white-space:pre-line;">' + sec.content + '</p>';
+          }
         }
       });
       if (lesson.proTip) {
-        html += '<div class="key-takeaways"><h3>Pro Tip</h3><p>' + lesson.proTip + '</p></div>';
+        if (startsWithBlock(lesson.proTip)) {
+          html += '<div class="key-takeaways"><h3>Pro Tip</h3>' + lesson.proTip + '</div>';
+        } else {
+          html += '<div class="key-takeaways"><h3>Pro Tip</h3><p>' + lesson.proTip + '</p></div>';
+        }
       }
       if (lesson.keyTakeaways && lesson.keyTakeaways.length > 0) {
         html += '<div class="key-takeaways"><h3>Key Takeaways</h3><ul>';
