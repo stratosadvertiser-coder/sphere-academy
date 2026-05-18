@@ -12555,14 +12555,47 @@ footer {
   gap: 28px !important;
 }
 
-/* Hero title — bigger, won't wrap on desktop */
+/* Hero title — sized to fit the longer outcome-focused headline.
+   Slightly smaller max than the old short title because we have
+   more words, but still oversized and confident on desktop. */
 .hero.hero-v2 .hero-title,
 .hero.hero-v2 h1 {
-  font-size: clamp(40px, 7vw, 76px) !important;
-  line-height: 1.05 !important;
-  letter-spacing: -0.04em !important;
+  font-size: clamp(36px, 5.6vw, 62px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
   font-weight: 700 !important;
   white-space: normal !important;
+  max-width: 780px;
+  margin: 0 auto !important;
+}
+
+/* Subheadline — adds the mechanism right under the promise */
+.hero.hero-v2 .hero-sub {
+  font-size: clamp(15px, 1.4vw, 18px) !important;
+  line-height: 1.55 !important;
+  color: var(--text-light) !important;
+  max-width: 560px !important;
+  margin: -10px auto 0 !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.005em !important;
+}
+
+/* CTA microcopy — small trust signals immediately below the buttons */
+.hero.hero-v2 .hero-cta-microcopy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px !important;
+  color: var(--text-light) !important;
+  margin: -10px auto 0 !important;
+  letter-spacing: -0.005em;
+  font-weight: 500;
+}
+.hero.hero-v2 .hero-cta-microcopy span:first-child {
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* Navbar logo — bigger image + bolder wordmark */
