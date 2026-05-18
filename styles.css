@@ -11949,16 +11949,20 @@ code, pre, .lesson-id, .phase-week {
 }
 
 /* Re-enable the animated indigo gradient on "Roadmap" only — the rest
-   of the hero title stays solid. The original keyframes (gradientShift)
-   still live higher up in this file; we just stop overriding them. */
+   of the hero title stays solid. Higher specificity + unique animation
+   name + explicit longhand declarations after the shorthand so the
+   Emil-master rules can't accidentally squash the flow. */
 .hero h1 .highlight {
   background: none !important;
   -webkit-text-fill-color: var(--text) !important;
   color: var(--text) !important;
   animation: none !important;
 }
-.hero-title-gradient {
-  background: linear-gradient(90deg,
+.hero h1 .hero-title-gradient,
+.hero-title.hero-title .hero-title-gradient,
+span.hero-title-gradient {
+  background-color: transparent !important;
+  background-image: linear-gradient(90deg,
     #312e81 0%,
     #635bff 25%,
     #8b9eff 50%,
@@ -11968,11 +11972,20 @@ code, pre, .lesson-id, .phase-week {
     #312e81 100%
   ) !important;
   background-size: 250% 100% !important;
+  background-position: 0% 50%;
+  background-repeat: no-repeat;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
-  animation: gradientShift 5s linear infinite !important;
+  animation: roadmapFlow 5s linear infinite !important;
+  will-change: background-position;
+  display: inline-block;
+}
+
+@keyframes roadmapFlow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: -250% 50%; }
 }
 
 /* "Skills You'll Build" section — trimmed back to a normal section
@@ -12491,6 +12504,13 @@ input:focus, textarea:focus, select:focus {
 
 @media (prefers-reduced-motion: reduce) {
   .fade-up-emil { opacity: 1 !important; transform: none !important; transition: none !important; }
+  /* Keep the Roadmap color flow even with reduced motion — it's a
+     gentle hue shift, no movement that could trigger vestibular issues.
+     Slow it down to 10s so it's barely perceptible. */
+  .hero-title-gradient,
+  span.hero-title-gradient {
+    animation: roadmapFlow 10s linear infinite !important;
+  }
 }
 
 /* ---------- 17. Footer ---------- */
