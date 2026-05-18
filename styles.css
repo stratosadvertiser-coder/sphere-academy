@@ -11975,15 +11975,157 @@ code, pre, .lesson-id, .phase-week {
   animation: gradientShift 5s linear infinite !important;
 }
 
-/* Push the "Skills You'll Build" section down — stacked +3cm passes
-   per user request. Currently 353px (~9.3cm) total top padding to
-   give the section dramatic breathing room from the hero above. */
+/* "Skills You'll Build" section — trimmed back to a normal section
+   gap now that the Outcome Strip + Phases Preview fill the space
+   between hero and this section. */
 section.features,
 #features {
-  padding-top: 353px !important;
+  padding-top: 72px !important;
 }
 .features-header {
-  margin-top: 40px !important;
+  margin-top: 0 !important;
+}
+
+/* ============================================================
+   OUTCOME STRIP — bold stats below the hero
+   ============================================================ */
+.outcome-strip {
+  padding: 56px 0 32px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.outcome-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  max-width: 880px;
+  margin: 0 auto;
+  text-align: center;
+}
+.outcome-stat-num {
+  font-family: 'Inter Tight', sans-serif !important;
+  font-size: clamp(32px, 4vw, 44px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 8px;
+  background: linear-gradient(180deg, var(--text) 0%, var(--text-light) 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.outcome-stat-label {
+  font-size: 13px;
+  color: var(--text-light);
+  letter-spacing: -0.005em;
+}
+@media (max-width: 640px) {
+  .outcome-grid { grid-template-columns: repeat(2, 1fr); gap: 28px; }
+}
+
+/* ============================================================
+   PHASES PREVIEW — 4-card grid below the outcome strip
+   ============================================================ */
+.phases-preview {
+  padding: 72px 0;
+}
+.phases-preview-header {
+  text-align: center;
+  max-width: 580px;
+  margin: 0 auto 40px;
+}
+.phases-preview-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-light);
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.phases-preview-h {
+  font-size: clamp(26px, 4vw, 36px) !important;
+  letter-spacing: -0.025em !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  margin-bottom: 12px !important;
+  color: var(--text);
+}
+.phases-preview-sub {
+  font-size: 15px;
+  color: var(--text-light);
+  line-height: 1.55;
+}
+.phases-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+@media (max-width: 640px) {
+  .phases-preview-grid { grid-template-columns: 1fr; }
+}
+.phase-card {
+  display: block;
+  padding: 24px 22px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.phase-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--primary) 4%, var(--card-bg));
+}
+.phase-card:hover .phase-card-arrow { transform: translateX(3px); color: var(--primary); }
+.phase-card-num {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--primary);
+  letter-spacing: 0.04em;
+  margin-bottom: 14px;
+  display: inline-block;
+  padding: 3px 9px;
+  background: var(--primary-light);
+  border-radius: 6px;
+}
+.phase-card h3 {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  margin-bottom: 6px !important;
+  color: var(--text);
+}
+.phase-card p {
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  color: var(--text-light);
+  margin-bottom: 18px !important;
+}
+.phase-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px;
+  color: var(--text-light);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.phase-card-arrow {
+  transition: transform 0.2s ease, color 0.2s ease;
+  color: var(--text-light);
 }
 
 /* ---------- 4. Cards, posts, items — hairline borders only, no shadows ---------- */
