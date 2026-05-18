@@ -3925,7 +3925,8 @@ if (currentPage === 'lesson.html') {
   }
 
   // Prerequisites gate — if published but locked (and not admin), show locked screen
-  const isLocked = lesson && isPublished && !isAdmin && !LESSONS.isUnlocked(weekId);
+  // Locking is permanently disabled — all 16 lessons open from day one.
+  const isLocked = false;
   if (isLocked) {
     const main = document.querySelector('.lesson-main');
     if (main) {
