@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Sphere Academy — Marketing Intern Roadmap</title>
+  <meta name="description" content="Become the marketing intern companies actually hire. 16 hands-on lessons, real portfolio, free to start.">
+  <meta name="theme-color" content="#faf9f5">
+  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-05-sorbit">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fraunces (serif headlines) + Inter (body) — Anthropic's exact pairing -->
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       ANTHROPIC.COM AESTHETIC
+       Warm cream + serif + terracotta accents + hand-drawn touches
+       ============================================================ */
+    :root {
+      /* Anthropic palette — warm cream + clay + sage */
+      --cream:        #faf9f5;
+      --cream-warm:   #f5f0e6;
+      --cream-deep:   #ebe5d6;
+      --ink:          #181818;
+      --ink-2:        #3d3929;
+      --ink-3:        #6f6852;
+      --ink-4:        #a09783;
+
+      --clay:         #cc785c;        /* Anthropic terracotta */
+      --clay-deep:    #b25f44;
+      --clay-light:   #f0d4c4;
+      --sage:         #4f7d4f;
+      --sage-light:   #d4e0d4;
+
+      --line:         rgba(24, 24, 24, 0.08);
+      --line-strong:  rgba(24, 24, 24, 0.16);
+      --shadow-soft:  0 1px 2px rgba(24, 24, 24, 0.04), 0 8px 24px -12px rgba(24, 24, 24, 0.08);
+
+      --radius:       12px;
+      --radius-lg:    20px;
+      --max-w:        700px;
+      --max-w-wide:   1080px;
+      --ease:         cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --cream:       #1a1815;
+        --cream-warm:  #25221d;
+        --cream-deep:  #2f2b24;
+        --ink:         #f5f0e6;
+        --ink-2:       #d4ccb8;
+        --ink-3:       #9c9381;
+        --ink-4:       #6f6852;
+        --clay-light:  rgba(204, 120, 92, 0.15);
+        --sage-light:  rgba(79, 125, 79, 0.18);
+        --line:        rgba(245, 240, 230, 0.08);
+        --line-strong: rgba(245, 240, 230, 0.16);
+      }
+    }
+    [data-theme="dark"] {
+      --cream:       #1a1815;
+      --cream-warm:  #25221d;
+      --cream-deep:  #2f2b24;
+      --ink:         #f5f0e6;
+      --ink-2:       #d4ccb8;
+      --ink-3:       #9c9381;
+      --ink-4:       #6f6852;
+      --clay-light:  rgba(204, 120, 92, 0.15);
+      --sage-light:  rgba(79, 125, 79, 0.18);
+      --line:        rgba(245, 240, 230, 0.08);
+      --line-strong: rgba(245, 240, 230, 0.16);
+    }
+    [data-theme="light"] {
+      --cream:       #faf9f5;
+      --cream-warm:  #f5f0e6;
+      --cream-deep:  #ebe5d6;
+      --ink:         #181818;
+      --ink-2:       #3d3929;
+      --ink-3:       #6f6852;
+      --ink-4:       #a09783;
+      --clay-light:  #f0d4c4;
+      --sage-light:  #d4e0d4;
+      --line:        rgba(24, 24, 24, 0.08);
+      --line-strong: rgba(24, 24, 24, 0.16);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-size: 16px;
+      line-height: 1.6;
+      letter-spacing: -0.005em;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, h4 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--ink);
+      font-variation-settings: 'opsz' 144, 'SOFT' 50;
+    }
+    h1 em, h2 em, h3 em {
+      font-style: italic;
+      color: var(--clay);
+      font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    }
+    p { color: var(--ink-2); }
+    code, .mono {
+      font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      font-size: 0.88em;
+    }
+
+    /* ============================================================
+       NAVBAR — minimal, hairline, warm
+       ============================================================ */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: color-mix(in srgb, var(--cream) 88%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      max-width: var(--max-w-wide);
+      margin: 0 auto;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: 18px;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+    }
+    .nav-brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--clay);
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 14px;
+    }
+    .nav-link {
+      color: var(--ink-3);
+      transition: color 0.15s ease;
+    }
+    .nav-link:hover { color: var(--ink); }
+    .nav-cta {
+      padding: 8px 16px;
+      background: var(--ink);
+      color: var(--cream);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: opacity 0.15s ease;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+    .theme-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink-3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .theme-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+    @media (max-width: 720px) {
+      .nav-links a:not(.nav-cta) { display: none; }
+    }
+
+    /* ============================================================
+       CONTAINER
+       ============================================================ */
+    .container {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+    .container-wide {
+      max-width: var(--max-w-wide);
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+
+    /* ============================================================
+       HERO — warm editorial, big serif headline
+       ============================================================ */
+    .hero {
+      padding: 88px 0 64px;
+      text-align: center;
+      position: relative;
+    }
+    @media (min-width: 768px) {
+      .hero { padding: 120px 0 80px; }
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      background: var(--cream-warm);
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      font-size: 12px;
+      color: var(--ink-3);
+      letter-spacing: 0.04em;
+      font-weight: 500;
+      margin-bottom: 32px;
+    }
+    .hero-eyebrow-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--clay);
+      box-shadow: 0 0 10px var(--clay);
+    }
+
+    .hero h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      font-weight: 400;
+      margin-bottom: 24px;
+      font-variation-settings: 'opsz' 144, 'SOFT' 50;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--clay);
+      font-weight: 400;
+      font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      line-height: 1.65;
+      color: var(--ink-2);
+      max-width: 520px;
+      margin: 0 auto 36px;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 100px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s var(--ease);
+      border: 1px solid transparent;
+      letter-spacing: -0.005em;
+    }
+    .btn-primary {
+      background: var(--ink);
+      color: var(--cream);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px -6px rgba(24, 24, 24, 0.25);
+    }
+    .btn-secondary {
+      background: var(--cream-warm);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .btn-secondary:hover {
+      background: var(--cream-deep);
+      border-color: var(--line-strong);
+    }
+    .btn-arrow {
+      transition: transform 0.18s var(--ease);
+    }
+    .btn:hover .btn-arrow { transform: translateX(2px); }
+
+    .hero-microcopy {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 28px;
+      font-size: 13px;
+      color: var(--ink-3);
+      flex-wrap: wrap;
+    }
+    .hero-microcopy span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hero-microcopy .check {
+      color: var(--sage);
+      font-weight: 600;
+    }
+
+    /* Hand-drawn arrow accent below CTAs */
+    .hero-arrow {
+      margin: 36px auto 0;
+      width: 64px;
+      height: 64px;
+      color: var(--clay);
+      opacity: 0.7;
+    }
+
+    /* ============================================================
+       SOCIAL PROOF STRIP — under hero
+       ============================================================ */
+    .proof-strip {
+      padding: 32px 0 48px;
+      border-bottom: 1px solid var(--line);
+    }
+    .proof-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .proof-avatars {
+      display: flex;
+      align-items: center;
+    }
+    .proof-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--cream);
+      background: var(--clay);
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: -10px;
+    }
+    .proof-avatar:first-child { margin-left: 0; }
+    .proof-avatar:nth-child(2) { background: var(--sage); }
+    .proof-avatar:nth-child(3) { background: var(--ink-2); }
+    .proof-avatar:nth-child(4) {
+      background: var(--cream-deep);
+      color: var(--ink);
+      font-size: 11px;
+    }
+    .proof-text {
+      font-size: 14px;
+      color: var(--ink-3);
+    }
+    .proof-stars {
+      color: var(--clay);
+      letter-spacing: 1px;
+    }
+
+    /* ============================================================
+       SECTIONS — editorial spacing
+       ============================================================ */
+    section { padding: 80px 0; }
+
+    .section-eyebrow {
+      display: inline-block;
+      font-size: 12px;
+      color: var(--clay);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .section-h {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(32px, 4.5vw, 48px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+      margin-bottom: 18px;
+      font-variation-settings: 'opsz' 144, 'SOFT' 50;
+    }
+    .section-h em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .section-sub {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--ink-2);
+      max-width: 540px;
+      margin: 0 auto 48px;
+    }
+    .section-header-center {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 56px;
+    }
+
+    /* ============================================================
+       PHASES — editorial card stack, hairline borders
+       ============================================================ */
+    .phases-list {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .phase {
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      gap: 24px;
+      align-items: flex-start;
+      padding: 28px 8px;
+      border-bottom: 1px solid var(--line);
+      transition: background 0.18s var(--ease);
+      cursor: pointer;
+    }
+    .phase:hover { background: var(--cream-warm); }
+    .phase-num {
+      font-family: 'Fraunces', serif;
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--clay);
+      font-style: italic;
+      line-height: 1;
+      font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    }
+    .phase-body h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: -0.015em;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+    .phase-body p {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--ink-3);
+    }
+    .phase-week {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--ink-4);
+      font-weight: 500;
+      padding-top: 6px;
+    }
+    @media (max-width: 540px) {
+      .phase { grid-template-columns: 44px 1fr; gap: 16px; padding: 22px 4px; }
+      .phase-week { grid-column: 2; padding-top: 4px; }
+    }
+
+    /* ============================================================
+       OUTCOMES — what you'll graduate with
+       ============================================================ */
+    .outcomes {
+      background: var(--cream-warm);
+      border-radius: var(--radius-lg);
+      padding: 56px 48px;
+      max-width: 720px;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    @media (max-width: 540px) {
+      .outcomes { padding: 36px 24px; }
+    }
+    .outcomes-list {
+      list-style: none;
+      padding: 0;
+      margin: 32px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .outcomes-list li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+    .oc-check {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--clay);
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .outcomes-list strong {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    /* ============================================================
+       TESTIMONIAL — pull quote, magazine style
+       ============================================================ */
+    .testimonial {
+      max-width: 680px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .testimonial-mark {
+      font-family: 'Fraunces', serif;
+      font-size: 80px;
+      line-height: 0.5;
+      color: var(--clay);
+      font-weight: 400;
+      margin-bottom: 20px;
+      font-style: italic;
+      font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    }
+    .testimonial blockquote {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(22px, 3vw, 30px);
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+      font-weight: 400;
+      color: var(--ink);
+      margin: 0 0 28px;
+      font-variation-settings: 'opsz' 144, 'SOFT' 50;
+    }
+    .testimonial blockquote em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+    .testimonial-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--clay);
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .testimonial-name { font-weight: 600; color: var(--ink); }
+    .testimonial-role { color: var(--ink-3); }
+
+    /* ============================================================
+       FAQ
+       ============================================================ */
+    .faq-list {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .faq-item {
+      background: var(--cream-warm);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .faq-item:hover { border-color: var(--line-strong); }
+    .faq-item[open] {
+      background: var(--cream);
+      border-color: var(--clay-light);
+    }
+    .faq-item summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 20px 24px;
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+      content: '+';
+      font-family: 'Fraunces', serif;
+      font-size: 28px;
+      color: var(--clay);
+      font-weight: 300;
+      transition: transform 0.2s var(--ease);
+    }
+    .faq-item[open] summary::after { transform: rotate(45deg); }
+    .faq-body {
+      padding: 0 24px 22px;
+      color: var(--ink-2);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ============================================================
+       FINAL CTA — warm card
+       ============================================================ */
+    .cta-final {
+      background: var(--ink);
+      border-radius: var(--radius-lg);
+      padding: 64px 48px;
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-final::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(204, 120, 92, 0.5), transparent 60%);
+      filter: blur(30px);
+      pointer-events: none;
+    }
+    .cta-final-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      background: rgba(245, 240, 230, 0.08);
+      border: 1px solid rgba(245, 240, 230, 0.12);
+      border-radius: 100px;
+      font-size: 12px;
+      color: rgba(245, 240, 230, 0.7);
+      letter-spacing: 0.04em;
+      margin-bottom: 20px;
+      font-weight: 500;
+      position: relative;
+    }
+    .cta-final h2 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(32px, 4vw, 44px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 16px;
+      position: relative;
+      font-variation-settings: 'opsz' 144, 'SOFT' 50;
+    }
+    .cta-final h2 em { font-style: italic; color: #e7a991; }
+    .cta-final p {
+      color: rgba(245, 240, 230, 0.75);
+      max-width: 460px;
+      margin: 0 auto 28px;
+      font-size: 16px;
+      line-height: 1.65;
+      position: relative;
+    }
+    .cta-final .btn-primary {
+      background: var(--cream);
+      color: var(--ink);
+      position: relative;
+    }
+    .cta-final-microcopy {
+      margin-top: 18px;
+      font-size: 13px;
+      color: rgba(245, 240, 230, 0.55);
+      position: relative;
+    }
+    @media (max-width: 540px) {
+      .cta-final { padding: 44px 24px; }
+    }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 36px 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--ink-4);
+    }
+    footer a { color: var(--ink-3); transition: color 0.15s ease; }
+    footer a:hover { color: var(--ink); }
+    .footer-links {
+      display: flex;
+      gap: 22px;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    /* ============================================================
+       FADE-UP (scroll reveal)
+       ============================================================ */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+    }
+    .fade-up.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .fade-up.in.d1 { transition-delay: 80ms; }
+    .fade-up.in.d2 { transition-delay: 160ms; }
+    .fade-up.in.d3 { transition-delay: 240ms; }
+    .fade-up.in.d4 { transition-delay: 320ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fade-up { opacity: 1; transform: none; transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index-anthropic.html" class="nav-brand">
+        <span class="nav-brand-mark">S</span>
+        <span>Sphere Academy</span>
+      </a>
+      <div class="nav-links">
+        <a href="#curriculum" class="nav-link">Curriculum</a>
+        <a href="#stories" class="nav-link">Stories</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+        <button class="theme-btn" id="themeBtn" aria-label="Toggle theme">
+          <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+        <a href="login.html" class="nav-cta">Start →</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="container">
+      <div class="hero-eyebrow fade-up">
+        <span class="hero-eyebrow-dot"></span>
+        Marketing Intern Training Program
+      </div>
+
+      <h1 class="fade-up d1">
+        Become the marketing intern<br/>
+        companies <em>actually hire.</em>
+      </h1>
+
+      <p class="hero-sub fade-up d2">
+        16 hands-on lessons. Real creatives, real ads, real portfolio —
+        by graduation. Free to start, built for the Filipino market.
+      </p>
+
+      <div class="hero-actions fade-up d3">
+        <a href="login.html" class="btn btn-primary">
+          Start the program
+          <svg class="btn-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="#curriculum" class="btn btn-secondary">View curriculum</a>
+      </div>
+
+      <div class="hero-microcopy fade-up d4">
+        <span><span class="check">✓</span> Free to start</span>
+        <span><span class="check">✓</span> No credit card</span>
+        <span><span class="check">✓</span> Self-paced</span>
+      </div>
+
+      <!-- Hand-drawn arrow accent -->
+      <svg class="hero-arrow fade-up d4" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M32 8 C 36 24, 40 32, 32 48 C 24 40, 20 32, 24 24" />
+        <path d="M26 44 L 32 48 L 38 44" />
+      </svg>
+    </div>
+  </header>
+
+  <!-- SOCIAL PROOF -->
+  <section class="proof-strip">
+    <div class="container">
+      <div class="proof-inner fade-up">
+        <div class="proof-avatars">
+          <span class="proof-avatar">CK</span>
+          <span class="proof-avatar">MS</span>
+          <span class="proof-avatar">RP</span>
+          <span class="proof-avatar">+4</span>
+        </div>
+        <span class="proof-text">
+          <span class="proof-stars">★★★★★</span>
+          &nbsp;Joined by 7 marketing interns this month
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CURRICULUM / PHASES -->
+  <section id="curriculum">
+    <div class="container">
+      <div class="section-header-center fade-up">
+        <div class="section-eyebrow">The Curriculum</div>
+        <h2 class="section-h">Four phases. One <em>marketing intern.</em></h2>
+        <p class="section-sub">A 16-lesson path that takes you from your first creative to your first launched campaign — structured so you never bounce between tools without a plan.</p>
+      </div>
+
+      <div class="phases-list">
+        <div class="phase fade-up">
+          <div class="phase-num">01</div>
+          <div class="phase-body">
+            <h3>Basic Fundamentals</h3>
+            <p>Digital marketing landscape, image &amp; video creatives, brand identity foundations.</p>
+          </div>
+          <div class="phase-week">W1—W4</div>
+        </div>
+        <div class="phase fade-up">
+          <div class="phase-num">02</div>
+          <div class="phase-body">
+            <h3>Creatives + AI</h3>
+            <p>Critique frameworks, customer angles, AI workflows for production at scale.</p>
+          </div>
+          <div class="phase-week">W5—W8</div>
+        </div>
+        <div class="phase fade-up">
+          <div class="phase-num">03</div>
+          <div class="phase-body">
+            <h3>Tools &amp; Platforms</h3>
+            <p>Google Sheets, Botcake, Chatfuel, POS &amp; Pancake operations end-to-end.</p>
+          </div>
+          <div class="phase-week">W9—W12</div>
+        </div>
+        <div class="phase fade-up">
+          <div class="phase-num">04</div>
+          <div class="phase-body">
+            <h3>Ads Manager</h3>
+            <p>Targeting, audiences, budget strategy, launch &amp; optimize real campaigns.</p>
+          </div>
+          <div class="phase-week">W13—W16</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OUTCOMES -->
+  <section>
+    <div class="container">
+      <div class="section-header-center fade-up">
+        <div class="section-eyebrow">Your Outcome</div>
+        <h2 class="section-h">By week sixteen, you'll have <em>shipped real work.</em></h2>
+        <p class="section-sub">Not "watched a course." Not "took notes." You'll graduate with tangible work to put in a portfolio, send to clients, or post on LinkedIn.</p>
+      </div>
+
+      <div class="outcomes fade-up">
+        <ul class="outcomes-list">
+          <li><span class="oc-check">✓</span><div><strong>5 production-ready ad creatives</strong> in your portfolio</div></li>
+          <li><span class="oc-check">✓</span><div><strong>1 launched Meta campaign</strong> with real metrics &amp; analysis</div></li>
+          <li><span class="oc-check">✓</span><div>Working knowledge of <strong>Meta Ads, Canva, Botcake, Pancake</strong></div></li>
+          <li><span class="oc-check">✓</span><div>A <strong>verifiable certificate</strong> ready for LinkedIn</div></li>
+          <li><span class="oc-check">✓</span><div>A <strong>network of working marketers</strong> in your cohort</div></li>
+          <li><span class="oc-check">✓</span><div>The <strong>exact playbook</strong> used on Stratos client campaigns</div></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIAL — pull quote, magazine style -->
+  <section id="stories">
+    <div class="container">
+      <div class="testimonial">
+        <div class="testimonial-mark fade-up">"</div>
+        <blockquote class="fade-up d1">
+          The creatives phase gave me so much confidence. I went from <em>never opening Canva</em> to producing ad-ready content that actually performed.
+        </blockquote>
+        <div class="testimonial-author fade-up d2">
+          <div class="testimonial-avatar">AT</div>
+          <div>
+            <div class="testimonial-name">Ana Torres</div>
+            <div class="testimonial-role">Junior Marketer · Lazada PH</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="container">
+      <div class="section-header-center fade-up">
+        <div class="section-eyebrow">Questions</div>
+        <h2 class="section-h">Everything before you <em>sign up.</em></h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item fade-up" open>
+          <summary>Do I need marketing experience?</summary>
+          <div class="faq-body">Nope. Phase 1 starts from absolute zero — we cover the basics of digital marketing, image creatives, and brand identity. By the time you reach Phase 4 (Meta Ads), you'll have built up enough foundation to launch real campaigns.</div>
+        </details>
+        <details class="faq-item fade-up">
+          <summary>How long does the program really take?</summary>
+          <div class="faq-body">It's a 16-lesson, self-paced program. Active students finish in ~4 months at one lesson per week. You can also race through — some grads complete it in 6 to 8 weeks.</div>
+        </details>
+        <details class="faq-item fade-up">
+          <summary>Is this free or paid?</summary>
+          <div class="faq-body">Free to start, free to finish. The core 16-lesson program is permanently free. We may add premium features later (mentorship, paid portfolio reviews) but the curriculum stays open.</div>
+        </details>
+        <details class="faq-item fade-up">
+          <summary>Can I do this with a full-time job?</summary>
+          <div class="faq-body">Yes — each lesson takes 30 to 60 minutes plus weekly assignments. Most students study 3 to 5 hours per week. Lessons are recorded so you can watch anytime.</div>
+        </details>
+        <details class="faq-item fade-up">
+          <summary>Is the certificate recognized?</summary>
+          <div class="faq-body">It's a verifiable Sphere Academy by Stratos certificate with a public URL graduates can share. It's not a government-accredited diploma, but it's recognized by Stratos partner companies and our hiring network.</div>
+        </details>
+        <details class="faq-item fade-up">
+          <summary>How is this different from free YouTube?</summary>
+          <div class="faq-body">YouTube gives you scattered tips with no structure, no assignments, no community, no feedback. Sphere gives you a 16-week roadmap, weekly hands-on work, a cohort of peers, and a graduating outcome. Both are valuable — Sphere takes you further.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section>
+    <div class="container">
+      <div class="cta-final fade-up">
+        <div class="cta-final-eyebrow">Open enrollment · No application required</div>
+        <h2>Ready <em>when you are.</em></h2>
+        <p>Sixteen lessons. Four phases. One marketing intern who graduates with real work to show. Race to finish at your own pace.</p>
+        <a href="login.html" class="btn btn-primary">
+          Start the program
+          <svg class="btn-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <div class="cta-final-microcopy">✓ Free to start · ✓ No credit card · ✓ Self-paced</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container-wide">
+      <div class="footer-links">
+        <a href="#curriculum">Curriculum</a>
+        <a href="#stories">Stories</a>
+        <a href="#faq">FAQ</a>
+        <a href="login.html">Login</a>
+      </div>
+      <div>© 2026 Sphere Academy — by Stratos</div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme toggle
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const SUN = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+    const MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeIcon.outerHTML = (theme === 'dark' ? SUN : MOON).replace('<svg ', '<svg id="themeIcon" ');
+    }
+    const savedTheme = localStorage.getItem('anthropic-theme')
+      || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyTheme(savedTheme);
+    themeBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('anthropic-theme', next);
+      applyTheme(next);
+    });
+
+    // Fade-up scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
