@@ -11948,13 +11948,41 @@ code, pre, .lesson-id, .phase-week {
   display: none !important;
 }
 
-/* Disable animated text gradient — replace with solid */
-.hero-title-gradient,
+/* Re-enable the animated indigo gradient on "Roadmap" only — the rest
+   of the hero title stays solid. The original keyframes (gradientShift)
+   still live higher up in this file; we just stop overriding them. */
 .hero h1 .highlight {
   background: none !important;
   -webkit-text-fill-color: var(--text) !important;
   color: var(--text) !important;
   animation: none !important;
+}
+.hero-title-gradient {
+  background: linear-gradient(90deg,
+    #312e81 0%,
+    #635bff 25%,
+    #8b9eff 50%,
+    #c5cbf5 65%,
+    #8b9eff 80%,
+    #635bff 95%,
+    #312e81 100%
+  ) !important;
+  background-size: 250% 100% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  animation: gradientShift 5s linear infinite !important;
+}
+
+/* Push the "Skills You'll Build" section down ~3cm (113px) per user
+   request — it was butting up against the hero. */
+section.features,
+#features {
+  padding-top: 113px !important;
+}
+.features-header {
+  margin-top: 40px !important;
 }
 
 /* ---------- 4. Cards, posts, items — hairline borders only, no shadows ---------- */
