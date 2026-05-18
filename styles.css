@@ -12535,3 +12535,91 @@ footer {
   color: var(--text-light) !important;
   border: 1px solid var(--border) !important;
 }
+
+/* ============================================================
+   HERO + PHASES ALIGNMENT PASS (May 18)
+   - Center every hero child on the same vertical axis
+   - Make the two mini-cards equal-height + perfectly mirrored
+   - Center the trust strip avatars over the caption
+   - Push the Phases Preview section down 5cm per request
+   ============================================================ */
+
+/* Centered hero column — fixed 540px width so every child snaps to
+   the same axis. Items above can still go full-bleed via overrides. */
+.hero.hero-v2 .hero-centered {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  max-width: 540px !important;
+  margin: 0 auto !important;
+  gap: 22px !important;
+}
+
+/* Sphere card — fixed width, internally centered */
+.hero.hero-v2 .bento-logo-centered {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  width: auto !important;
+  max-width: 300px !important;
+  margin: 6px auto !important;
+  padding: 12px 18px !important;
+}
+
+/* Mini-cards row — equal-width columns, equal heights via stretch */
+.hero.hero-v2 .hero-mini-cards {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  width: 100% !important;
+  max-width: 540px !important;
+  margin: 0 auto !important;
+  align-items: stretch !important;
+}
+.hero.hero-v2 .bento-live,
+.hero.hero-v2 .bento-outcome {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 16px !important;
+  height: 100% !important;
+  min-height: 64px !important;
+}
+.hero.hero-v2 .bento-live-pulse,
+.hero.hero-v2 .bento-outcome-icon {
+  flex-shrink: 0 !important;
+}
+.hero.hero-v2 .bento-live-meta,
+.hero.hero-v2 .bento-outcome-text {
+  text-align: left !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+/* Trust strip — stack avatars ABOVE the caption, both centered.
+   The old side-by-side layout had unequal visual weight making the
+   whole strip look off-center even when geometrically centered. */
+.hero.hero-v2 .hero-trust {
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 12px auto 0 !important;
+  width: fit-content !important;
+}
+.hero.hero-v2 .hero-trust-avatars {
+  display: flex !important;
+  justify-content: center !important;
+}
+.hero.hero-v2 .hero-trust p {
+  margin: 0 !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  color: var(--text-light) !important;
+}
+
+/* Move "What's Inside / Four phases" section down ~5cm (188px) */
+.phases-preview {
+  padding-top: 260px !important; /* 72 normal + 188 (5cm) added */
+}
