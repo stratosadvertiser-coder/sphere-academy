@@ -11975,11 +11975,12 @@ code, pre, .lesson-id, .phase-week {
   animation: gradientShift 5s linear infinite !important;
 }
 
-/* Push the "Skills You'll Build" section down ~3cm (113px) per user
-   request — it was butting up against the hero. */
+/* Push the "Skills You'll Build" section down — stacked +3cm passes
+   per user request. Currently 240px (~6.3cm) total top padding to
+   give the section clear breathing room from the hero above. */
 section.features,
 #features {
-  padding-top: 113px !important;
+  padding-top: 240px !important;
 }
 .features-header {
   margin-top: 40px !important;
