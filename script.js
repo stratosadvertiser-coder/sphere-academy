@@ -4050,7 +4050,12 @@ if (currentPage === 'lesson.html') {
         + '<span>/</span><span>Week ' + lesson.week + '</span>';
     }
 
-    // Update video player
+    // Update video player — three states:
+    //  1. videoUrl set → render the real embed/thumbnail player
+    //  2. no videoUrl + viewer is admin → inline "Paste video URL" card
+    //     that saves the URL right from the lesson page (no admin trip)
+    //  3. no videoUrl + viewer is student → polished "Video coming soon"
+    //     placeholder that doesn't look like a broken UI
     const videoPlayer = document.querySelector('.video-player');
     if (videoPlayer && lesson.videoUrl) {
       const thumbHtml = LESSONS.getVideoEmbed(lesson, false);
@@ -4067,8 +4072,59 @@ if (currentPage === 'lesson.html') {
         }
       }
     } else if (videoPlayer) {
-      const durEl = videoPlayer.querySelector('.video-duration');
-      if (durEl) durEl.textContent = lesson.duration || '45:00';
+      const isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+      if (isAdmin) {
+        // Admin sees an inline composer so they can paste a video URL
+        // without leaving the lesson page. Saves to LESSONS.save() and
+        // immediately re-renders the embed.
+        videoPlayer.classList.add('video-player-admin');
+        videoPlayer.innerHTML =
+          '<div class="video-empty-admin">'
+          + '<div class="video-empty-icon">'
+          +   '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>'
+          + '</div>'
+          + '<h3>Add a video to this lesson</h3>'
+          + '<p>Paste a link from YouTube, Vimeo, Loom, Drive, Facebook, TikTok, or a direct .mp4.<br><span class="video-empty-hint">Videos boost lesson completion by 3-5×.</span></p>'
+          + '<form class="video-empty-form" id="inlineVideoForm">'
+          +   '<input type="url" id="inlineVideoUrl" placeholder="https://youtube.com/watch?v=..." required>'
+          +   '<button type="submit" class="btn btn-primary">Save video</button>'
+          + '</form>'
+          + '<a href="admin.html#tab=lessons" class="video-empty-link">Or open the full lesson editor →</a>'
+          + '</div>';
+
+        const form = document.getElementById('inlineVideoForm');
+        if (form) {
+          form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const url = (document.getElementById('inlineVideoUrl').value || '').trim();
+            if (!url) return;
+            // Persist + re-render
+            const updated = Object.assign({}, lesson, { videoUrl: url, videoType: 'auto' });
+            LESSONS.save(updated);
+            // Hot-swap the player UI without page reload
+            videoPlayer.classList.remove('video-player-admin');
+            videoPlayer.innerHTML = LESSONS.getVideoEmbed(updated, false);
+            videoPlayer.style.background = '#000';
+            const thumb = videoPlayer.querySelector('.yt-thumb-player');
+            if (thumb) {
+              thumb.addEventListener('click', () => {
+                videoPlayer.innerHTML = LESSONS.getVideoEmbed(updated, true);
+              });
+            }
+          });
+        }
+      } else {
+        // Student sees a calm, intentional "coming soon" placeholder
+        videoPlayer.classList.add('video-player-coming');
+        videoPlayer.innerHTML =
+          '<div class="video-empty-soon">'
+          + '<div class="video-empty-icon">'
+          +   '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+          + '</div>'
+          + '<h3>Video coming soon</h3>'
+          + '<p>The full lesson video is on its way. Read the content below to get started — you can come back when the recording is up.</p>'
+          + '</div>';
+      }
     }
 
     // Update body
