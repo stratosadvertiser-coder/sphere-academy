@@ -11934,18 +11934,81 @@ code, pre, .lesson-id, .phase-week {
   --border-strong: rgba(255, 255, 255, 0.14);
 }
 
-/* ---------- 3. Hide visual noise (mesh blobs, marquee, gradient text) ---------- */
-.hero-mesh,
-.hero-mesh-blob,
-.mesh-blob-a, .mesh-blob-b, .mesh-blob-c,
+/* ---------- 3. Hide visual noise (legacy blobs, marquee, glow) ----------
+   .hero-mesh / .hero-mesh-blob / .mesh-blob-* are intentionally
+   re-enabled below (Animated Aurora). Older .hero-blob set stays off. */
 .hero-blobs,
 .hero-blob,
 .blob-a, .blob-b, .blob-c,
-.hero-mesh-grid,
 .bento-logo-glow,
 .bento-live-pulse,
 .tools-marquee {
   display: none !important;
+}
+
+/* ---------- AURORA — soft moving indigo lights behind the hero --------
+   Re-uses the existing .hero-mesh / .mesh-blob-* markup in index.html.
+   Three orbs drift on slow staggered cycles with heavy 130-140px blur
+   so they read as ambient atmosphere, not shapes. Indigo-only palette
+   matches the Emil aesthetic — no pink or mint. */
+.hero.hero-v2 .hero-mesh {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+.hero.hero-v2 .hero-mesh-blob {
+  display: block !important;
+  position: absolute !important;
+  border-radius: 50% !important;
+  filter: blur(140px) !important;
+  opacity: 0.45 !important;
+  will-change: transform !important;
+  animation: auroraDrift 32s ease-in-out infinite !important;
+}
+[data-theme="dark"] .hero.hero-v2 .hero-mesh-blob {
+  opacity: 0.55 !important;
+  filter: blur(130px) !important;
+}
+.hero.hero-v2 .mesh-blob-a {
+  width: 520px !important; height: 520px !important;
+  top: -140px !important; left: -120px !important;
+  background: #635bff !important;
+  animation-duration: 32s !important;
+}
+.hero.hero-v2 .mesh-blob-b {
+  width: 620px !important; height: 620px !important;
+  top: 28% !important; right: -180px !important; left: auto !important;
+  background: #4c1d95 !important;
+  animation-duration: 38s !important;
+  animation-delay: -10s !important;
+}
+.hero.hero-v2 .mesh-blob-c {
+  width: 440px !important; height: 440px !important;
+  bottom: -120px !important; left: 30% !important; top: auto !important;
+  background: #8b9eff !important;
+  animation-duration: 35s !important;
+  animation-delay: -18s !important;
+}
+.hero.hero-v2 .hero-mesh-grid { display: none !important; }
+
+/* Make sure hero content stays clearly above the aurora layer */
+.hero.hero-v2 .container,
+.hero.hero-v2 .hero-centered {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes auroraDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%      { transform: translate3d(60px, -40px, 0) scale(1.08); }
+  66%      { transform: translate3d(-40px, 50px, 0) scale(0.94); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero.hero-v2 .hero-mesh-blob { animation: none !important; }
 }
 
 /* Re-enable the animated indigo gradient on "Roadmap" only — the rest
