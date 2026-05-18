@@ -1,3 +1,67 @@
+// ============================================================
+// EMIL FADE-UP — global on-scroll reveal applied to every section,
+// card, post, lesson, etc. without per-page wiring. Looks for the
+// most common content containers, slaps .fade-up-emil on them, and
+// intersects them into .in-view as the user scrolls. Respects
+// prefers-reduced-motion via CSS so this can stay running for
+// everyone.
+// ============================================================
+(function emilFadeUp() {
+  if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') return;
+  // Anything we want to fade up gets this class. Done as a function so
+  // future dynamic content (feed posts, students rows) can call this too.
+  function tag() {
+    const targets = document.querySelectorAll(
+      'section > .container, ' +
+      '.dash-section, ' +
+      '.hero-eyebrow, .hero h1, .hero p, .hero-actions, .hero-meta, ' +
+      '.post, .win-item, .ann-item, .faq-item, .event-card, ' +
+      '.course-card, .bento-card, .feature-card, .about-pillar, ' +
+      '.pricing-card, .testimonial-card, .outcome-card, .member-card, ' +
+      '.key-takeaways, .lesson-body > h2, ' +
+      '.section-h, .section-label, .section-sub, ' +
+      '.admin-editor-card, .auth-card'
+    );
+    targets.forEach((el) => {
+      if (!el.classList.contains('fade-up-emil')) {
+        el.classList.add('fade-up-emil');
+      }
+    });
+  }
+  function observe() {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in-view');
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.fade-up-emil:not(.in-view)').forEach((el) => obs.observe(el));
+  }
+  function init() {
+    tag();
+    observe();
+    // Re-tag after dynamic renders so new posts/wins/lessons animate too.
+    // Throttled so flurries of mutations don't thrash.
+    let pending = null;
+    const mo = new MutationObserver(() => {
+      if (pending) return;
+      pending = requestAnimationFrame(() => {
+        pending = null;
+        tag();
+        observe();
+      });
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
 // ===== SAFE localStorage HELPER =====
 function safeSetItem(key, value) {
   try {

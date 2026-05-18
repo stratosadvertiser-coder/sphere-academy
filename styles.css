@@ -11863,3 +11863,504 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
     margin: 16px;
   }
 }
+
+/* ============================================================
+   EMIL KOWALSKI MASTER THEME — 2026 redesign
+   Applied last so it wins specificity for the global override.
+   Monochrome palette + Inter Tight + hairline borders + restrained
+   motion. Touches every page without per-page rewrites by overriding
+   the CSS variables that the rest of the codebase already references.
+   ============================================================ */
+
+/* ---------- 1. Typography — Inter Tight everywhere ---------- */
+html, body, button, input, textarea, select, .btn, .lockup-text,
+.hero h1, h1, h2, h3, h4, h5, h6, p, a, li, td, th, label, span {
+  font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+}
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font-feature-settings: 'ss01', 'cv11';
+  letter-spacing: -0.005em;
+  font-size: 15px;
+  line-height: 1.55;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.15 !important;
+}
+.hero h1, .auth-card h1 {
+  letter-spacing: -0.035em !important;
+  font-weight: 600 !important;
+}
+code, pre, .lesson-id, .phase-week {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace !important;
+}
+
+/* ---------- 2. Color palette — monochrome with indigo accent ---------- */
+:root {
+  --primary: #635bff;
+  --primary-light: rgba(99, 91, 255, 0.08);
+  --primary-glow: rgba(99, 91, 255, 0.2);
+  --accent: #635bff;
+  --accent-pink: #635bff;            /* neutralize pink accents */
+  --bg: #fafafa;
+  --bg-alt: #ffffff;
+  --bg-elevated: #ffffff;
+  --card-bg: #ffffff;
+  --text: #0a0a0a;
+  --text-light: #737373;
+  --text-muted: #a3a3a3;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+}
+[data-theme="dark"] {
+  --primary: #635bff;
+  --primary-light: rgba(99, 91, 255, 0.14);
+  --primary-glow: rgba(99, 91, 255, 0.3);
+  --accent: #8b9eff;
+  --accent-pink: #8b9eff;
+  --bg: #0a0a0a;
+  --bg-alt: #111111;
+  --bg-elevated: #111111;
+  --card-bg: #111111;
+  --text: #fafafa;
+  --text-light: #a3a3a3;
+  --text-muted: #737373;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+}
+
+/* ---------- 3. Hide visual noise (mesh blobs, marquee, gradient text) ---------- */
+.hero-mesh,
+.hero-mesh-blob,
+.mesh-blob-a, .mesh-blob-b, .mesh-blob-c,
+.hero-blobs,
+.hero-blob,
+.blob-a, .blob-b, .blob-c,
+.hero-mesh-grid,
+.bento-logo-glow,
+.bento-live-pulse,
+.tools-marquee {
+  display: none !important;
+}
+
+/* Disable animated text gradient — replace with solid */
+.hero-title-gradient,
+.hero h1 .highlight {
+  background: none !important;
+  -webkit-text-fill-color: var(--text) !important;
+  color: var(--text) !important;
+  animation: none !important;
+}
+
+/* ---------- 4. Cards, posts, items — hairline borders only, no shadows ---------- */
+.card,
+.post,
+.win-item,
+.ann-item,
+.faq-item,
+.event-card,
+.bento-card,
+.feature-card,
+.about-pillar,
+.course-card,
+.lesson-card,
+.pricing-card,
+.testimonial-card,
+.outcome-card,
+.member-card,
+.dm-conversation,
+.auth-card,
+.admin-editor-card,
+.dash-card,
+.lesson-locked,
+.key-takeaways,
+.quiz-section,
+.assignment-section,
+.qa-section,
+.sub-inspector,
+.avatar-adjuster,
+.cert-card {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+.card:hover,
+.post:hover,
+.win-item:hover,
+.bento-card:hover,
+.feature-card:hover,
+.event-card:hover,
+.about-pillar:hover,
+.course-card:hover,
+.lesson-card:hover,
+.member-card:hover {
+  border-color: var(--border-strong) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+/* Section backgrounds — keep flat, hairline-divided */
+section, .section, .dash-section { background: transparent !important; }
+
+/* ---------- 5. Buttons — Emil's filled/ghost duo ---------- */
+.btn {
+  border-radius: 8px !important;
+  font-family: 'Inter Tight', sans-serif !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.005em !important;
+  padding: 9px 16px !important;
+  font-size: 14px !important;
+  transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+  box-shadow: none !important;
+}
+.btn-primary {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  border: 1px solid var(--text) !important;
+}
+.btn-primary:hover {
+  opacity: 0.85 !important;
+  transform: translateY(-1px) !important;
+  background: var(--text) !important;
+  color: var(--bg) !important;
+}
+.btn-outline {
+  background: transparent !important;
+  color: var(--text-light) !important;
+  border: 1px solid var(--border-strong) !important;
+}
+.btn-outline:hover {
+  color: var(--text) !important;
+  border-color: var(--text-light) !important;
+  background: transparent !important;
+}
+
+/* ---------- 6. Navbar — frosted, hairline bottom ---------- */
+.navbar {
+  background: color-mix(in srgb, var(--bg) 85%, transparent) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+.navbar.scrolled {
+  background: color-mix(in srgb, var(--bg) 92%, transparent) !important;
+  box-shadow: none !important;
+}
+.logo {
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  font-size: 15px !important;
+}
+.nav-links a {
+  font-size: 14px !important;
+  color: var(--text-light) !important;
+  font-weight: 400 !important;
+}
+.nav-links a:hover { color: var(--text) !important; }
+
+/* ---------- 7. Hero — strip decoration, narrow column ---------- */
+.hero, .hero.hero-v2 {
+  background: transparent !important;
+  padding: clamp(72px, 9vw, 110px) 0 clamp(40px, 6vw, 64px) !important;
+}
+.hero-centered, .hero .container, .hero-bento {
+  max-width: 640px !important;
+  margin: 0 auto !important;
+  text-align: center !important;
+  display: block !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+}
+.hero p {
+  color: var(--text-light) !important;
+  font-size: 17px !important;
+  max-width: 480px !important;
+  margin: 0 auto 28px !important;
+  line-height: 1.55 !important;
+}
+.hero-eyebrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 4px 10px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 100px !important;
+  font-size: 11px !important;
+  color: var(--text-light) !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+  margin-bottom: 22px !important;
+}
+.hero-eyebrow::before {
+  content: '' !important;
+  width: 5px !important;
+  height: 5px !important;
+  border-radius: 50% !important;
+  background: var(--accent) !important;
+  box-shadow: 0 0 8px var(--accent) !important;
+}
+.hero-actions {
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+}
+
+/* Sphere card (bento-logo-centered) — keep but flatten */
+.bento-logo-centered, .bento-card.bento-logo {
+  background: var(--bg-alt) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  margin: 24px auto !important;
+  max-width: fit-content !important;
+}
+
+/* Mini-cards (Live community + Marketing Intern Graduate) */
+.bento-live, .bento-graduate, .bento-mini {
+  background: var(--bg-alt) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+}
+
+/* ---------- 8. Inputs / textareas ---------- */
+input, textarea, select {
+  background: var(--bg-alt) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  border-radius: 8px !important;
+  font-family: 'Inter Tight', sans-serif !important;
+  font-size: 14px !important;
+  padding: 10px 12px !important;
+  transition: border-color 0.15s ease !important;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: var(--text-light) !important;
+  box-shadow: none !important;
+}
+@media (max-width: 768px) {
+  input, textarea, select { font-size: 16px !important; }
+}
+
+/* ---------- 9. Tables (admin students table) ---------- */
+.students-table thead th {
+  background: var(--bg) !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--text-light) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+.students-table tbody td {
+  border-bottom: 1px solid var(--border) !important;
+  font-size: 14px !important;
+}
+.students-table tbody tr:hover {
+  background: color-mix(in srgb, var(--text) 3%, var(--bg)) !important;
+}
+
+/* ---------- 10. Badges, pills, chips ---------- */
+.role-badge, .status-badge, .tag, .chip {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  border-radius: 100px !important;
+  padding: 3px 9px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--bg) !important;
+  color: var(--text-light) !important;
+}
+.role-badge.admin {
+  background: var(--primary-light) !important;
+  color: var(--primary) !important;
+  border-color: transparent !important;
+}
+.role-badge.student {
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-light) !important;
+}
+.status-badge.active {
+  background: rgba(34, 197, 94, 0.1) !important;
+  color: #16a34a !important;
+  border-color: transparent !important;
+}
+.status-badge.pending {
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+/* ---------- 11. Course cards — flatten ---------- */
+.course-card { border-radius: 10px !important; overflow: hidden !important; }
+.course-card-img { border-radius: 0 !important; }
+.course-card-body h3 {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ---------- 12. Lesson sidebar ---------- */
+.lesson-sidebar {
+  background: var(--bg) !important;
+  border-right: 1px solid var(--border) !important;
+}
+.sidebar-lesson {
+  border-left: 2px solid transparent !important;
+  font-size: 13px !important;
+  color: var(--text-light) !important;
+}
+.sidebar-lesson.active {
+  background: color-mix(in srgb, var(--primary) 6%, var(--bg)) !important;
+  color: var(--text) !important;
+  border-left-color: var(--primary) !important;
+  font-weight: 500 !important;
+}
+.sidebar-module-title {
+  font-size: 10px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--text-muted) !important;
+  font-weight: 500 !important;
+}
+
+/* ---------- 13. Lesson content typography ---------- */
+.lesson-body {
+  font-size: 15px !important;
+  line-height: 1.7 !important;
+}
+.lesson-body h2 {
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+  margin: 40px 0 12px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid var(--border) !important;
+}
+.lesson-body h2:first-child { border-top: none !important; padding-top: 0 !important; }
+.lesson-body h3 {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+}
+.lesson-body p { font-size: 15px !important; color: var(--text) !important; }
+.lesson-body ul, .lesson-body ol { padding-left: 22px !important; }
+.lesson-body li { color: var(--text) !important; font-size: 15px !important; }
+.lesson-body strong { color: var(--text) !important; font-weight: 600 !important; }
+
+/* Pro Tip / Key Takeaways callouts — flatten */
+.key-takeaways {
+  background: var(--bg-alt) !important;
+  border: 1px solid var(--border) !important;
+  border-left: 3px solid var(--primary) !important;
+  border-radius: 8px !important;
+  padding: 18px 20px !important;
+}
+.key-takeaways h3 {
+  font-size: 11px !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: var(--primary) !important;
+  margin-bottom: 10px !important;
+}
+
+/* ---------- 14. Avatars — keep but neutralize gradient ---------- */
+.nav-profile-avatar, .composer-avatar, .members-avatar {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+}
+
+/* ---------- 15. Feed / tabs ---------- */
+.dash-tabs, .members-tabs {
+  border-bottom: 1px solid var(--border) !important;
+  background: transparent !important;
+}
+.dash-tab-item, .members-tab {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.005em !important;
+  color: var(--text-light) !important;
+  border-bottom: 2px solid transparent !important;
+  background: transparent !important;
+}
+.dash-tab-item.active, .members-tab.active {
+  color: var(--text) !important;
+  border-bottom-color: var(--text) !important;
+  background: transparent !important;
+}
+
+/* ---------- 16. Animations — fade-up on scroll (Emil signature) ---------- */
+.fade-up-emil {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.fade-up-emil.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fade-up-emil.in-view.d1 { transition-delay: 80ms; }
+.fade-up-emil.in-view.d2 { transition-delay: 160ms; }
+.fade-up-emil.in-view.d3 { transition-delay: 240ms; }
+.fade-up-emil.in-view.d4 { transition-delay: 320ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up-emil { opacity: 1 !important; transform: none !important; transition: none !important; }
+}
+
+/* ---------- 17. Footer ---------- */
+footer {
+  border-top: 1px solid var(--border) !important;
+  background: transparent !important;
+  padding: 28px 0 !important;
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+}
+
+/* ---------- 18. Misc decorative items to hide / flatten ---------- */
+.live-pulse-dot, .notif-badge { animation: none !important; }
+.gradient-text {
+  background: none !important;
+  -webkit-text-fill-color: var(--text) !important;
+  color: var(--text) !important;
+}
+
+/* ---------- 19. Auth (login/signup) — center, narrow, calm ---------- */
+.auth-page { background: var(--bg) !important; padding: 80px 20px !important; }
+.auth-card {
+  max-width: 380px !important;
+  margin: 0 auto !important;
+  padding: 32px 28px !important;
+}
+.auth-subtitle { color: var(--text-light) !important; font-size: 14px !important; }
+.auth-footer { font-size: 13px !important; color: var(--text-light) !important; }
+
+/* ---------- 20. Sticky bar / Mark Complete — flatten ---------- */
+.sticky-bar, .lesson-complete-btn {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.005em !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.lesson-complete-btn.completed {
+  background: var(--bg-alt) !important;
+  color: var(--text-light) !important;
+  border: 1px solid var(--border) !important;
+}
