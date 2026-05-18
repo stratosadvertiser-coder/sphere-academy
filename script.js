@@ -3231,30 +3231,13 @@ const LESSONS = {
   },
 
   // ===== Prerequisites / Auto-Unlock =====
-  // Week N is unlocked iff Week (N-1) was completed AND its quiz passed
-  // (if the quiz is enabled) AND its assignment submitted (if enabled).
-  // Week 1 is always unlocked. Admin bypass: admin always sees everything.
+  // Lesson locking has been DISABLED across the program — all 16 lessons
+  // are open from day one. Students race to finish at their own pace.
+  // (Previously: Week N required Week N-1 complete + quiz passed + asgn
+  // submitted. Kept the function so the rest of the code that asks
+  // "is this unlocked?" keeps working without refactoring every caller.)
   isUnlocked(weekId) {
-    try {
-      if (typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin()) return true;
-      const lesson = this.get(weekId);
-      if (!lesson) return false;
-      if ((lesson.week || 1) <= 1) return true;
-      const prevWeekId = 'w' + (lesson.week - 1);
-      const prev = this.get(prevWeekId);
-      if (!prev) return true; // no previous lesson defined — unlock
-      // Lesson must be marked complete
-      if (typeof PROGRESS !== 'undefined' && !PROGRESS.isCompleted(prevWeekId)) return false;
-      // If prev has a quiz enabled, must be passed
-      if (prev.quiz && prev.quiz.enabled && prev.quiz.questions && prev.quiz.questions.length > 0) {
-        if (typeof QUIZ_RESULTS !== 'undefined' && !QUIZ_RESULTS.isPassed(prevWeekId)) return false;
-      }
-      // If prev has assignment enabled, must be submitted
-      if (prev.assignment && prev.assignment.enabled) {
-        if (typeof ASSIGNMENTS !== 'undefined' && !ASSIGNMENTS.isSubmitted(prevWeekId)) return false;
-      }
-      return true;
-    } catch (e) { return true; /* on any error, fail open */ }
+    return true;
   },
 
   // What's blocking a locked lesson — returns an array of requirements
