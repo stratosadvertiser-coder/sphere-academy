@@ -12423,16 +12423,21 @@ code, pre, .lesson-id, .phase-week {
 
 /* (Legacy liquid sphere CSS retained below for fallback / easy revert) */
 
-/* Solid base so the sphere has a clean canvas behind it */
-[data-theme="dark"] html,
-[data-theme="dark"] body,
-[data-theme="dark"] .hero.hero-v2 {
-  background-color: #0a0a18 !important;
+/* Legacy Saturn base — only apply solid color to html (body has
+   its own cosmos bg with nebula + stars). Hero stays transparent
+   so the body's nebula shows through and there's no seam between
+   the hero and the section below. */
+[data-theme="dark"] html {
+  background-color: #0d0a24 !important;
 }
-[data-theme="light"] html,
-[data-theme="light"] body,
-[data-theme="light"] .hero.hero-v2 {
+[data-theme="dark"] .hero.hero-v2 {
+  background-color: transparent !important;
+}
+[data-theme="light"] html {
   background-color: #fafafa !important;
+}
+[data-theme="light"] .hero.hero-v2 {
+  background-color: transparent !important;
 }
 
 .hero.hero-v2 .hero-waves {
