@@ -12269,22 +12269,32 @@ code, pre, .lesson-id, .phase-week {
     radial-gradient(1px 1px     at 95% 17%, rgba(255,255,255,0.5),  transparent 60%),
     radial-gradient(1px 1px     at 98% 63%, rgba(255,255,255,0.55), transparent 60%),
 
-    /* ─── GALAXY NEBULA CLOUDS (drawn underneath everything) ───
-       Three soft blurred color clouds give the cosmos depth — a
-       central indigo body, a violet swirl, and a faint pink cluster.
-       All very low opacity so they read as ambient nebula, not blobs. */
-    radial-gradient(circle 900px at 22% 32%,
-      rgba(99, 91, 255, 0.18) 0%,
-      rgba(99, 91, 255, 0.08) 30%,
-      transparent 60%),
-    radial-gradient(circle 800px at 78% 68%,
-      rgba(140, 90, 220, 0.16) 0%,
-      rgba(140, 90, 220, 0.06) 30%,
-      transparent 60%),
-    radial-gradient(circle 600px at 55% 88%,
+    /* ─── GALAXY NEBULA — even ambient color across the whole viewport ───
+       Replaced the 3 corner-positioned clouds with a centered base
+       gradient + 4 smaller accent clouds spread evenly so every
+       section gets soft purple-violet-pink atmosphere (no dark
+       patches in the corners). */
+    radial-gradient(ellipse 110% 100% at 50% 50%,
+      rgba(99, 91, 255, 0.14) 0%,
+      rgba(99, 91, 255, 0.08) 40%,
+      rgba(99, 91, 255, 0.04) 70%,
+      transparent 100%),
+    radial-gradient(circle 700px at 18% 28%,
+      rgba(99, 91, 255, 0.14) 0%,
+      rgba(99, 91, 255, 0.04) 50%,
+      transparent 75%),
+    radial-gradient(circle 700px at 82% 30%,
+      rgba(140, 90, 220, 0.12) 0%,
+      rgba(140, 90, 220, 0.04) 50%,
+      transparent 75%),
+    radial-gradient(circle 700px at 20% 75%,
+      rgba(140, 90, 220, 0.12) 0%,
+      rgba(140, 90, 220, 0.04) 50%,
+      transparent 75%),
+    radial-gradient(circle 700px at 80% 75%,
       rgba(220, 120, 200, 0.10) 0%,
-      rgba(220, 120, 200, 0.04) 30%,
-      transparent 65%) !important;
+      rgba(220, 120, 200, 0.03) 50%,
+      transparent 75%) !important;
 
   background-repeat: no-repeat !important;
   background-attachment: fixed !important;
