@@ -12643,13 +12643,11 @@ section, .section, .dash-section { background: transparent !important; }
   background: transparent !important;
   margin-bottom: 22px !important;
 }
+/* Removed duplicate dot — the HTML already has <span class="hero-pulse"></span>
+   inside the eyebrow which renders the pulsing indigo dot. The CSS
+   ::before was stacking a second static dot beside it. */
 .hero-eyebrow::before {
-  content: '' !important;
-  width: 5px !important;
-  height: 5px !important;
-  border-radius: 50% !important;
-  background: var(--accent) !important;
-  box-shadow: 0 0 8px var(--accent) !important;
+  content: none !important;
 }
 .hero-actions {
   display: flex !important;
