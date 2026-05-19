@@ -12984,6 +12984,12 @@ footer {
   font-weight: 600;
 }
 
+/* Empty spacer where the trust microcopy used to live — preserves
+   the vertical rhythm between CTAs and the Sphere badge card. */
+.hero.hero-v2 .hero-cta-microcopy-spacer {
+  height: 8px;
+}
+
 /* Navbar logo — bigger image + bolder wordmark */
 .logo {
   font-size: 17px !important;
