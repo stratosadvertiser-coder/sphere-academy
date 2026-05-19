@@ -12307,12 +12307,12 @@ code, pre, .lesson-id, .phase-week {
 
 /* Sci-fi motion streaks — slow pulse so the light beam feels alive */
 .hero.hero-v2 .saturn-streaks {
-  transform-origin: 720px 450px;
+  transform-origin: 720px 680px;
   animation: streakPulse 8s ease-in-out infinite;
   mix-blend-mode: screen;
 }
 .hero.hero-v2 .saturn-streaks-front {
-  transform-origin: 720px 450px;
+  transform-origin: 720px 680px;
   animation: streakPulse 8s ease-in-out infinite reverse;
   animation-delay: -2s;
   mix-blend-mode: screen;
