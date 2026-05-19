@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-headline2">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-spotlight">
 </head>
 <body class="page-loaded">
 
@@ -56,34 +56,11 @@
       <div class="hero-mesh-grid"></div>
     </div>
 
-    <!-- Animated wave ribbons — smooth indigo curves flowing across hero -->
+    <!-- Ambient atmospheric background — single soft indigo spotlight
+         behind the hero. Clean, premium, no visible streaks. -->
     <div class="hero-waves" aria-hidden="true">
-      <svg class="hero-wave-svg" viewBox="0 0 1440 900" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="waveGradA" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"  stop-color="#635bff" stop-opacity="0"/>
-            <stop offset="50%" stop-color="#635bff" stop-opacity="0.55"/>
-            <stop offset="100%" stop-color="#635bff" stop-opacity="0"/>
-          </linearGradient>
-          <linearGradient id="waveGradB" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"  stop-color="#8b9eff" stop-opacity="0"/>
-            <stop offset="50%" stop-color="#8b9eff" stop-opacity="0.45"/>
-            <stop offset="100%" stop-color="#8b9eff" stop-opacity="0"/>
-          </linearGradient>
-          <linearGradient id="waveGradC" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"  stop-color="#4c1d95" stop-opacity="0"/>
-            <stop offset="50%" stop-color="#4c1d95" stop-opacity="0.55"/>
-            <stop offset="100%" stop-color="#4c1d95" stop-opacity="0"/>
-          </linearGradient>
-          <filter id="waveBlur"><feGaussianBlur stdDeviation="22"/></filter>
-        </defs>
-        <path class="wave wave-a" filter="url(#waveBlur)" fill="none" stroke="url(#waveGradA)" stroke-width="80" stroke-linecap="round"
-          d="M -200 280 Q 240 200 540 320 T 1240 280 T 1700 350"/>
-        <path class="wave wave-b" filter="url(#waveBlur)" fill="none" stroke="url(#waveGradB)" stroke-width="60" stroke-linecap="round"
-          d="M -200 480 Q 320 380 620 520 T 1280 460 T 1700 540"/>
-        <path class="wave wave-c" filter="url(#waveBlur)" fill="none" stroke="url(#waveGradC)" stroke-width="100" stroke-linecap="round"
-          d="M -200 680 Q 260 600 600 720 T 1260 670 T 1700 740"/>
-      </svg>
+      <div class="hero-spotlight"></div>
+      <div class="hero-spotlight hero-spotlight-2"></div>
     </div>
 
     <div class="container hero-centered">
@@ -587,6 +564,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-headline2"></script>
+  <script src="script.js?v=2025-05-19-spotlight"></script>
 </body>
 </html>
