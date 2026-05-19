@@ -12995,14 +12995,15 @@ footer {
   gap: 12px !important;
 }
 
-/* Sphere card — wider, taller, more premium */
+/* Sphere card — same outer width as the mini-cards row below so all
+   three cards line up edge-to-edge. Inner content stays centered. */
 .hero.hero-v2 .bento-logo-centered {
-  display: inline-flex !important;
+  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 16px !important;
-  width: auto !important;
-  max-width: 380px !important;
+  width: 100% !important;
+  max-width: 640px !important;
   margin: 6px auto !important;
   padding: 18px 26px !important;
 }
