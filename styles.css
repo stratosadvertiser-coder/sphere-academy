@@ -12277,6 +12277,15 @@ code, pre, .lesson-id, .phase-week {
   pointer-events: none;
   animation: saturnBreathe 14s ease-in-out infinite;
   will-change: transform;
+  /* Soft blur so the Saturn reads as atmospheric background and
+     the headline + CTAs in front pop with full clarity. Stars on
+     the body bg stay sharp because they're a separate layer. */
+  filter: blur(8px);
+  opacity: 0.75;
+}
+[data-theme="light"] .hero.hero-v2 .hero-saturn {
+  filter: blur(8px);
+  opacity: 0.45;
 }
 
 @keyframes saturnBreathe {
