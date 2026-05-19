@@ -12916,42 +12916,43 @@ footer {
    - Same equal-height / center-axis discipline as before
    ============================================================ */
 
-/* Centered hero column — wide enough for the long uppercase headline
-   to fit on one line on desktop. Children below have their own
-   max-widths (Sphere card 380, mini-cards 640, trust fit-content)
-   so widening this doesn't change their layout. */
+/* Centered hero column — back to a balanced 880px now that the
+   headline is a two-liner (no longer needs to stretch wide). All
+   other children center within this container via their own
+   max-widths. */
 .hero.hero-v2 .hero-centered {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   text-align: center !important;
-  max-width: 1120px !important;
+  max-width: 880px !important;
   margin: 0 auto !important;
   gap: 28px !important;
 }
 
-/* Hero title — uppercase one-liner per user request. Sized small
-   enough that "BECOME A MARKETER BUSINESSES CAN TRUST TO GROW."
-   stays on a single line on typical desktops (>=1024px). Mobile
-   relaxes to allow wrapping so the headline doesn't overflow. */
+/* Hero title — uppercase two-liner per user request. The <br> in
+   the HTML forces the break after "marketer" so it always stacks
+   as: line 1 "BECOME A MARKETER", line 2 "BUSINESSES CAN TRUST TO
+   GROW." text-align center on the parent + display:block on the
+   h1 centers each line independently. */
 .hero.hero-v2 .hero-title,
 .hero.hero-v2 h1 {
-  font-size: clamp(20px, 3.1vw, 42px) !important;
+  display: block !important;
+  font-size: clamp(28px, 4.4vw, 56px) !important;
   line-height: 1.1 !important;
-  letter-spacing: -0.015em !important;
+  letter-spacing: -0.02em !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
-  white-space: nowrap !important;
-  max-width: none !important;
+  white-space: normal !important;
+  text-align: center !important;
+  max-width: 880px !important;
   margin: 0 auto !important;
 }
-/* Mobile: allow wrapping so the long uppercase line doesn't bust
-   the viewport. Slightly smaller still. */
-@media (max-width: 900px) {
+/* Mobile: slightly smaller font so the long second line fits */
+@media (max-width: 720px) {
   .hero.hero-v2 .hero-title,
   .hero.hero-v2 h1 {
-    white-space: normal !important;
-    font-size: clamp(22px, 5.4vw, 34px) !important;
+    font-size: clamp(22px, 6vw, 38px) !important;
     max-width: 92vw !important;
   }
 }
