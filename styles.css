@@ -13175,30 +13175,51 @@ footer {
   gap: 28px !important;
 }
 
-/* Hero title — uppercase two-liner. The <br> in HTML forces the
-   break, so the lines stack predictably as:
+/* Hero title — uppercase two-liner. Each line is wrapped in a
+   .hero-line span with white-space: nowrap so neither line can
+   collapse into a third row regardless of viewport width.
      Line 1: BECOME A MARKETER BUSINESSES
      Line 2: CAN TRUST TO GROW.
-   Tighter font size + nowrap per-line so neither line ever wraps
-   into a third row. */
-.hero.hero-v2 .hero-title,
-.hero.hero-v2 h1 {
+   Font is intentionally kept small enough that line 1 fits on a
+   typical phone-width viewport, since nowrap would otherwise force
+   horizontal overflow. */
+html body .hero.hero-v2 .hero-title,
+html body .hero.hero-v2 h1.hero-title {
   display: block !important;
-  font-size: clamp(26px, 3.8vw, 50px) !important;
-  line-height: 1.1 !important;
+  font-size: clamp(18px, 2.6vw, 36px) !important;
+  line-height: 1.15 !important;
   letter-spacing: -0.02em !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
   white-space: normal !important;
   text-align: center !important;
-  max-width: 1000px !important;
+  max-width: 1200px !important;
   margin: 0 auto !important;
+  overflow: visible !important;
+}
+html body .hero.hero-v2 .hero-title .hero-line,
+html body .hero.hero-v2 h1.hero-title .hero-line {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  width: auto !important;
+  max-width: none !important;
 }
 @media (max-width: 720px) {
-  .hero.hero-v2 .hero-title,
-  .hero.hero-v2 h1 {
-    font-size: clamp(20px, 5.2vw, 32px) !important;
-    max-width: 92vw !important;
+  html body .hero.hero-v2 .hero-title,
+  html body .hero.hero-v2 h1.hero-title {
+    font-size: clamp(15px, 4.4vw, 26px) !important;
+    max-width: 96vw !important;
+  }
+  html body .hero.hero-v2 .hero-title .hero-line,
+  html body .hero.hero-v2 h1.hero-title .hero-line {
+    white-space: nowrap !important;
+  }
+}
+@media (max-width: 380px) {
+  html body .hero.hero-v2 .hero-title,
+  html body .hero.hero-v2 h1.hero-title {
+    font-size: clamp(13px, 4vw, 22px) !important;
   }
 }
 
