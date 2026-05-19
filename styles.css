@@ -12915,6 +12915,38 @@ footer {
   letter-spacing: -0.005em !important;
 }
 
+/* Hero mini-cards — Live community + Marketing Intern Graduate must
+   match each other in color. The base .bento-card uses a translucent
+   rgba(255,255,255,0.03) bg in dark mode, so whichever card sits in
+   front of the aurora blob picks up a purple tint while the other
+   stays pure black. Force both to a SOLID opaque card surface so
+   their background looks identical regardless of what bleeds behind. */
+.hero.hero-v2 .bento-live,
+.hero.hero-v2 .bento-outcome {
+  background: var(--card-bg, var(--bg-alt)) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .hero.hero-v2 .bento-live,
+[data-theme="dark"] .hero.hero-v2 .bento-outcome {
+  background: #14172b !important;          /* solid deep navy */
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="light"] .hero.hero-v2 .bento-live,
+[data-theme="light"] .hero.hero-v2 .bento-outcome {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Sphere card — same opaque surface so it matches the row below */
+[data-theme="dark"] .hero.hero-v2 .bento-logo-centered {
+  background: #14172b !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="light"] .hero.hero-v2 .bento-logo-centered {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
 /* Testimonial cards — the Emil theme flattened their dark gradient
    background to white but the text inside is still styled white,
    so the quote becomes invisible on light mode. Force theme-aware
