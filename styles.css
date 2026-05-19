@@ -12915,6 +12915,27 @@ footer {
   letter-spacing: -0.005em !important;
 }
 
+/* Testimonial cards — the Emil theme flattened their dark gradient
+   background to white but the text inside is still styled white,
+   so the quote becomes invisible on light mode. Force theme-aware
+   text colors on all the testimonial inner elements. */
+.testimonial-card {
+  color: var(--text) !important;
+}
+.testimonial-card blockquote {
+  color: var(--text) !important;
+}
+.testimonial-card .testimonial-stars {
+  color: #f59e0b !important;
+}
+.testimonial-card .testimonial-name strong,
+.testimonial-card .testimonial-name b {
+  color: var(--text) !important;
+}
+.testimonial-card .testimonial-name span {
+  color: var(--text-light) !important;
+}
+
 /* CTA microcopy — small trust signals immediately below the buttons */
 .hero.hero-v2 .hero-cta-microcopy {
   display: flex;
