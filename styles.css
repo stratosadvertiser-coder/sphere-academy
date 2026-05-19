@@ -12916,14 +12916,16 @@ footer {
    - Same equal-height / center-axis discipline as before
    ============================================================ */
 
-/* Centered hero column — wider (780px) so "Marketing Intern Roadmap"
-   stays on one line, plus everything below has room to grow. */
+/* Centered hero column — wide enough for the long uppercase headline
+   to fit on one line on desktop. Children below have their own
+   max-widths (Sphere card 380, mini-cards 640, trust fit-content)
+   so widening this doesn't change their layout. */
 .hero.hero-v2 .hero-centered {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   text-align: center !important;
-  max-width: 780px !important;
+  max-width: 1120px !important;
   margin: 0 auto !important;
   gap: 28px !important;
 }
