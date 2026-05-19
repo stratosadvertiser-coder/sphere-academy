@@ -12937,29 +12937,29 @@ footer {
   gap: 28px !important;
 }
 
-/* Hero title — uppercase two-liner per user request. The <br> in
-   the HTML forces the break after "marketer" so it always stacks
-   as: line 1 "BECOME A MARKETER", line 2 "BUSINESSES CAN TRUST TO
-   GROW." text-align center on the parent + display:block on the
-   h1 centers each line independently. */
+/* Hero title — uppercase two-liner. The <br> in HTML forces the
+   break, so the lines stack predictably as:
+     Line 1: BECOME A MARKETER BUSINESSES
+     Line 2: CAN TRUST TO GROW.
+   Tighter font size + nowrap per-line so neither line ever wraps
+   into a third row. */
 .hero.hero-v2 .hero-title,
 .hero.hero-v2 h1 {
   display: block !important;
-  font-size: clamp(28px, 4.4vw, 56px) !important;
+  font-size: clamp(26px, 3.8vw, 50px) !important;
   line-height: 1.1 !important;
   letter-spacing: -0.02em !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
   white-space: normal !important;
   text-align: center !important;
-  max-width: 880px !important;
+  max-width: 1000px !important;
   margin: 0 auto !important;
 }
-/* Mobile: slightly smaller font so the long second line fits */
 @media (max-width: 720px) {
   .hero.hero-v2 .hero-title,
   .hero.hero-v2 h1 {
-    font-size: clamp(22px, 6vw, 38px) !important;
+    font-size: clamp(20px, 5.2vw, 32px) !important;
     max-width: 92vw !important;
   }
 }
