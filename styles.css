@@ -12277,15 +12277,15 @@ code, pre, .lesson-id, .phase-week {
   pointer-events: none;
   animation: saturnBreathe 14s ease-in-out infinite;
   will-change: transform;
-  /* Soft blur so the Saturn reads as atmospheric background and
-     the headline + CTAs in front pop with full clarity. Stars on
-     the body bg stay sharp because they're a separate layer. */
-  filter: blur(8px);
-  opacity: 0.75;
+  /* Light blur — Saturn reads as atmospheric background but
+     keeps enough detail to look like a planet, not a smear.
+     Foreground content still pops because it's a separate layer. */
+  filter: blur(5px);
+  opacity: 0.8;
 }
 [data-theme="light"] .hero.hero-v2 .hero-saturn {
-  filter: blur(8px);
-  opacity: 0.45;
+  filter: blur(5px);
+  opacity: 0.5;
 }
 
 @keyframes saturnBreathe {
@@ -12316,12 +12316,12 @@ code, pre, .lesson-id, .phase-week {
 
 /* Sci-fi motion streaks — slow pulse so the light beam feels alive */
 .hero.hero-v2 .saturn-streaks {
-  transform-origin: 720px 500px;
+  transform-origin: 720px 387px;
   animation: streakPulse 8s ease-in-out infinite;
   mix-blend-mode: screen;
 }
 .hero.hero-v2 .saturn-streaks-front {
-  transform-origin: 720px 500px;
+  transform-origin: 720px 387px;
   animation: streakPulse 8s ease-in-out infinite reverse;
   animation-delay: -2s;
   mix-blend-mode: screen;
