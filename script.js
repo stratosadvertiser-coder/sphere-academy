@@ -2248,12 +2248,18 @@ const AUTH = {
   },
 
   // Sync version — checks localStorage only. Used by the synchronous
-  // legacy login form. The async loginAsync below also falls back to
-  // Firestore so a password reset by an admin propagates to any device.
+  // legacy login form. The async fallback in the login handler also
+  // pulls from Firestore so a password reset by an admin propagates
+  // to any device.
+  // Username comparison is case-insensitive (signup lowercases). The
+  // password is matched exactly so it stays case-sensitive.
   login(username, password) {
     this.initUsers();
     const users = this.getAllUsers();
-    const user = users.find(u => u.username === username && u.password === password);
+    const u_lower = (username || '').toLowerCase();
+    const user = users.find(u =>
+      (u.username || '').toLowerCase() === u_lower && u.password === password
+    );
     if (user) {
       safeSetItem('auth_logged_in', 'true');
       safeSetItem('auth_user', user.username);
@@ -3472,11 +3478,14 @@ if (loginForm) {
   const loginError = document.getElementById('loginError');
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = (document.getElementById('username') || document.getElementById('email')).value.trim();
+    const rawUsername = (document.getElementById('username') || document.getElementById('email')).value.trim();
+    const username = rawUsername.toLowerCase(); // normalize — signup already lowercases
     const password = document.getElementById('password').value;
     const submitBtn = loginForm.querySelector('button[type="submit"]');
 
-    // First attempt — local-only (instant, no network).
+    // First attempt — local-only (instant, no network). AUTH.login is
+    // now case-insensitive on username so this works regardless of how
+    // the user typed it.
     if (AUTH.login(username, password)) {
       window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
       return;
@@ -3489,38 +3498,54 @@ if (loginForm) {
     let remoteHit = false;
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && username) {
-        const snap = await DATA_SYNC.db.collection('sphere_users').doc(username).get();
-        if (snap.exists) {
-          const data = snap.data() || {};
-          if (data.password && data.password === password) {
-            // Sync the remote record into the local auth_users array so
-            // AUTH.login can match it next time, then fire the local login.
-            try {
-              const users = AUTH.getAllUsers();
-              const idx = users.findIndex(u => (u.username || '').toLowerCase() === username.toLowerCase());
-              if (idx === -1) {
-                users.push({
-                  username: data.username || username,
-                  email: data.email || '',
-                  fullName: data.displayName || data.fullName || username,
-                  password: data.password,
-                  role: data.role || 'student',
-                  createdAt: data.registeredAt || Date.now()
-                });
-              } else {
-                users[idx].password = data.password;
-                if (data.role) users[idx].role = data.role;
-                if (data.email) users[idx].email = users[idx].email || data.email;
-                if (data.displayName) users[idx].fullName = users[idx].fullName || data.displayName;
-              }
-              safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
-            } catch (e) { /* non-fatal */ }
+        // Try the lowercase doc id first (canonical), then the raw
+        // username as a backstop just in case an old account exists
+        // with mixed-case storage.
+        const tryIds = [username];
+        if (rawUsername !== username) tryIds.push(rawUsername);
 
-            if (AUTH.login(username, password)) {
-              window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
-              remoteHit = true;
-              return;
+        let matchedData = null;
+        for (const id of tryIds) {
+          try {
+            const snap = await DATA_SYNC.db.collection('sphere_users').doc(id).get();
+            if (snap.exists) {
+              const data = snap.data() || {};
+              if (data.password && data.password === password) {
+                matchedData = data;
+                break;
+              }
             }
+          } catch (_) { /* try next */ }
+        }
+
+        if (matchedData) {
+          // Mirror remote record into the local auth_users array so
+          // AUTH.login matches next time, then fire the local login.
+          try {
+            const users = AUTH.getAllUsers();
+            const idx = users.findIndex(u => (u.username || '').toLowerCase() === username);
+            if (idx === -1) {
+              users.push({
+                username: (matchedData.username || username).toLowerCase(),
+                email: matchedData.email || '',
+                fullName: matchedData.displayName || matchedData.fullName || username,
+                password: matchedData.password,
+                role: matchedData.role || 'student',
+                createdAt: matchedData.registeredAt || Date.now()
+              });
+            } else {
+              users[idx].password = matchedData.password;
+              if (matchedData.role) users[idx].role = matchedData.role;
+              if (matchedData.email) users[idx].email = users[idx].email || matchedData.email;
+              if (matchedData.displayName) users[idx].fullName = users[idx].fullName || matchedData.displayName;
+            }
+            safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+          } catch (e) { /* non-fatal */ }
+
+          if (AUTH.login(username, password)) {
+            window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
+            remoteHit = true;
+            return;
           }
         }
       }
@@ -11033,13 +11058,24 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving…';
 
+        // Normalize the username for the Firestore doc id so it
+        // matches what the login fallback will look up. Signup
+        // lowercases on creation, so we do the same here.
+        const usernameLc = (username || '').toLowerCase();
+        let firestoreOk = false;
+
         // 1) Firestore — write password to sphere_users so it propagates
         //    cross-device. (Note: stored as plain text matching the rest
         //    of the AUTH system; same as the localStorage copy.)
         try {
           if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
-            await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(username)
-              .set({ password: newPw }, { merge: true });
+            await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(usernameLc)
+              .set({
+                username: usernameLc,
+                password: newPw,
+                passwordUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+            firestoreOk = true;
           }
         } catch (e) {
           console.warn('[PWRESET] Firestore write failed:', e.message);
@@ -11049,7 +11085,7 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         // 2) localStorage — instant update on this admin's device
         try {
           const users = AUTH.getAllUsers();
-          const idx = users.findIndex(u => (u.username || '').toLowerCase() === username.toLowerCase());
+          const idx = users.findIndex(u => (u.username || '').toLowerCase() === usernameLc);
           if (idx !== -1) {
             users[idx].password = newPw;
             safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
@@ -11064,6 +11100,13 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         // Disable input so admin doesn't think they can re-edit
         input.disabled = true;
         genBtn.disabled = true;
+
+        // Add a tiny status line confirming the Firestore write succeeded
+        // so the admin knows the student can log in from any device.
+        const successLabel = overlay.querySelector('.pwreset-success-label');
+        if (successLabel && firestoreOk) {
+          successLabel.innerHTML = '<span style="color:#16a34a">✓</span> Password updated &amp; synced. Copy + share:';
+        }
       });
     }
 
