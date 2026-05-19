@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-up3cm">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-clean">
 </head>
 <body class="page-loaded">
 
@@ -56,179 +56,8 @@
       <div class="hero-mesh-grid"></div>
     </div>
 
-    <!-- Saturn-style planet behind the hero — sphere with tilted rings,
-         atmosphere halo, and a scattered star field. Grok-inspired. -->
-    <div class="hero-waves" aria-hidden="true">
-      <svg class="hero-saturn" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <!-- Planet body — vivid 3D-shaded indigo sphere -->
-          <radialGradient id="planetGrad" cx="38%" cy="32%" r="78%">
-            <stop offset="0%"   stop-color="#ffffff" stop-opacity="1"/>
-            <stop offset="8%"   stop-color="#d9deff" stop-opacity="1"/>
-            <stop offset="22%"  stop-color="#a5acff" stop-opacity="1"/>
-            <stop offset="42%"  stop-color="#8b9eff" stop-opacity="1"/>
-            <stop offset="62%"  stop-color="#635bff" stop-opacity="1"/>
-            <stop offset="82%"  stop-color="#4c1d95" stop-opacity="1"/>
-            <stop offset="100%" stop-color="#1e1b4b" stop-opacity="1"/>
-          </radialGradient>
-
-          <!-- Atmosphere rim glow — much brighter -->
-          <radialGradient id="atmoGrad" cx="50%" cy="50%" r="55%">
-            <stop offset="74%" stop-color="rgba(139,158,255,0)"/>
-            <stop offset="88%" stop-color="rgba(165,172,255,0.55)"/>
-            <stop offset="96%" stop-color="rgba(197,203,245,0.65)"/>
-            <stop offset="100%" stop-color="rgba(139,158,255,0)"/>
-          </radialGradient>
-
-          <!-- Outer halo — stronger so the planet glows -->
-          <radialGradient id="outerHalo" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"  stop-color="rgba(99,91,255,0.45)"/>
-            <stop offset="40%" stop-color="rgba(99,91,255,0.18)"/>
-            <stop offset="70%" stop-color="rgba(99,91,255,0.06)"/>
-            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
-          </radialGradient>
-
-          <!-- Ring gradient — fades to transparent at both ends -->
-          <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stop-color="rgba(99,91,255,0)"/>
-            <stop offset="10%"  stop-color="rgba(99,91,255,0.4)"/>
-            <stop offset="28%"  stop-color="rgba(139,158,255,0.85)"/>
-            <stop offset="50%"  stop-color="rgba(197,203,245,0.95)"/>
-            <stop offset="72%"  stop-color="rgba(139,158,255,0.85)"/>
-            <stop offset="90%"  stop-color="rgba(99,91,255,0.4)"/>
-            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
-          </linearGradient>
-          <!-- Soft outer band -->
-          <linearGradient id="ringBandGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stop-color="rgba(99,91,255,0)"/>
-            <stop offset="20%"  stop-color="rgba(99,91,255,0.18)"/>
-            <stop offset="50%"  stop-color="rgba(165,172,255,0.32)"/>
-            <stop offset="80%"  stop-color="rgba(99,91,255,0.18)"/>
-            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
-          </linearGradient>
-
-          <!-- Sci-fi motion streak — bright white-to-indigo with sharp edges -->
-          <linearGradient id="streakGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stop-color="rgba(99,91,255,0)"/>
-            <stop offset="20%"  stop-color="rgba(139,158,255,0.4)"/>
-            <stop offset="48%"  stop-color="rgba(255,255,255,0.95)"/>
-            <stop offset="52%"  stop-color="rgba(255,255,255,0.95)"/>
-            <stop offset="80%"  stop-color="rgba(139,158,255,0.4)"/>
-            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
-          </linearGradient>
-          <linearGradient id="streakGradSoft" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stop-color="rgba(99,91,255,0)"/>
-            <stop offset="50%"  stop-color="rgba(165,172,255,0.55)"/>
-            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
-          </linearGradient>
-          <filter id="streakBlur"><feGaussianBlur stdDeviation="2.5"/></filter>
-          <filter id="streakBlurSoft"><feGaussianBlur stdDeviation="14"/></filter>
-
-          <!-- Masks split the ring into back (top) and front (bottom)
-               at y=387 to match the planet's vertical center -->
-          <mask id="ringBack"><rect x="0" y="0" width="1440" height="387" fill="white"/></mask>
-          <mask id="ringFront"><rect x="0" y="387" width="1440" height="513" fill="white"/></mask>
-
-          <!-- Soft blur for rim glow -->
-          <filter id="rimBlur" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="6"/>
-          </filter>
-        </defs>
-
-        <!-- Outer ambient halo behind everything -->
-        <circle cx="720" cy="387" r="300" fill="url(#outerHalo)"/>
-
-        <!-- Star field around Saturn — gives the planet an obvious
-             halo of pinpoint lights in addition to the global star field -->
-        <g class="saturn-stars">
-          <circle cx="100"  cy="80"  r="1.4" fill="white"/>
-          <circle cx="260"  cy="150" r="1.6" fill="white" opacity="0.85"/>
-          <circle cx="440"  cy="60"  r="1"   fill="white" opacity="0.7"/>
-          <circle cx="640"  cy="120" r="1.3" fill="white"/>
-          <circle cx="880"  cy="90"  r="1.6" fill="#a5acff"/>
-          <circle cx="1040" cy="170" r="1.1" fill="white" opacity="0.75"/>
-          <circle cx="1220" cy="70"  r="1.4" fill="white"/>
-          <circle cx="1360" cy="150" r="1.1" fill="white" opacity="0.65"/>
-          <circle cx="70"   cy="320" r="1.3" fill="white"/>
-          <circle cx="180"  cy="380" r="1"   fill="white" opacity="0.7"/>
-          <circle cx="1290" cy="380" r="1.7" fill="#a5acff"/>
-          <circle cx="1380" cy="280" r="1.2" fill="white"/>
-          <circle cx="50"   cy="560" r="1.1" fill="white" opacity="0.7"/>
-          <circle cx="170"  cy="640" r="1.4" fill="white"/>
-          <circle cx="1290" cy="620" r="1.3" fill="white"/>
-          <circle cx="1180" cy="720" r="1"   fill="white" opacity="0.65"/>
-          <circle cx="240"  cy="780" r="1.2" fill="white"/>
-          <circle cx="620"  cy="830" r="1.1" fill="white" opacity="0.75"/>
-          <circle cx="970"  cy="830" r="1.3" fill="#a5acff"/>
-          <circle cx="1340" cy="800" r="1.5" fill="white"/>
-          <!-- Cluster near the planet's right rim -->
-          <circle cx="1090" cy="380" r="1.1" fill="white" opacity="0.8"/>
-          <circle cx="1140" cy="450" r="1.4" fill="white"/>
-          <circle cx="1120" cy="520" r="1.1" fill="#a5acff" opacity="0.85"/>
-          <!-- Cluster near the planet's left rim -->
-          <circle cx="310"  cy="380" r="1.1" fill="white" opacity="0.8"/>
-          <circle cx="280"  cy="450" r="1.4" fill="white"/>
-          <circle cx="300"  cy="520" r="1.1" fill="#a5acff" opacity="0.85"/>
-        </g>
-
-        <!-- Sci-fi motion streaks — light beams behind the planet -->
-        <g class="saturn-streaks" transform="rotate(-12 720 387)">
-          <!-- Wide soft beam underneath -->
-          <rect x="-200" y="373" width="1840" height="24"
-            fill="url(#streakGradSoft)" filter="url(#streakBlurSoft)" opacity="0.7"/>
-          <!-- Sharp bright streak -->
-          <rect x="-200" y="385" width="1840" height="3"
-            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.85"/>
-          <!-- Secondary thinner streak above -->
-          <rect x="0" y="355" width="1640" height="2"
-            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.45"/>
-          <!-- Secondary thinner streak below -->
-          <rect x="-50" y="415" width="1700" height="2"
-            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.55"/>
-        </g>
-
-        <!-- BACK half of ring (drawn first, behind sphere) -->
-        <g mask="url(#ringBack)">
-          <g transform="rotate(-18 720 387)">
-            <ellipse cx="720" cy="387" rx="240" ry="50"
-              fill="none" stroke="url(#ringBandGrad)" stroke-width="36" opacity="0.85"/>
-            <ellipse cx="720" cy="387" rx="240" ry="50"
-              fill="none" stroke="url(#ringGrad)" stroke-width="2.5" opacity="1"/>
-            <ellipse cx="720" cy="387" rx="195" ry="41"
-              fill="none" stroke="url(#ringGrad)" stroke-width="1.5" opacity="0.75"/>
-          </g>
-        </g>
-
-        <!-- Sphere body + atmosphere -->
-        <circle cx="720" cy="387" r="105" fill="url(#planetGrad)"/>
-        <circle cx="720" cy="387" r="121" fill="url(#atmoGrad)" filter="url(#rimBlur)"/>
-        <!-- Specular highlight — brighter spot on the upper-left -->
-        <ellipse cx="680" cy="352" rx="34" ry="22"
-          fill="rgba(255,255,255,0.4)" filter="url(#rimBlur)"/>
-        <ellipse cx="676" cy="347" rx="15" ry="9"
-          fill="rgba(255,255,255,0.6)" filter="url(#rimBlur)"/>
-
-        <!-- FRONT half of ring (drawn last, in front of sphere) -->
-        <g mask="url(#ringFront)">
-          <g transform="rotate(-18 720 387)">
-            <ellipse cx="720" cy="387" rx="240" ry="50"
-              fill="none" stroke="url(#ringBandGrad)" stroke-width="36" opacity="0.85"/>
-            <ellipse cx="720" cy="387" rx="240" ry="50"
-              fill="none" stroke="url(#ringGrad)" stroke-width="2.5" opacity="1"/>
-            <ellipse cx="720" cy="387" rx="195" ry="41"
-              fill="none" stroke="url(#ringGrad)" stroke-width="1.5" opacity="0.75"/>
-          </g>
-        </g>
-
-        <!-- Sci-fi motion streak FRONT — passes in front of the planet -->
-        <g class="saturn-streaks-front" transform="rotate(-12 720 387)">
-          <rect x="-200" y="384" width="1840" height="2"
-            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.5"/>
-          <rect x="-200" y="390" width="1840" height="3"
-            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.65"/>
-        </g>
-      </svg>
-    </div>
+    <!-- Saturn removed — clean hero, only the global body star field
+         remains as the background atmosphere. -->
 
     <div class="container hero-centered">
 
@@ -731,6 +560,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-up3cm"></script>
+  <script src="script.js?v=2025-05-19-clean"></script>
 </body>
 </html>
