@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-sphere">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-saturn">
 </head>
 <body class="page-loaded">
 
@@ -56,16 +56,126 @@
       <div class="hero-mesh-grid"></div>
     </div>
 
-    <!-- Liquid Sphere — single indigo orb behind the hero with
-         halo, inner highlight, and gentle breathing animation.
-         Brand-coded (Sphere Academy). -->
+    <!-- Saturn-style planet behind the hero — sphere with tilted rings,
+         atmosphere halo, and a scattered star field. Grok-inspired. -->
     <div class="hero-waves" aria-hidden="true">
-      <div class="hero-sphere-stage">
-        <div class="hero-sphere-halo"></div>
-        <div class="hero-sphere">
-          <div class="hero-sphere-highlight"></div>
-        </div>
-      </div>
+      <svg class="hero-saturn" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <!-- Planet body — 3D-shaded indigo sphere -->
+          <radialGradient id="planetGrad" cx="38%" cy="32%" r="78%">
+            <stop offset="0%"   stop-color="#d9deff" stop-opacity="0.95"/>
+            <stop offset="10%"  stop-color="#a5acff" stop-opacity="0.90"/>
+            <stop offset="25%"  stop-color="#8b9eff" stop-opacity="0.85"/>
+            <stop offset="45%"  stop-color="#635bff" stop-opacity="0.85"/>
+            <stop offset="65%"  stop-color="#4c1d95" stop-opacity="0.85"/>
+            <stop offset="85%"  stop-color="#1e1b4b" stop-opacity="0.95"/>
+            <stop offset="100%" stop-color="#0a0a18" stop-opacity="1"/>
+          </radialGradient>
+
+          <!-- Atmosphere rim glow -->
+          <radialGradient id="atmoGrad" cx="50%" cy="50%" r="55%">
+            <stop offset="78%" stop-color="rgba(139,158,255,0)"/>
+            <stop offset="92%" stop-color="rgba(139,158,255,0.35)"/>
+            <stop offset="100%" stop-color="rgba(139,158,255,0)"/>
+          </radialGradient>
+
+          <!-- Outer halo -->
+          <radialGradient id="outerHalo" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"  stop-color="rgba(99,91,255,0.20)"/>
+            <stop offset="60%" stop-color="rgba(99,91,255,0.06)"/>
+            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
+          </radialGradient>
+
+          <!-- Ring gradient — fades to transparent at both ends -->
+          <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgba(99,91,255,0)"/>
+            <stop offset="10%"  stop-color="rgba(99,91,255,0.4)"/>
+            <stop offset="28%"  stop-color="rgba(139,158,255,0.85)"/>
+            <stop offset="50%"  stop-color="rgba(197,203,245,0.95)"/>
+            <stop offset="72%"  stop-color="rgba(139,158,255,0.85)"/>
+            <stop offset="90%"  stop-color="rgba(99,91,255,0.4)"/>
+            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
+          </linearGradient>
+          <!-- Soft outer band -->
+          <linearGradient id="ringBandGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgba(99,91,255,0)"/>
+            <stop offset="20%"  stop-color="rgba(99,91,255,0.18)"/>
+            <stop offset="50%"  stop-color="rgba(165,172,255,0.32)"/>
+            <stop offset="80%"  stop-color="rgba(99,91,255,0.18)"/>
+            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
+          </linearGradient>
+
+          <!-- Masks split the ring into back (top) and front (bottom) -->
+          <mask id="ringBack"><rect x="0" y="0" width="1440" height="450" fill="white"/></mask>
+          <mask id="ringFront"><rect x="0" y="450" width="1440" height="450" fill="white"/></mask>
+
+          <!-- Soft blur for rim glow -->
+          <filter id="rimBlur" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6"/>
+          </filter>
+        </defs>
+
+        <!-- Outer ambient halo behind everything -->
+        <circle cx="720" cy="450" r="540" fill="url(#outerHalo)"/>
+
+        <!-- Star field -->
+        <g class="saturn-stars">
+          <circle cx="120"  cy="90"  r="1.2" fill="white"/>
+          <circle cx="280"  cy="160" r="1.4" fill="white" opacity="0.85"/>
+          <circle cx="460"  cy="70"  r="0.9" fill="white" opacity="0.7"/>
+          <circle cx="680"  cy="130" r="1.2" fill="white"/>
+          <circle cx="900"  cy="100" r="1.4" fill="#a5acff"/>
+          <circle cx="1060" cy="180" r="1"   fill="white" opacity="0.7"/>
+          <circle cx="1220" cy="80"  r="1.3" fill="white"/>
+          <circle cx="1340" cy="160" r="1"   fill="white" opacity="0.6"/>
+          <circle cx="80"   cy="320" r="1.2" fill="white"/>
+          <circle cx="200"  cy="380" r="0.9" fill="white" opacity="0.7"/>
+          <circle cx="1300" cy="380" r="1.5" fill="#a5acff"/>
+          <circle cx="1380" cy="280" r="1"   fill="white"/>
+          <circle cx="60"   cy="560" r="1"   fill="white" opacity="0.7"/>
+          <circle cx="180"  cy="640" r="1.3" fill="white"/>
+          <circle cx="1310" cy="620" r="1.2" fill="white"/>
+          <circle cx="1180" cy="720" r="0.9" fill="white" opacity="0.6"/>
+          <circle cx="240"  cy="780" r="1.1" fill="white"/>
+          <circle cx="640"  cy="830" r="1"   fill="white" opacity="0.7"/>
+          <circle cx="980"  cy="830" r="1.2" fill="#a5acff"/>
+          <circle cx="1340" cy="800" r="1.4" fill="white"/>
+        </g>
+
+        <!-- BACK half of ring (drawn first, behind sphere) -->
+        <g mask="url(#ringBack)">
+          <g transform="rotate(-18 720 450)">
+            <!-- Wide soft band -->
+            <ellipse cx="720" cy="450" rx="540" ry="110"
+              fill="none" stroke="url(#ringBandGrad)" stroke-width="60" opacity="0.7"/>
+            <!-- Bright inner ring -->
+            <ellipse cx="720" cy="450" rx="540" ry="110"
+              fill="none" stroke="url(#ringGrad)" stroke-width="3" opacity="0.95"/>
+            <!-- Secondary inner ring -->
+            <ellipse cx="720" cy="450" rx="440" ry="90"
+              fill="none" stroke="url(#ringGrad)" stroke-width="1.5" opacity="0.55"/>
+          </g>
+        </g>
+
+        <!-- Sphere body + atmosphere -->
+        <circle cx="720" cy="450" r="240" fill="url(#planetGrad)"/>
+        <circle cx="720" cy="450" r="262" fill="url(#atmoGrad)" filter="url(#rimBlur)"/>
+        <!-- Specular highlight -->
+        <ellipse cx="620" cy="370" rx="70" ry="45"
+          fill="rgba(255,255,255,0.25)" filter="url(#rimBlur)"/>
+
+        <!-- FRONT half of ring (drawn last, in front of sphere) -->
+        <g mask="url(#ringFront)">
+          <g transform="rotate(-18 720 450)">
+            <ellipse cx="720" cy="450" rx="540" ry="110"
+              fill="none" stroke="url(#ringBandGrad)" stroke-width="60" opacity="0.7"/>
+            <ellipse cx="720" cy="450" rx="540" ry="110"
+              fill="none" stroke="url(#ringGrad)" stroke-width="3" opacity="0.95"/>
+            <ellipse cx="720" cy="450" rx="440" ry="90"
+              fill="none" stroke="url(#ringGrad)" stroke-width="1.5" opacity="0.55"/>
+          </g>
+        </g>
+      </svg>
     </div>
 
     <div class="container hero-centered">
@@ -569,6 +679,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-sphere"></script>
+  <script src="script.js?v=2025-05-19-saturn"></script>
 </body>
 </html>
