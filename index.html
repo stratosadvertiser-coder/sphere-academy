@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-solid2">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-wavecolor">
 </head>
 <body class="page-loaded">
 
@@ -56,10 +56,42 @@
       <div class="hero-mesh-grid"></div>
     </div>
 
-    <!-- Single soft indigo spotlight behind the headline.
-         Pure solid background everywhere else — zero seams. -->
+    <!-- Wave-color background — soft horizontal flowing color bands
+         that wash across the hero like indigo waves. -->
     <div class="hero-waves" aria-hidden="true">
       <div class="hero-spotlight"></div>
+      <svg class="hero-wave-svg" viewBox="0 0 1440 900" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="waveColorA" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#635bff" stop-opacity="0"/>
+            <stop offset="25%"  stop-color="#635bff" stop-opacity="0.35"/>
+            <stop offset="75%"  stop-color="#635bff" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#635bff" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="waveColorB" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#8b9eff" stop-opacity="0"/>
+            <stop offset="30%"  stop-color="#8b9eff" stop-opacity="0.30"/>
+            <stop offset="70%"  stop-color="#8b9eff" stop-opacity="0.30"/>
+            <stop offset="100%" stop-color="#8b9eff" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="waveColorC" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#4c1d95" stop-opacity="0"/>
+            <stop offset="35%"  stop-color="#4c1d95" stop-opacity="0.40"/>
+            <stop offset="65%"  stop-color="#4c1d95" stop-opacity="0.40"/>
+            <stop offset="100%" stop-color="#4c1d95" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="waveBlur"><feGaussianBlur stdDeviation="80"/></filter>
+        </defs>
+        <!-- Top wave — gentle curve high in the hero -->
+        <path class="wave wave-a" filter="url(#waveBlur)" fill="url(#waveColorA)"
+          d="M -200 220 C 200 140 600 320 900 240 C 1200 160 1440 280 1700 220 L 1700 380 C 1440 460 1200 320 900 420 C 600 520 200 360 -200 440 Z"/>
+        <!-- Middle wave — broad band through the center -->
+        <path class="wave wave-b" filter="url(#waveBlur)" fill="url(#waveColorB)"
+          d="M -200 460 C 300 380 700 540 1100 460 C 1300 420 1600 480 1700 460 L 1700 620 C 1600 660 1300 580 1100 640 C 700 720 300 560 -200 660 Z"/>
+        <!-- Bottom wave — deep violet wash near the bottom -->
+        <path class="wave wave-c" filter="url(#waveBlur)" fill="url(#waveColorC)"
+          d="M -200 700 C 200 620 600 780 900 720 C 1200 660 1440 760 1700 700 L 1700 880 C 1440 940 1200 820 900 880 C 600 940 200 820 -200 900 Z"/>
+      </svg>
     </div>
 
     <div class="container hero-centered">
@@ -563,6 +595,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-solid2"></script>
+  <script src="script.js?v=2025-05-19-wavecolor"></script>
 </body>
 </html>
