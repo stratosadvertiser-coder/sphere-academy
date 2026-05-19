@@ -12198,76 +12198,23 @@ code, pre, .lesson-id, .phase-week {
    Three orbs drift on slow staggered cycles with heavy 130-140px blur
    so they read as ambient atmosphere, not shapes. Indigo-only palette
    matches the Emil aesthetic — no pink or mint. */
+/* Hero mesh — overflow VISIBLE so the heavily-blurred bottom blob
+   spills naturally into the section below. No mask, no extra bleed
+   glow, no section wash — those layers were stacking and creating
+   the visible seam. The blob's 140px blur is enough to fade itself
+   out cleanly into transparency on its own. */
 .hero.hero-v2 .hero-mesh {
   display: block !important;
   position: absolute !important;
   inset: 0 !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   pointer-events: none !important;
   z-index: 0 !important;
-  /* Smooth fade-out so the aurora dissolves into the next section
-     instead of cutting hard at the hero edge. Top stays full opacity,
-     last ~30% gradually fades to transparent. */
-  -webkit-mask-image: linear-gradient(to bottom,
-    #000 0%,
-    #000 55%,
-    rgba(0,0,0,0.85) 72%,
-    rgba(0,0,0,0.5) 85%,
-    rgba(0,0,0,0.15) 95%,
-    transparent 100%);
-          mask-image: linear-gradient(to bottom,
-    #000 0%,
-    #000 55%,
-    rgba(0,0,0,0.85) 72%,
-    rgba(0,0,0,0.5) 85%,
-    rgba(0,0,0,0.15) 95%,
-    transparent 100%);
 }
-
-/* Extend an extra soft glow BELOW the hero edge that continues into
-   the next section, so the transition reads as one continuous
-   atmosphere instead of "hero ends, new dark band begins". */
-.hero.hero-v2::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -160px;
-  height: 280px;
-  background: radial-gradient(ellipse 70% 100% at 50% 0%,
-    rgba(99, 91, 255, 0.10) 0%,
-    rgba(99, 91, 255, 0.04) 40%,
-    transparent 75%);
-  pointer-events: none;
-  z-index: 0;
-  filter: blur(40px);
-}
-[data-theme="dark"] .hero.hero-v2::after {
-  background: radial-gradient(ellipse 70% 100% at 50% 0%,
-    rgba(99, 91, 255, 0.22) 0%,
-    rgba(99, 91, 255, 0.08) 40%,
-    transparent 75%);
-}
-
-/* The Phases Preview section sits right under the hero — give it a
-   faint ambient top so the bleed from above feels intentional. */
-.phases-preview {
-  position: relative;
-}
-.phases-preview::before {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 220px;
-  background: linear-gradient(to bottom,
-    color-mix(in srgb, var(--primary) 4%, transparent) 0%,
-    transparent 100%);
-  pointer-events: none;
-}
-[data-theme="dark"] .phases-preview::before {
-  background: linear-gradient(to bottom,
-    color-mix(in srgb, var(--primary) 8%, transparent) 0%,
-    transparent 100%);
+/* Hero itself also stops clipping so blob-c can bleed past the
+   bottom edge into the section underneath. */
+.hero.hero-v2 {
+  overflow: visible !important;
 }
 .hero.hero-v2 .hero-mesh-blob {
   display: block !important;
@@ -12296,8 +12243,10 @@ code, pre, .lesson-id, .phase-week {
   animation-delay: -10s !important;
 }
 .hero.hero-v2 .mesh-blob-c {
-  width: 440px !important; height: 440px !important;
-  bottom: -120px !important; left: 30% !important; top: auto !important;
+  /* Sit half above / half below the hero boundary so the blur
+     smears across the section line and there's no visible seam. */
+  width: 520px !important; height: 520px !important;
+  bottom: -260px !important; left: 30% !important; top: auto !important;
   background: #8b9eff !important;
   animation-duration: 35s !important;
   animation-delay: -18s !important;
