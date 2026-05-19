@@ -12208,10 +12208,22 @@ code, pre, .lesson-id, .phase-week {
 }
 
 /* ============================================================
-   AMBIENT SPOTLIGHT BACKGROUND — clean, premium, no visible streaks
-   Two soft indigo glows drifting slowly behind the hero content.
-   Reads as atmospheric light, not pattern.
+   SOLID + SINGLE SPOTLIGHT BACKGROUND
+   One soft indigo glow behind the hero headline. Everything else
+   is pure solid color. Zero seams possible.
    ============================================================ */
+
+/* Force a solid dark base on the whole page so the hero's spotlight
+   has nothing to bleed against — sections below are the same color. */
+[data-theme="dark"] body,
+[data-theme="dark"] html {
+  background-color: #0a0a18 !important;
+}
+[data-theme="light"] body,
+[data-theme="light"] html {
+  background-color: #fafafa !important;
+}
+
 .hero.hero-v2 .hero-waves {
   position: absolute !important;
   inset: 0 !important;
@@ -12221,65 +12233,30 @@ code, pre, .lesson-id, .phase-week {
 }
 .hero.hero-v2 .hero-spotlight {
   position: absolute;
-  top: 20%;
+  top: 32%;
   left: 50%;
-  width: 1200px;
-  height: 800px;
+  width: 900px;
+  height: 700px;
   transform: translate(-50%, -50%);
   background: radial-gradient(ellipse at center,
-    rgba(99, 91, 255, 0.18) 0%,
-    rgba(99, 91, 255, 0.08) 30%,
-    transparent 65%);
-  filter: blur(60px);
+    rgba(99, 91, 255, 0.16) 0%,
+    rgba(99, 91, 255, 0.06) 35%,
+    transparent 70%);
+  filter: blur(40px);
   pointer-events: none;
-  animation: spotlightDrift 28s ease-in-out infinite;
+  animation: spotlightDriftSlow 60s ease-in-out infinite;
   will-change: transform;
 }
-.hero.hero-v2 .hero-spotlight-2 {
-  top: 70%;
-  left: 30%;
-  width: 900px;
-  height: 600px;
-  background: radial-gradient(ellipse at center,
-    rgba(139, 158, 255, 0.12) 0%,
-    rgba(139, 158, 255, 0.04) 35%,
-    transparent 65%);
-  animation: spotlightDrift2 36s ease-in-out infinite;
-  animation-delay: -8s;
-}
-
 [data-theme="dark"] .hero.hero-v2 .hero-spotlight {
   background: radial-gradient(ellipse at center,
-    rgba(99, 91, 255, 0.28) 0%,
-    rgba(99, 91, 255, 0.12) 30%,
-    transparent 65%);
-}
-[data-theme="dark"] .hero.hero-v2 .hero-spotlight-2 {
-  background: radial-gradient(ellipse at center,
-    rgba(139, 158, 255, 0.20) 0%,
-    rgba(139, 158, 255, 0.06) 35%,
-    transparent 65%);
+    rgba(99, 91, 255, 0.30) 0%,
+    rgba(99, 91, 255, 0.10) 35%,
+    transparent 70%);
 }
 
-@keyframes spotlightDrift {
+@keyframes spotlightDriftSlow {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50%      { transform: translate(-48%, -52%) scale(1.06); }
-}
-@keyframes spotlightDrift2 {
-  0%, 100% { transform: translate(-30%, -70%) scale(1); }
-  50%      { transform: translate(-32%, -68%) scale(0.95); }
-}
-
-/* Bottom vignette so the spotlight fades into the body color */
-.hero.hero-v2 .hero-waves::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg,
-    transparent 0%,
-    transparent 75%,
-    var(--bg) 100%);
-  pointer-events: none;
+  50%      { transform: translate(-49%, -51%) scale(1.04); }
 }
 
 @media (prefers-reduced-motion: reduce) {
