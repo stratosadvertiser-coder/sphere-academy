@@ -46,14 +46,44 @@
     </div>
   </nav>
 
-  <!-- Hero — editorial layout with bento grid + animated mesh background -->
+  <!-- Hero — editorial layout with animated wave ribbon background -->
   <section class="hero hero-v2">
-    <!-- Animated mesh gradient — drifting indigo / pink / mint blobs -->
+    <!-- Animated mesh — legacy aurora blobs (kept hidden, can re-enable later) -->
     <div class="hero-mesh" aria-hidden="true">
       <div class="hero-mesh-blob mesh-blob-a"></div>
       <div class="hero-mesh-blob mesh-blob-b"></div>
       <div class="hero-mesh-blob mesh-blob-c"></div>
       <div class="hero-mesh-grid"></div>
+    </div>
+
+    <!-- Animated wave ribbons — smooth indigo curves flowing across hero -->
+    <div class="hero-waves" aria-hidden="true">
+      <svg class="hero-wave-svg" viewBox="0 0 1440 900" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="waveGradA" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"  stop-color="#635bff" stop-opacity="0"/>
+            <stop offset="50%" stop-color="#635bff" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#635bff" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="waveGradB" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"  stop-color="#8b9eff" stop-opacity="0"/>
+            <stop offset="50%" stop-color="#8b9eff" stop-opacity="0.45"/>
+            <stop offset="100%" stop-color="#8b9eff" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="waveGradC" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"  stop-color="#4c1d95" stop-opacity="0"/>
+            <stop offset="50%" stop-color="#4c1d95" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#4c1d95" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="waveBlur"><feGaussianBlur stdDeviation="22"/></filter>
+        </defs>
+        <path class="wave wave-a" filter="url(#waveBlur)" fill="none" stroke="url(#waveGradA)" stroke-width="80" stroke-linecap="round"
+          d="M -200 280 Q 240 200 540 320 T 1240 280 T 1700 350"/>
+        <path class="wave wave-b" filter="url(#waveBlur)" fill="none" stroke="url(#waveGradB)" stroke-width="60" stroke-linecap="round"
+          d="M -200 480 Q 320 380 620 520 T 1280 460 T 1700 540"/>
+        <path class="wave wave-c" filter="url(#waveBlur)" fill="none" stroke="url(#waveGradC)" stroke-width="100" stroke-linecap="round"
+          d="M -200 680 Q 260 600 600 720 T 1260 670 T 1700 740"/>
+      </svg>
     </div>
 
     <div class="container hero-centered">
