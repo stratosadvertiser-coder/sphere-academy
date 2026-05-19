@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-seamless">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-vivid">
 </head>
 <body class="page-loaded">
 
@@ -61,28 +61,30 @@
     <div class="hero-waves" aria-hidden="true">
       <svg class="hero-saturn" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
         <defs>
-          <!-- Planet body — 3D-shaded indigo sphere -->
+          <!-- Planet body — vivid 3D-shaded indigo sphere -->
           <radialGradient id="planetGrad" cx="38%" cy="32%" r="78%">
-            <stop offset="0%"   stop-color="#d9deff" stop-opacity="0.95"/>
-            <stop offset="10%"  stop-color="#a5acff" stop-opacity="0.90"/>
-            <stop offset="25%"  stop-color="#8b9eff" stop-opacity="0.85"/>
-            <stop offset="45%"  stop-color="#635bff" stop-opacity="0.85"/>
-            <stop offset="65%"  stop-color="#4c1d95" stop-opacity="0.85"/>
-            <stop offset="85%"  stop-color="#1e1b4b" stop-opacity="0.95"/>
-            <stop offset="100%" stop-color="#0a0a18" stop-opacity="1"/>
+            <stop offset="0%"   stop-color="#ffffff" stop-opacity="1"/>
+            <stop offset="8%"   stop-color="#d9deff" stop-opacity="1"/>
+            <stop offset="22%"  stop-color="#a5acff" stop-opacity="1"/>
+            <stop offset="42%"  stop-color="#8b9eff" stop-opacity="1"/>
+            <stop offset="62%"  stop-color="#635bff" stop-opacity="1"/>
+            <stop offset="82%"  stop-color="#4c1d95" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#1e1b4b" stop-opacity="1"/>
           </radialGradient>
 
-          <!-- Atmosphere rim glow -->
+          <!-- Atmosphere rim glow — much brighter -->
           <radialGradient id="atmoGrad" cx="50%" cy="50%" r="55%">
-            <stop offset="78%" stop-color="rgba(139,158,255,0)"/>
-            <stop offset="92%" stop-color="rgba(139,158,255,0.35)"/>
+            <stop offset="74%" stop-color="rgba(139,158,255,0)"/>
+            <stop offset="88%" stop-color="rgba(165,172,255,0.55)"/>
+            <stop offset="96%" stop-color="rgba(197,203,245,0.65)"/>
             <stop offset="100%" stop-color="rgba(139,158,255,0)"/>
           </radialGradient>
 
-          <!-- Outer halo -->
+          <!-- Outer halo — stronger so the planet glows -->
           <radialGradient id="outerHalo" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"  stop-color="rgba(99,91,255,0.20)"/>
-            <stop offset="60%" stop-color="rgba(99,91,255,0.06)"/>
+            <stop offset="0%"  stop-color="rgba(99,91,255,0.45)"/>
+            <stop offset="40%" stop-color="rgba(99,91,255,0.18)"/>
+            <stop offset="70%" stop-color="rgba(99,91,255,0.06)"/>
             <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
           </radialGradient>
 
@@ -118,37 +120,72 @@
         <!-- Outer ambient halo behind everything -->
         <circle cx="720" cy="450" r="540" fill="url(#outerHalo)"/>
 
+        <!-- Star field around Saturn — gives the planet an obvious
+             halo of pinpoint lights in addition to the global star field -->
+        <g class="saturn-stars">
+          <circle cx="100"  cy="80"  r="1.4" fill="white"/>
+          <circle cx="260"  cy="150" r="1.6" fill="white" opacity="0.85"/>
+          <circle cx="440"  cy="60"  r="1"   fill="white" opacity="0.7"/>
+          <circle cx="640"  cy="120" r="1.3" fill="white"/>
+          <circle cx="880"  cy="90"  r="1.6" fill="#a5acff"/>
+          <circle cx="1040" cy="170" r="1.1" fill="white" opacity="0.75"/>
+          <circle cx="1220" cy="70"  r="1.4" fill="white"/>
+          <circle cx="1360" cy="150" r="1.1" fill="white" opacity="0.65"/>
+          <circle cx="70"   cy="320" r="1.3" fill="white"/>
+          <circle cx="180"  cy="380" r="1"   fill="white" opacity="0.7"/>
+          <circle cx="1290" cy="380" r="1.7" fill="#a5acff"/>
+          <circle cx="1380" cy="280" r="1.2" fill="white"/>
+          <circle cx="50"   cy="560" r="1.1" fill="white" opacity="0.7"/>
+          <circle cx="170"  cy="640" r="1.4" fill="white"/>
+          <circle cx="1290" cy="620" r="1.3" fill="white"/>
+          <circle cx="1180" cy="720" r="1"   fill="white" opacity="0.65"/>
+          <circle cx="240"  cy="780" r="1.2" fill="white"/>
+          <circle cx="620"  cy="830" r="1.1" fill="white" opacity="0.75"/>
+          <circle cx="970"  cy="830" r="1.3" fill="#a5acff"/>
+          <circle cx="1340" cy="800" r="1.5" fill="white"/>
+          <!-- Cluster near the planet's right rim -->
+          <circle cx="1090" cy="380" r="1.1" fill="white" opacity="0.8"/>
+          <circle cx="1140" cy="450" r="1.4" fill="white"/>
+          <circle cx="1120" cy="520" r="1.1" fill="#a5acff" opacity="0.85"/>
+          <!-- Cluster near the planet's left rim -->
+          <circle cx="310"  cy="380" r="1.1" fill="white" opacity="0.8"/>
+          <circle cx="280"  cy="450" r="1.4" fill="white"/>
+          <circle cx="300"  cy="520" r="1.1" fill="#a5acff" opacity="0.85"/>
+        </g>
+
         <!-- BACK half of ring (drawn first, behind sphere) -->
         <g mask="url(#ringBack)">
           <g transform="rotate(-18 720 450)">
             <!-- Wide soft band -->
             <ellipse cx="720" cy="450" rx="540" ry="110"
-              fill="none" stroke="url(#ringBandGrad)" stroke-width="60" opacity="0.7"/>
+              fill="none" stroke="url(#ringBandGrad)" stroke-width="70" opacity="0.85"/>
             <!-- Bright inner ring -->
             <ellipse cx="720" cy="450" rx="540" ry="110"
-              fill="none" stroke="url(#ringGrad)" stroke-width="3" opacity="0.95"/>
+              fill="none" stroke="url(#ringGrad)" stroke-width="4" opacity="1"/>
             <!-- Secondary inner ring -->
             <ellipse cx="720" cy="450" rx="440" ry="90"
-              fill="none" stroke="url(#ringGrad)" stroke-width="1.5" opacity="0.55"/>
+              fill="none" stroke="url(#ringGrad)" stroke-width="2" opacity="0.75"/>
           </g>
         </g>
 
         <!-- Sphere body + atmosphere -->
         <circle cx="720" cy="450" r="240" fill="url(#planetGrad)"/>
-        <circle cx="720" cy="450" r="262" fill="url(#atmoGrad)" filter="url(#rimBlur)"/>
-        <!-- Specular highlight -->
-        <ellipse cx="620" cy="370" rx="70" ry="45"
-          fill="rgba(255,255,255,0.25)" filter="url(#rimBlur)"/>
+        <circle cx="720" cy="450" r="270" fill="url(#atmoGrad)" filter="url(#rimBlur)"/>
+        <!-- Specular highlight — brighter spot on the upper-left -->
+        <ellipse cx="620" cy="360" rx="80" ry="55"
+          fill="rgba(255,255,255,0.4)" filter="url(#rimBlur)"/>
+        <ellipse cx="610" cy="350" rx="35" ry="22"
+          fill="rgba(255,255,255,0.6)" filter="url(#rimBlur)"/>
 
         <!-- FRONT half of ring (drawn last, in front of sphere) -->
         <g mask="url(#ringFront)">
           <g transform="rotate(-18 720 450)">
             <ellipse cx="720" cy="450" rx="540" ry="110"
-              fill="none" stroke="url(#ringBandGrad)" stroke-width="60" opacity="0.7"/>
+              fill="none" stroke="url(#ringBandGrad)" stroke-width="70" opacity="0.85"/>
             <ellipse cx="720" cy="450" rx="540" ry="110"
-              fill="none" stroke="url(#ringGrad)" stroke-width="3" opacity="0.95"/>
+              fill="none" stroke="url(#ringGrad)" stroke-width="4" opacity="1"/>
             <ellipse cx="720" cy="450" rx="440" ry="90"
-              fill="none" stroke="url(#ringGrad)" stroke-width="1.5" opacity="0.55"/>
+              fill="none" stroke="url(#ringGrad)" stroke-width="2" opacity="0.75"/>
           </g>
         </g>
       </svg>
@@ -655,6 +692,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-seamless"></script>
+  <script src="script.js?v=2025-05-19-vivid"></script>
 </body>
 </html>
