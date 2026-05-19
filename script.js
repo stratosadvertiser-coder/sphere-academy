@@ -2252,14 +2252,24 @@ const AUTH = {
   // pulls from Firestore so a password reset by an admin propagates
   // to any device.
   // Username comparison is case-insensitive (signup lowercases). The
-  // password is matched exactly so it stays case-sensitive.
+  // password is trimmed on BOTH sides before the case-sensitive match
+  // so accidental whitespace from copy-paste doesn't break login.
   login(username, password) {
     this.initUsers();
     const users = this.getAllUsers();
-    const u_lower = (username || '').toLowerCase();
-    const user = users.find(u =>
-      (u.username || '').toLowerCase() === u_lower && u.password === password
-    );
+    const u_lower = (username || '').toLowerCase().trim();
+    const p_input = (password || '').toString();
+    const p_trimmed = p_input.trim();
+    const user = users.find(u => {
+      if ((u.username || '').toLowerCase().trim() !== u_lower) return false;
+      const stored = (u.password || '').toString();
+      // Match against both raw and trimmed stored password, AND both
+      // raw and trimmed input — catches every whitespace combination.
+      return stored === p_input
+        || stored === p_trimmed
+        || stored.trim() === p_input
+        || stored.trim() === p_trimmed;
+    });
     if (user) {
       safeSetItem('auth_logged_in', 'true');
       safeSetItem('auth_user', user.username);
@@ -3479,43 +3489,66 @@ if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const rawUsername = (document.getElementById('username') || document.getElementById('email')).value.trim();
-    const username = rawUsername.toLowerCase(); // normalize — signup already lowercases
-    const password = document.getElementById('password').value;
+    const username = rawUsername.toLowerCase();
+    // Trim password — handles accidental whitespace from copy-paste.
+    // Original kept just in case the stored value has intentional ws.
+    const rawPassword = document.getElementById('password').value || '';
+    const password = rawPassword.trim();
     const submitBtn = loginForm.querySelector('button[type="submit"]');
 
-    // First attempt — local-only (instant, no network). AUTH.login is
-    // now case-insensitive on username so this works regardless of how
-    // the user typed it.
+    console.log('[LOGIN] Attempting login for:', username);
+
+    // First attempt — local-only (instant, no network). AUTH.login now
+    // tries every combination of trimmed/raw on both username + password.
     if (AUTH.login(username, password)) {
+      console.log('[LOGIN] ✓ Local login successful');
       window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
       return;
     }
+    console.log('[LOGIN] Local check failed, trying Firestore fallback…');
 
     // Fallback — check Firestore in case the admin recently reset the
-    // password on another device. If Firestore has a matching record,
-    // mirror it into local storage so future logins are instant.
+    // password on another device.
     if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.originalLabel = submitBtn.textContent; submitBtn.textContent = 'Signing in…'; }
     let remoteHit = false;
+    let remoteAttempted = false;
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && username) {
-        // Try the lowercase doc id first (canonical), then the raw
-        // username as a backstop just in case an old account exists
-        // with mixed-case storage.
+        remoteAttempted = true;
         const tryIds = [username];
         if (rawUsername !== username) tryIds.push(rawUsername);
+        console.log('[LOGIN] Querying Firestore for IDs:', tryIds);
 
         let matchedData = null;
+        let foundDocButPwMismatch = false;
         for (const id of tryIds) {
           try {
             const snap = await DATA_SYNC.db.collection('sphere_users').doc(id).get();
             if (snap.exists) {
               const data = snap.data() || {};
-              if (data.password && data.password === password) {
-                matchedData = data;
-                break;
+              console.log('[LOGIN] Found Firestore doc:', id, '— has password field:', !!data.password);
+              if (data.password) {
+                const storedPw = String(data.password);
+                // Match every combination — trim both sides to defeat whitespace.
+                const matches = storedPw === password
+                  || storedPw === rawPassword
+                  || storedPw.trim() === password
+                  || storedPw.trim() === rawPassword;
+                if (matches) {
+                  matchedData = data;
+                  console.log('[LOGIN] ✓ Password matched in Firestore');
+                  break;
+                } else {
+                  foundDocButPwMismatch = true;
+                  console.log('[LOGIN] ✗ Password did NOT match. Stored length:', storedPw.length, 'Input length:', password.length);
+                }
               }
+            } else {
+              console.log('[LOGIN] No doc at:', id);
             }
-          } catch (_) { /* try next */ }
+          } catch (e) {
+            console.warn('[LOGIN] Firestore read failed for', id, ':', e.message);
+          }
         }
 
         if (matchedData) {
@@ -3540,17 +3573,29 @@ if (loginForm) {
               if (matchedData.displayName) users[idx].fullName = users[idx].fullName || matchedData.displayName;
             }
             safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
-          } catch (e) { /* non-fatal */ }
+            console.log('[LOGIN] Mirrored Firestore record to localStorage');
+          } catch (e) { console.warn('[LOGIN] Mirror failed:', e.message); }
 
           if (AUTH.login(username, password)) {
+            console.log('[LOGIN] ✓ Logged in via Firestore fallback');
             window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
             remoteHit = true;
             return;
+          } else {
+            console.warn('[LOGIN] Mirror succeeded but AUTH.login still failed — check username casing');
           }
         }
+
+        if (foundDocButPwMismatch && loginError) {
+          loginError.textContent = 'Wrong password for that account. (If your admin just reset it, double-check the exact characters.)';
+          loginError.style.display = 'block';
+          return;
+        }
+      } else {
+        console.log('[LOGIN] DATA_SYNC.db not available — skipping fallback');
       }
     } catch (err) {
-      console.warn('[LOGIN] Firestore fallback failed:', err.message);
+      console.warn('[LOGIN] Firestore fallback errored:', err.message);
     } finally {
       if (submitBtn && !remoteHit) {
         submitBtn.disabled = false;
@@ -11058,54 +11103,77 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving…';
 
-        // Normalize the username for the Firestore doc id so it
-        // matches what the login fallback will look up. Signup
-        // lowercases on creation, so we do the same here.
-        const usernameLc = (username || '').toLowerCase();
+        // Normalize the username for the Firestore doc id so it matches
+        // what the login fallback will look up. Signup lowercases on
+        // creation, so we do the same here.
+        const usernameLc = (username || '').toLowerCase().trim();
         let firestoreOk = false;
+        let firestoreErr = null;
 
-        // 1) Firestore — write password to sphere_users so it propagates
-        //    cross-device. (Note: stored as plain text matching the rest
-        //    of the AUTH system; same as the localStorage copy.)
+        console.log('[PWRESET] Saving new password for:', usernameLc, '— length:', newPw.length);
+
+        // 1) Firestore — write password to sphere_users so it
+        //    propagates cross-device. We write TWO doc ids defensively:
+        //    the lowercased canonical AND the original casing — so if
+        //    an older account exists with mixed-case storage, both get
+        //    the new password.
         try {
           if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+            const payload = {
+              username: usernameLc,
+              password: newPw,
+              passwordUpdatedAt: (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue)
+                ? firebase.firestore.FieldValue.serverTimestamp()
+                : new Date().toISOString()
+            };
             await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(usernameLc)
-              .set({
-                username: usernameLc,
-                password: newPw,
-                passwordUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
-              }, { merge: true });
+              .set(payload, { merge: true });
+            // Also write to the raw username if different (backstop)
+            if (username && username !== usernameLc) {
+              try {
+                await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(username)
+                  .set(payload, { merge: true });
+              } catch (_) {}
+            }
             firestoreOk = true;
+            console.log('[PWRESET] ✓ Firestore write succeeded');
+          } else {
+            firestoreErr = 'Firebase not initialized — password saved locally only.';
+            console.warn('[PWRESET]', firestoreErr);
           }
         } catch (e) {
-          console.warn('[PWRESET] Firestore write failed:', e.message);
-          alert('Failed to save the new password to the server.\n\n' + (e.message || 'Unknown error') + '\n\nThe local copy will still update — but the student may need to log in from your device, or you may need to retry to sync to their account.');
+          firestoreErr = e.message || 'Unknown error';
+          console.warn('[PWRESET] Firestore write failed:', firestoreErr);
         }
 
         // 2) localStorage — instant update on this admin's device
         try {
           const users = AUTH.getAllUsers();
-          const idx = users.findIndex(u => (u.username || '').toLowerCase() === usernameLc);
+          const idx = users.findIndex(u => (u.username || '').toLowerCase().trim() === usernameLc);
           if (idx !== -1) {
             users[idx].password = newPw;
             safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+            console.log('[PWRESET] ✓ localStorage updated');
+          } else {
+            console.warn('[PWRESET] User not found in localStorage — they may need to log in from this device once to sync local cache');
           }
-        } catch (e) { /* non-fatal */ }
+        } catch (e) { console.warn('[PWRESET] localStorage update failed:', e.message); }
 
         // Show success state with copyable new password
         finalCode.textContent = newPw;
         successBox.style.display = 'block';
         saveBtn.style.display = 'none';
         cancelBtn.textContent = 'Done';
-        // Disable input so admin doesn't think they can re-edit
         input.disabled = true;
         genBtn.disabled = true;
 
-        // Add a tiny status line confirming the Firestore write succeeded
-        // so the admin knows the student can log in from any device.
         const successLabel = overlay.querySelector('.pwreset-success-label');
-        if (successLabel && firestoreOk) {
-          successLabel.innerHTML = '<span style="color:#16a34a">✓</span> Password updated &amp; synced. Copy + share:';
+        if (successLabel) {
+          if (firestoreOk) {
+            successLabel.innerHTML = '<span style="color:#16a34a">✓</span> Password updated &amp; synced to server. The student can log in from any device.';
+          } else {
+            successLabel.innerHTML = '<span style="color:#ca8a04">⚠</span> Local-only save — server sync failed' + (firestoreErr ? ': ' + _esc(firestoreErr) : '') + '. Student must log in from this device.';
+          }
         }
       });
     }
