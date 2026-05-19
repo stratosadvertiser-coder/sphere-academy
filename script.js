@@ -2247,6 +2247,9 @@ const AUTH = {
     return this.isLoggedIn() && safeGetItem('auth_role') === 'admin';
   },
 
+  // Sync version — checks localStorage only. Used by the synchronous
+  // legacy login form. The async loginAsync below also falls back to
+  // Firestore so a password reset by an admin propagates to any device.
   login(username, password) {
     this.initUsers();
     const users = this.getAllUsers();
@@ -3467,18 +3470,72 @@ LESSONS.init();
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
   const loginError = document.getElementById('loginError');
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = (document.getElementById('username') || document.getElementById('email')).value.trim();
     const password = document.getElementById('password').value;
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
 
+    // First attempt — local-only (instant, no network).
     if (AUTH.login(username, password)) {
       window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
-    } else {
-      if (loginError) {
-        loginError.textContent = 'Invalid username or password.';
-        loginError.style.display = 'block';
+      return;
+    }
+
+    // Fallback — check Firestore in case the admin recently reset the
+    // password on another device. If Firestore has a matching record,
+    // mirror it into local storage so future logins are instant.
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.originalLabel = submitBtn.textContent; submitBtn.textContent = 'Signing in…'; }
+    let remoteHit = false;
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && username) {
+        const snap = await DATA_SYNC.db.collection('sphere_users').doc(username).get();
+        if (snap.exists) {
+          const data = snap.data() || {};
+          if (data.password && data.password === password) {
+            // Sync the remote record into the local auth_users array so
+            // AUTH.login can match it next time, then fire the local login.
+            try {
+              const users = AUTH.getAllUsers();
+              const idx = users.findIndex(u => (u.username || '').toLowerCase() === username.toLowerCase());
+              if (idx === -1) {
+                users.push({
+                  username: data.username || username,
+                  email: data.email || '',
+                  fullName: data.displayName || data.fullName || username,
+                  password: data.password,
+                  role: data.role || 'student',
+                  createdAt: data.registeredAt || Date.now()
+                });
+              } else {
+                users[idx].password = data.password;
+                if (data.role) users[idx].role = data.role;
+                if (data.email) users[idx].email = users[idx].email || data.email;
+                if (data.displayName) users[idx].fullName = users[idx].fullName || data.displayName;
+              }
+              safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+            } catch (e) { /* non-fatal */ }
+
+            if (AUTH.login(username, password)) {
+              window.location.href = AUTH.isAdmin() ? 'admin.html' : 'dashboard.html';
+              remoteHit = true;
+              return;
+            }
+          }
+        }
       }
+    } catch (err) {
+      console.warn('[LOGIN] Firestore fallback failed:', err.message);
+    } finally {
+      if (submitBtn && !remoteHit) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = submitBtn.dataset.originalLabel || 'Log In';
+      }
+    }
+
+    if (loginError) {
+      loginError.textContent = 'Invalid username or password.';
+      loginError.style.display = 'block';
     }
   });
 }
@@ -10737,6 +10794,14 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           ? ' <button class="students-role-btn ' + roleBtnClass + '" data-username="' + escS(r.username) + '" data-next-role="' + nextRole + '" title="' + roleBtnLabel + '">' + roleBtnLabel + '</button>'
           : '';
 
+        // Reset-password button — admin-only utility for when a student
+        // forgets their password. Hidden for self (admins reset their own
+        // via Profile) and for the primary `admin` account.
+        const canResetPassword = !isMe && !isPrimaryAdmin;
+        const resetPwBtnHtml = canResetPassword
+          ? ' <button class="students-resetpw-btn" data-username="' + escS(r.username) + '" title="Reset password">Reset PW</button>'
+          : '';
+
         // Avatar cell: prefer the real profile picture, fall back to initials
         // when the student hasn't uploaded one yet. Stable color hash on the
         // fallback so each student keeps the same colored badge.
@@ -10757,6 +10822,7 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           + '<td class="students-actions-cell" style="white-space:nowrap;">'
           +   '<button class="students-view-btn" data-username="' + escS(r.username) + '" title="View submissions">View</button>'
           +   roleToggleHtml
+          +   resetPwBtnHtml
           +   (r.role !== 'admin' ? ' <button class="students-delete-btn" data-username="' + escS(r.username) + '" title="Remove">Remove</button>' : '')
           + '</td>'
           + '</tr>';
@@ -10839,6 +10905,165 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           btn.textContent = nextRole === 'admin' ? '✓ Promoted' : '✓ Demoted';
           setTimeout(() => loadStudents(), 600);
         });
+      });
+
+      // Wire reset-password buttons. Click → opens a small modal that
+      // lets the admin set a new password (or auto-generate one). Saves
+      // to BOTH localStorage (so this admin's view reflects it instantly)
+      // AND Firestore (so the student can log in from any device with
+      // the new password). The new password is displayed in a copyable
+      // box so the admin can share it with the student.
+      studentsTbody.querySelectorAll('.students-resetpw-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const username = btn.dataset.username;
+          if (!username) return;
+          openPasswordResetModal(username);
+        });
+      });
+    }
+
+    // ===== PASSWORD RESET MODAL =====
+    function openPasswordResetModal(username) {
+      // Find the student row so we can show their display name
+      const row = studentCache.find(r => (r.username || '').toLowerCase() === username.toLowerCase());
+      const displayName = (row && row.displayName) || username;
+
+      // Build modal
+      const overlay = document.createElement('div');
+      overlay.className = 'pwreset-overlay';
+      overlay.innerHTML = (
+        '<div class="pwreset-modal" role="dialog" aria-modal="true">'
+        + '<button class="pwreset-close" aria-label="Close">&times;</button>'
+        + '<div class="pwreset-header">'
+        +   '<div class="pwreset-icon">'
+        +     '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+        +   '</div>'
+        +   '<h3>Reset password</h3>'
+        +   '<p>For <strong>' + _esc(displayName) + '</strong> · <code>@' + _esc(username) + '</code></p>'
+        + '</div>'
+        + '<div class="pwreset-body">'
+        +   '<label for="pwresetInput">New password</label>'
+        +   '<div class="pwreset-input-row">'
+        +     '<input type="text" id="pwresetInput" placeholder="Type a new password (8+ characters)" minlength="8" autocomplete="off">'
+        +     '<button type="button" class="pwreset-gen-btn" id="pwresetGenBtn" title="Auto-generate a strong password">Generate</button>'
+        +   '</div>'
+        +   '<p class="pwreset-hint">Minimum 8 characters. Share this with the student — they\'ll log in with their existing username and this new password.</p>'
+        +   '<div class="pwreset-success" id="pwresetSuccess" style="display:none;">'
+        +     '<div class="pwreset-success-label">Password updated. Copy + share:</div>'
+        +     '<div class="pwreset-success-box">'
+        +       '<code id="pwresetFinalCode"></code>'
+        +       '<button type="button" id="pwresetCopyBtn" class="pwreset-copy-btn">Copy</button>'
+        +     '</div>'
+        +     '<p class="pwreset-hint">Takes effect on their next login.</p>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="pwreset-footer">'
+        +   '<button type="button" class="pwreset-cancel-btn">Cancel</button>'
+        +   '<button type="button" class="pwreset-save-btn" id="pwresetSaveBtn">Save new password</button>'
+        + '</div>'
+        + '</div>'
+      );
+      document.body.appendChild(overlay);
+
+      const input = overlay.querySelector('#pwresetInput');
+      const genBtn = overlay.querySelector('#pwresetGenBtn');
+      const saveBtn = overlay.querySelector('#pwresetSaveBtn');
+      const cancelBtn = overlay.querySelector('.pwreset-cancel-btn');
+      const closeBtn = overlay.querySelector('.pwreset-close');
+      const successBox = overlay.querySelector('#pwresetSuccess');
+      const finalCode = overlay.querySelector('#pwresetFinalCode');
+      const copyBtn = overlay.querySelector('#pwresetCopyBtn');
+
+      // Focus the input
+      setTimeout(() => input.focus(), 100);
+
+      // Auto-generate strong password — 12 chars, mix of letters/digits/syms
+      function generatePassword() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+        const syms = '!@#$%&*';
+        let out = '';
+        for (let i = 0; i < 11; i++) out += chars[Math.floor(Math.random() * chars.length)];
+        out += syms[Math.floor(Math.random() * syms.length)];
+        // Shuffle so the symbol isn't always at the end
+        return out.split('').sort(() => Math.random() - 0.5).join('');
+      }
+
+      genBtn.addEventListener('click', () => {
+        input.value = generatePassword();
+        input.focus();
+      });
+
+      function close() {
+        try { document.body.removeChild(overlay); } catch (e) {}
+      }
+      cancelBtn.addEventListener('click', close);
+      closeBtn.addEventListener('click', close);
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+      copyBtn.addEventListener('click', () => {
+        const text = finalCode.textContent;
+        try {
+          navigator.clipboard.writeText(text);
+          copyBtn.textContent = '✓ Copied';
+          setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+        } catch (e) {
+          // Fallback for non-secure contexts
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); copyBtn.textContent = '✓ Copied'; } catch (e2) {}
+          document.body.removeChild(ta);
+          setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+        }
+      });
+
+      saveBtn.addEventListener('click', async () => {
+        const newPw = (input.value || '').trim();
+        if (!newPw) {
+          input.focus();
+          return;
+        }
+        if (newPw.length < 8) {
+          alert('Password must be at least 8 characters.');
+          input.focus();
+          return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+
+        // 1) Firestore — write password to sphere_users so it propagates
+        //    cross-device. (Note: stored as plain text matching the rest
+        //    of the AUTH system; same as the localStorage copy.)
+        try {
+          if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+            await DATA_SYNC.db.collection(USER_SYNC.COLLECTION).doc(username)
+              .set({ password: newPw }, { merge: true });
+          }
+        } catch (e) {
+          console.warn('[PWRESET] Firestore write failed:', e.message);
+          alert('Failed to save the new password to the server.\n\n' + (e.message || 'Unknown error') + '\n\nThe local copy will still update — but the student may need to log in from your device, or you may need to retry to sync to their account.');
+        }
+
+        // 2) localStorage — instant update on this admin's device
+        try {
+          const users = AUTH.getAllUsers();
+          const idx = users.findIndex(u => (u.username || '').toLowerCase() === username.toLowerCase());
+          if (idx !== -1) {
+            users[idx].password = newPw;
+            safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
+          }
+        } catch (e) { /* non-fatal */ }
+
+        // Show success state with copyable new password
+        finalCode.textContent = newPw;
+        successBox.style.display = 'block';
+        saveBtn.style.display = 'none';
+        cancelBtn.textContent = 'Done';
+        // Disable input so admin doesn't think they can re-edit
+        input.disabled = true;
+        genBtn.disabled = true;
       });
     }
 

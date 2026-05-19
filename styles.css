@@ -8946,6 +8946,253 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 }
 .students-actions-cell > button:first-child { margin-left: 0; }
 
+/* Reset password button — sits between role-toggle and Remove in the
+   admin students table. Same shape as the other action buttons. */
+.students-resetpw-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-light);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  margin-left: 4px;
+}
+.students-resetpw-btn:disabled { opacity: 0.6; cursor: wait; }
+.students-resetpw-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+[data-theme="dark"] .students-resetpw-btn:hover {
+  background: rgba(99, 91, 255, 0.18);
+  color: #c5cbf5;
+}
+
+/* ============================================================
+   PASSWORD RESET MODAL — overlay + card
+   ============================================================ */
+.pwreset-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 10, 30, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: pwresetFadeIn 0.2s ease;
+}
+@keyframes pwresetFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.pwreset-modal {
+  background: var(--card-bg, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 460px;
+  padding: 0;
+  position: relative;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  animation: pwresetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes pwresetSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pwreset-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-light);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pwreset-close:hover {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.pwreset-header {
+  padding: 28px 28px 12px;
+  text-align: center;
+}
+.pwreset-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.pwreset-header h3 {
+  font-size: 19px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+  margin: 0 0 6px !important;
+  color: var(--text);
+}
+.pwreset-header p {
+  font-size: 13px !important;
+  color: var(--text-light) !important;
+  margin: 0 !important;
+}
+.pwreset-header code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.pwreset-body { padding: 20px 28px; }
+.pwreset-body label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.pwreset-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.pwreset-input-row input[type="text"] {
+  flex: 1;
+  padding: 11px 14px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  font-size: 14px !important;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace !important;
+}
+.pwreset-input-row input[type="text"]:focus {
+  outline: none !important;
+  border-color: var(--primary) !important;
+}
+.pwreset-gen-btn {
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-light);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.pwreset-gen-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.pwreset-hint {
+  margin-top: 10px !important;
+  font-size: 12px !important;
+  color: var(--text-light) !important;
+  line-height: 1.5 !important;
+}
+
+.pwreset-success {
+  margin-top: 18px;
+  padding: 16px;
+  background: var(--primary-light);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 10px;
+}
+.pwreset-success-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.pwreset-success-box {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin-bottom: 8px;
+}
+.pwreset-success-box code {
+  flex: 1;
+  padding: 11px 14px;
+  background: var(--card-bg, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text);
+  word-break: break-all;
+}
+.pwreset-copy-btn {
+  padding: 11px 14px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.pwreset-copy-btn:hover { opacity: 0.9; }
+
+.pwreset-footer {
+  padding: 16px 28px 24px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.pwreset-cancel-btn,
+.pwreset-save-btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-light);
+  transition: all 0.15s ease;
+}
+.pwreset-cancel-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong, var(--text-light));
+}
+.pwreset-save-btn {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+.pwreset-save-btn:hover { opacity: 0.85; }
+.pwreset-save-btn:disabled { opacity: 0.6; cursor: wait; }
+
+@media (max-width: 540px) {
+  .pwreset-modal { max-width: 100%; }
+  .pwreset-input-row { flex-direction: column; }
+  .pwreset-gen-btn { width: 100%; }
+}
+
 /* Role-toggle button (Make Admin / Make Student). Direction-coded:
    - .to-admin = positive promotion → indigo (matches primary action)
    - .to-student = cautionary demotion → amber so admin pauses before clicking */
