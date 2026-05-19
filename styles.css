@@ -12208,25 +12208,19 @@ code, pre, .lesson-id, .phase-week {
 }
 
 /* ============================================================
-   SOLID + SINGLE SPOTLIGHT BACKGROUND
-   One bold indigo glow behind the hero headline. Everything else
-   is pure solid color. Zero seams possible.
+   LIQUID SPHERE BACKGROUND — single indigo orb behind the hero
+   with halo + drifting inner highlight. Brand-coded to Sphere
+   Academy. Smooth and clean.
    ============================================================ */
 
-/* Solid dark base — body, html, and the hero itself all share the
-   same exact color so the spotlight has nothing to bleed against
-   and there's nothing for sections below to misalign with. */
+/* Solid base so the sphere has a clean canvas behind it */
 [data-theme="dark"] html,
-[data-theme="dark"] body {
-  background-color: #0a0a18 !important;
-}
+[data-theme="dark"] body,
 [data-theme="dark"] .hero.hero-v2 {
   background-color: #0a0a18 !important;
 }
 [data-theme="light"] html,
-[data-theme="light"] body {
-  background-color: #fafafa !important;
-}
+[data-theme="light"] body,
 [data-theme="light"] .hero.hero-v2 {
   background-color: #fafafa !important;
 }
@@ -12239,40 +12233,133 @@ code, pre, .lesson-id, .phase-week {
   overflow: hidden !important;
 }
 
-/* The spotlight — large, bold, centered behind the hero text.
-   Higher opacity than before (was barely visible at 0.30). */
-.hero.hero-v2 .hero-spotlight {
+/* Sphere stage — anchors the orb to the center of the hero */
+.hero.hero-v2 .hero-sphere-stage {
   position: absolute;
-  top: 40%;
+  top: 50%;
   left: 50%;
-  width: 1400px;
-  height: 1000px;
+  width: 760px;
+  height: 760px;
   transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse at center,
-    rgba(99, 91, 255, 0.35) 0%,
-    rgba(99, 91, 255, 0.18) 25%,
-    rgba(99, 91, 255, 0.06) 50%,
-    transparent 75%);
-  filter: blur(30px);
   pointer-events: none;
-  animation: spotlightDriftSlow 60s ease-in-out infinite;
-  will-change: transform;
-}
-[data-theme="dark"] .hero.hero-v2 .hero-spotlight {
-  background: radial-gradient(ellipse at center,
-    rgba(99, 91, 255, 0.55) 0%,
-    rgba(99, 91, 255, 0.28) 25%,
-    rgba(99, 91, 255, 0.10) 50%,
-    transparent 75%);
 }
 
-@keyframes spotlightDriftSlow {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50%      { transform: translate(-49%, -51%) scale(1.04); }
+/* Outer halo — soft ambient glow extending past the sphere body */
+.hero.hero-v2 .hero-sphere-halo {
+  position: absolute;
+  inset: -160px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(99, 91, 255, 0.30) 0%,
+    rgba(99, 91, 255, 0.12) 35%,
+    rgba(99, 91, 255, 0.04) 60%,
+    transparent 80%);
+  filter: blur(60px);
+  animation: sphereHaloBreathe 10s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+[data-theme="light"] .hero.hero-v2 .hero-sphere-halo {
+  background: radial-gradient(circle,
+    rgba(99, 91, 255, 0.16) 0%,
+    rgba(99, 91, 255, 0.08) 35%,
+    rgba(99, 91, 255, 0.02) 60%,
+    transparent 80%);
+}
+
+/* The sphere body — gradient orb with 3D shading */
+.hero.hero-v2 .hero-sphere {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%,
+      rgba(165, 172, 255, 0.95) 0%,
+      rgba(139, 158, 255, 0.80) 12%,
+      rgba(99, 91, 255, 0.70) 30%,
+      rgba(76, 29, 149, 0.55) 55%,
+      rgba(49, 46, 129, 0.40) 75%,
+      rgba(10, 10, 24, 0.85) 100%);
+  box-shadow:
+    inset -40px -50px 100px rgba(10, 10, 24, 0.5),
+    inset 30px 40px 80px rgba(165, 172, 255, 0.15);
+  animation: sphereBreathe 12s ease-in-out infinite;
+  will-change: transform;
+  overflow: hidden;
+}
+[data-theme="light"] .hero.hero-v2 .hero-sphere {
+  background:
+    radial-gradient(circle at 35% 30%,
+      rgba(255, 255, 255, 0.85) 0%,
+      rgba(197, 203, 245, 0.65) 18%,
+      rgba(139, 158, 255, 0.50) 40%,
+      rgba(99, 91, 255, 0.32) 65%,
+      rgba(99, 91, 255, 0.08) 90%);
+  box-shadow:
+    inset -40px -50px 100px rgba(76, 29, 149, 0.2),
+    inset 30px 40px 80px rgba(255, 255, 255, 0.4);
+}
+
+/* Drifting inner highlight — like light reflecting on glass */
+.hero.hero-v2 .hero-sphere-highlight {
+  position: absolute;
+  top: 14%;
+  left: 18%;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.12) 35%,
+    transparent 65%);
+  filter: blur(25px);
+  animation: highlightDrift 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes sphereHaloBreathe {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.08); }
+}
+@keyframes sphereBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
+}
+@keyframes highlightDrift {
+  0%, 100% { transform: translate(0,    0)    rotate(0deg); }
+  33%      { transform: translate(30px, -20px) rotate(8deg); }
+  66%      { transform: translate(-20px, 30px) rotate(-6deg); }
+}
+
+/* Bottom vignette — fades the lower sphere edge into the body
+   color so there's no sharp line into the next section. */
+.hero.hero-v2 .hero-waves::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    transparent 78%,
+    var(--bg, #0a0a18) 100%);
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .hero.hero-v2 .hero-sphere-stage {
+    width: 540px;
+    height: 540px;
+  }
+  .hero.hero-v2 .hero-sphere-highlight {
+    width: 160px;
+    height: 160px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero.hero-v2 .hero-spotlight { animation: none !important; }
+  .hero.hero-v2 .hero-sphere-halo,
+  .hero.hero-v2 .hero-sphere,
+  .hero.hero-v2 .hero-sphere-highlight {
+    animation: none !important;
+  }
 }
 .hero.hero-v2 .hero-mesh-blob {
   display: block !important;
