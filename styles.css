@@ -12301,6 +12301,26 @@ code, pre, .lesson-id, .phase-week {
 @media (prefers-reduced-motion: reduce) {
   .hero.hero-v2 .hero-saturn { animation: none !important; }
   .hero.hero-v2 .saturn-stars circle { animation: none !important; }
+  .hero.hero-v2 .saturn-streaks,
+  .hero.hero-v2 .saturn-streaks-front { animation: none !important; }
+}
+
+/* Sci-fi motion streaks — slow pulse so the light beam feels alive */
+.hero.hero-v2 .saturn-streaks {
+  transform-origin: 720px 450px;
+  animation: streakPulse 8s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+.hero.hero-v2 .saturn-streaks-front {
+  transform-origin: 720px 450px;
+  animation: streakPulse 8s ease-in-out infinite reverse;
+  animation-delay: -2s;
+  mix-blend-mode: screen;
+}
+
+@keyframes streakPulse {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
 }
 
 /* Light mode: dim the planet so it doesn't overwhelm white text below */

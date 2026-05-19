@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-vivid">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-streak">
 </head>
 <body class="page-loaded">
 
@@ -107,6 +107,23 @@
             <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
           </linearGradient>
 
+          <!-- Sci-fi motion streak — bright white-to-indigo with sharp edges -->
+          <linearGradient id="streakGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgba(99,91,255,0)"/>
+            <stop offset="20%"  stop-color="rgba(139,158,255,0.4)"/>
+            <stop offset="48%"  stop-color="rgba(255,255,255,0.95)"/>
+            <stop offset="52%"  stop-color="rgba(255,255,255,0.95)"/>
+            <stop offset="80%"  stop-color="rgba(139,158,255,0.4)"/>
+            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
+          </linearGradient>
+          <linearGradient id="streakGradSoft" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgba(99,91,255,0)"/>
+            <stop offset="50%"  stop-color="rgba(165,172,255,0.55)"/>
+            <stop offset="100%" stop-color="rgba(99,91,255,0)"/>
+          </linearGradient>
+          <filter id="streakBlur"><feGaussianBlur stdDeviation="2.5"/></filter>
+          <filter id="streakBlurSoft"><feGaussianBlur stdDeviation="14"/></filter>
+
           <!-- Masks split the ring into back (top) and front (bottom) -->
           <mask id="ringBack"><rect x="0" y="0" width="1440" height="450" fill="white"/></mask>
           <mask id="ringFront"><rect x="0" y="450" width="1440" height="450" fill="white"/></mask>
@@ -153,40 +170,65 @@
           <circle cx="300"  cy="520" r="1.1" fill="#a5acff" opacity="0.85"/>
         </g>
 
+        <!-- Sci-fi motion streaks — light beams behind the planet -->
+        <g class="saturn-streaks" transform="rotate(-12 720 450)">
+          <!-- Wide soft beam underneath -->
+          <rect x="-200" y="436" width="1840" height="28"
+            fill="url(#streakGradSoft)" filter="url(#streakBlurSoft)" opacity="0.85"/>
+          <!-- Sharp bright streak -->
+          <rect x="-200" y="448" width="1840" height="4"
+            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.95"/>
+          <!-- Secondary thinner streak above -->
+          <rect x="0" y="412" width="1640" height="2"
+            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.55"/>
+          <!-- Secondary thinner streak below -->
+          <rect x="-50" y="488" width="1700" height="2"
+            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.65"/>
+        </g>
+
         <!-- BACK half of ring (drawn first, behind sphere) -->
         <g mask="url(#ringBack)">
           <g transform="rotate(-18 720 450)">
             <!-- Wide soft band -->
-            <ellipse cx="720" cy="450" rx="540" ry="110"
-              fill="none" stroke="url(#ringBandGrad)" stroke-width="70" opacity="0.85"/>
+            <ellipse cx="720" cy="450" rx="380" ry="78"
+              fill="none" stroke="url(#ringBandGrad)" stroke-width="52" opacity="0.85"/>
             <!-- Bright inner ring -->
-            <ellipse cx="720" cy="450" rx="540" ry="110"
-              fill="none" stroke="url(#ringGrad)" stroke-width="4" opacity="1"/>
+            <ellipse cx="720" cy="450" rx="380" ry="78"
+              fill="none" stroke="url(#ringGrad)" stroke-width="3" opacity="1"/>
             <!-- Secondary inner ring -->
-            <ellipse cx="720" cy="450" rx="440" ry="90"
-              fill="none" stroke="url(#ringGrad)" stroke-width="2" opacity="0.75"/>
+            <ellipse cx="720" cy="450" rx="310" ry="64"
+              fill="none" stroke="url(#ringGrad)" stroke-width="1.5" opacity="0.75"/>
           </g>
         </g>
 
         <!-- Sphere body + atmosphere -->
-        <circle cx="720" cy="450" r="240" fill="url(#planetGrad)"/>
-        <circle cx="720" cy="450" r="270" fill="url(#atmoGrad)" filter="url(#rimBlur)"/>
+        <circle cx="720" cy="450" r="170" fill="url(#planetGrad)"/>
+        <circle cx="720" cy="450" r="194" fill="url(#atmoGrad)" filter="url(#rimBlur)"/>
         <!-- Specular highlight — brighter spot on the upper-left -->
-        <ellipse cx="620" cy="360" rx="80" ry="55"
+        <ellipse cx="650" cy="385" rx="56" ry="38"
           fill="rgba(255,255,255,0.4)" filter="url(#rimBlur)"/>
-        <ellipse cx="610" cy="350" rx="35" ry="22"
+        <ellipse cx="643" cy="378" rx="24" ry="15"
           fill="rgba(255,255,255,0.6)" filter="url(#rimBlur)"/>
 
         <!-- FRONT half of ring (drawn last, in front of sphere) -->
         <g mask="url(#ringFront)">
           <g transform="rotate(-18 720 450)">
-            <ellipse cx="720" cy="450" rx="540" ry="110"
-              fill="none" stroke="url(#ringBandGrad)" stroke-width="70" opacity="0.85"/>
-            <ellipse cx="720" cy="450" rx="540" ry="110"
-              fill="none" stroke="url(#ringGrad)" stroke-width="4" opacity="1"/>
-            <ellipse cx="720" cy="450" rx="440" ry="90"
-              fill="none" stroke="url(#ringGrad)" stroke-width="2" opacity="0.75"/>
+            <ellipse cx="720" cy="450" rx="380" ry="78"
+              fill="none" stroke="url(#ringBandGrad)" stroke-width="52" opacity="0.85"/>
+            <ellipse cx="720" cy="450" rx="380" ry="78"
+              fill="none" stroke="url(#ringGrad)" stroke-width="3" opacity="1"/>
+            <ellipse cx="720" cy="450" rx="310" ry="64"
+              fill="none" stroke="url(#ringGrad)" stroke-width="1.5" opacity="0.75"/>
           </g>
+        </g>
+
+        <!-- Sci-fi motion streak FRONT — passes in front of the planet
+             at the same angle, giving a "flying through space" feel -->
+        <g class="saturn-streaks-front" transform="rotate(-12 720 450)">
+          <rect x="-200" y="447" width="1840" height="2"
+            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.55"/>
+          <rect x="-200" y="453" width="1840" height="3"
+            fill="url(#streakGrad)" filter="url(#streakBlur)" opacity="0.7"/>
         </g>
       </svg>
     </div>
@@ -692,6 +734,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-vivid"></script>
+  <script src="script.js?v=2025-05-19-streak"></script>
 </body>
 </html>
