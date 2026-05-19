@@ -12427,16 +12427,14 @@ code, pre, .lesson-id, .phase-week {
 
 /* Bottom vignette — fades the lower sphere edge into the body
    color so there's no sharp line into the next section. */
-.hero.hero-v2 .hero-waves::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg,
-    transparent 0%,
-    transparent 78%,
-    var(--bg, #0a0a18) 100%);
-  pointer-events: none;
-}
+/* Bottom vignette removed — was painting solid #0a0a18 over the
+   body's fixed star field at the hero's bottom, which made the
+   stars disappear over the last 22% of the hero, then reappear
+   below it. The visible "no stars → stars" band looked like a
+   horizontal color cut. With the vignette gone, the body's
+   global star field shows continuously through the hero into
+   every section underneath. */
+.hero.hero-v2 .hero-waves::after { content: none !important; }
 
 @media (max-width: 720px) {
   .hero.hero-v2 .hero-sphere-stage {
