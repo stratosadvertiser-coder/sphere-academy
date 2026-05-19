@@ -12209,18 +12209,25 @@ code, pre, .lesson-id, .phase-week {
 
 /* ============================================================
    SOLID + SINGLE SPOTLIGHT BACKGROUND
-   One soft indigo glow behind the hero headline. Everything else
+   One bold indigo glow behind the hero headline. Everything else
    is pure solid color. Zero seams possible.
    ============================================================ */
 
-/* Force a solid dark base on the whole page so the hero's spotlight
-   has nothing to bleed against — sections below are the same color. */
-[data-theme="dark"] body,
-[data-theme="dark"] html {
+/* Solid dark base — body, html, and the hero itself all share the
+   same exact color so the spotlight has nothing to bleed against
+   and there's nothing for sections below to misalign with. */
+[data-theme="dark"] html,
+[data-theme="dark"] body {
   background-color: #0a0a18 !important;
 }
-[data-theme="light"] body,
-[data-theme="light"] html {
+[data-theme="dark"] .hero.hero-v2 {
+  background-color: #0a0a18 !important;
+}
+[data-theme="light"] html,
+[data-theme="light"] body {
+  background-color: #fafafa !important;
+}
+[data-theme="light"] .hero.hero-v2 {
   background-color: #fafafa !important;
 }
 
@@ -12231,27 +12238,32 @@ code, pre, .lesson-id, .phase-week {
   z-index: 0 !important;
   overflow: hidden !important;
 }
+
+/* The spotlight — large, bold, centered behind the hero text.
+   Higher opacity than before (was barely visible at 0.30). */
 .hero.hero-v2 .hero-spotlight {
   position: absolute;
-  top: 32%;
+  top: 40%;
   left: 50%;
-  width: 900px;
-  height: 700px;
+  width: 1400px;
+  height: 1000px;
   transform: translate(-50%, -50%);
   background: radial-gradient(ellipse at center,
-    rgba(99, 91, 255, 0.16) 0%,
-    rgba(99, 91, 255, 0.06) 35%,
-    transparent 70%);
-  filter: blur(40px);
+    rgba(99, 91, 255, 0.35) 0%,
+    rgba(99, 91, 255, 0.18) 25%,
+    rgba(99, 91, 255, 0.06) 50%,
+    transparent 75%);
+  filter: blur(30px);
   pointer-events: none;
   animation: spotlightDriftSlow 60s ease-in-out infinite;
   will-change: transform;
 }
 [data-theme="dark"] .hero.hero-v2 .hero-spotlight {
   background: radial-gradient(ellipse at center,
-    rgba(99, 91, 255, 0.30) 0%,
-    rgba(99, 91, 255, 0.10) 35%,
-    transparent 70%);
+    rgba(99, 91, 255, 0.55) 0%,
+    rgba(99, 91, 255, 0.28) 25%,
+    rgba(99, 91, 255, 0.10) 50%,
+    transparent 75%);
 }
 
 @keyframes spotlightDriftSlow {
