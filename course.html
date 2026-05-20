@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-20-fx">
+  <link rel="stylesheet" href="styles.css?v=2025-05-20-multicourse">
 </head>
 <body class="page-loaded with-rail">
 
@@ -405,7 +405,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-20-fx"></script>
+  <script src="script.js?v=2025-05-20-multicourse"></script>
 
   <!-- Sidebar action wiring — delegates the rail's action buttons
        to the navbar's existing handlers. Same as dashboard.html. -->
@@ -494,8 +494,14 @@
           } else {
             imgHtml = '<div class="course-card-img" style="background:linear-gradient(135deg,#635bff 0%,#8b5cf6 50%,#c084fc 100%);"></div>';
           }
+          // Lesson count: lessons can be the new array form (preferred)
+          // or the legacy numeric form (from earlier schema). Handle both.
+          var lessonCount = 0;
+          if (Array.isArray(c.lessons)) lessonCount = c.lessons.length;
+          else if (typeof c.lessons === 'number') lessonCount = c.lessons;
+          else if (typeof c.lessonsCount === 'number') lessonCount = c.lessonsCount;
           var meta = [];
-          if (c.lessons) meta.push(c.lessons + ' lessons');
+          if (lessonCount) meta.push(lessonCount + ' lesson' + (lessonCount === 1 ? '' : 's'));
           if (c.duration) meta.push(esc(c.duration));
           var metaStr = meta.join(' · ');
           var inner = ''
@@ -505,11 +511,10 @@
             + (c.description ? '<p>' + esc(c.description) + '</p>' : '')
             + (metaStr ? '<p style="font-size:0.82rem; color:var(--text-light); margin-top:8px;">' + metaStr + '</p>' : '')
             + '</div>';
-          if (c.link) {
-            html += '<a href="' + esc(c.link) + '" class="course-card-link">' + inner + '</a>';
-          } else {
-            html += '<div class="course-card-link" style="cursor:default;">' + inner + '</div>';
-          }
+          // Default link: bonus-course.html?id=X to view the course's
+          // lessons. If admin set a custom link, use that instead.
+          var href = c.link || ('bonus-course.html?id=' + encodeURIComponent(c.id || ''));
+          html += '<a href="' + esc(href) + '" class="course-card-link">' + inner + '</a>';
         });
         grid.innerHTML = html;
       }

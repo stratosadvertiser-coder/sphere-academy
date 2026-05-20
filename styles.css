@@ -14595,3 +14595,164 @@ img.avatar-inner {
   .lesson-complete-check svg circle,
   .lesson-complete-check svg path { animation: none !important; }
 }
+
+/* ============================================================
+   BONUS COURSE VIEWER — bonus-course.html?id=X
+   Course hero with cover image + title, then a stacked list
+   of expandable lesson cards with embedded video + content.
+   ============================================================ */
+.bonus-course-hero {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: center;
+  padding: 24px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.08);
+}
+[data-theme="dark"] .bonus-course-hero {
+  background: #27272a;
+  border-color: rgba(255, 255, 255, 0.10);
+}
+.bonus-course-cover {
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #635bff 0%, #8b5cf6 50%, #c084fc 100%);
+}
+.bonus-course-meta h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.bonus-course-desc {
+  margin: 0 0 12px;
+  color: var(--text-light);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.bonus-course-stats {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-light);
+  font-weight: 500;
+}
+@media (max-width: 720px) {
+  .bonus-course-hero {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+  .bonus-course-cover { height: 140px; }
+  .bonus-course-meta h1 { font-size: 1.4rem; }
+}
+
+/* Lesson cards — collapsible (<details>). Each summary shows
+   a numbered chip + title + description; expanding reveals
+   the embedded video + content. */
+.bonus-lesson {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.bonus-lesson[open] {
+  border-color: rgba(99, 91, 255, 0.40);
+  box-shadow: 0 6px 18px -10px rgba(99, 91, 255, 0.30);
+}
+[data-theme="dark"] .bonus-lesson {
+  background: #27272a;
+  border-color: rgba(255, 255, 255, 0.10);
+}
+[data-theme="dark"] .bonus-lesson[open] {
+  border-color: rgba(139, 92, 246, 0.55);
+}
+.bonus-lesson summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.bonus-lesson summary::-webkit-details-marker { display: none; }
+.bonus-lesson-num {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #635bff, #8b5cf6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+.bonus-lesson-summary-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bonus-lesson-summary-body strong {
+  font-size: 1rem;
+  color: var(--text);
+}
+.bonus-lesson-summary-body span {
+  font-size: 0.86rem;
+  color: var(--text-light);
+  line-height: 1.45;
+}
+.bonus-lesson-chevron {
+  flex-shrink: 0;
+  color: var(--text-light);
+  transition: transform 0.25s ease;
+}
+.bonus-lesson[open] .bonus-lesson-chevron {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+.bonus-lesson-body {
+  padding: 0 18px 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+}
+[data-theme="dark"] .bonus-lesson-body {
+  border-top-color: rgba(255, 255, 255, 0.10);
+}
+.bonus-lesson-video {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  margin: 14px 0;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.bonus-lesson-video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.bonus-lesson-content {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+.bonus-lesson-content p {
+  margin: 0 0 12px;
+}
+.bonus-lesson-content p:last-child {
+  margin-bottom: 0;
+}

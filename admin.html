@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-20-fx">
+  <link rel="stylesheet" href="styles.css?v=2025-05-20-multicourse">
 </head>
 <body class="page-loaded">
 
@@ -733,11 +733,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-20-fx"></script>
+  <script src="script.js?v=2025-05-20-multicourse"></script>
 
-  <!-- Bonus Courses admin logic — CRUD over the bonus_courses
-       localStorage key with Firestore mirror at sphere_settings/
-       bonusCourses. Renders the existing list + handles add/delete. -->
+  <!-- Bonus Courses admin — full multi-course system. Each course
+       holds its own lessons array { id, title, description,
+       videoUrl, content }. Stored as bonus_courses (localStorage)
+       and mirrored to Firestore sphere_settings/bonusCourses.
+       Students see each course's lessons on bonus-course.html?id=X. -->
   <script>
     (function () {
       var STORAGE_KEY = 'bonus_courses';
@@ -750,8 +752,21 @@
       }
 
       function loadCourses() {
-        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-        catch (_) { return []; }
+        try {
+          var arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          // Migrate legacy schema: `lessons` used to be a number,
+          // now it's a list. Move the count to `lessonsCount` and
+          // initialize `lessons` as an empty array.
+          arr.forEach(function (c) {
+            if (typeof c.lessons === 'number') {
+              c.lessonsCount = c.lessons;
+              c.lessons = [];
+            }
+            if (!Array.isArray(c.lessons)) c.lessons = [];
+            if (!c.id) c.id = 'bc_' + (Date.now() + Math.random());
+          });
+          return arr;
+        } catch (_) { return []; }
       }
       function saveCourses(list) {
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (_) {}
@@ -759,13 +774,12 @@
           if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
             DATA_SYNC.db.collection('sphere_settings').doc('bonusCourses')
               .set({ courses: list, updatedAt: Date.now() }, { merge: true })
-              .catch(function (e) { console.warn('[BONUS] Firestore sync failed:', e.message); });
+              .catch(function (e) { console.warn('[COURSES] Firestore sync failed:', e.message); });
           }
         } catch (_) {}
       }
 
-      // Pull from Firestore on load (so admin's local copy stays
-      // in sync with whatever was set elsewhere).
+      // Pull from Firestore on load
       try {
         if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
           DATA_SYNC.db.collection('sphere_settings').doc('bonusCourses').get()
@@ -780,40 +794,166 @@
         }
       } catch (_) {}
 
+      // Track which course is currently expanded for lesson editing.
+      var expandedCourseId = null;
+
       function render() {
         var list = $('bonusCoursesList');
         if (!list) return;
         var courses = loadCourses();
         if (!courses.length) {
-          list.innerHTML = '<p style="margin:0; padding:18px; text-align:center; color:var(--text-light); background:var(--bg-alt, rgba(99,91,255,0.04)); border-radius:10px; border:1px dashed var(--border); font-size:0.9rem;">No bonus courses yet. Add one below to see it appear on the Course page.</p>';
+          list.innerHTML = '<p style="margin:0; padding:18px; text-align:center; color:var(--text-light); background:var(--bg-alt, rgba(99,91,255,0.04)); border-radius:10px; border:1px dashed var(--border); font-size:0.9rem;">No courses yet. Add one below to start stacking your training programs.</p>';
           return;
         }
         list.innerHTML = courses.map(function (c, i) {
           var img = c.image
             ? '<img src="' + esc(c.image) + '" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:10px;">'
             : '<div style="width:64px; height:64px; border-radius:10px; background:linear-gradient(135deg,#635bff,#8b5cf6,#c084fc); flex-shrink:0;"></div>';
+          var lessonCount = (c.lessons || []).length;
           var meta = [];
-          if (c.lessons) meta.push(c.lessons + ' lessons');
+          meta.push(lessonCount + ' lesson' + (lessonCount === 1 ? '' : 's'));
           if (c.duration) meta.push(esc(c.duration));
-          var metaStr = meta.length ? ' · ' + meta.join(' · ') : '';
+          var metaStr = ' · ' + meta.join(' · ');
+          var expanded = expandedCourseId === c.id;
+          var lessonsEditor = '';
+          if (expanded) {
+            var lessonsHtml = (c.lessons || []).map(function (l, li) {
+              return ''
+                + '<div style="border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:var(--bg-alt, rgba(99,91,255,0.04)); margin-bottom:10px;" data-lesson-idx="' + li + '">'
+                + '<div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">'
+                +   '<strong style="font-size:0.84rem; color:var(--text-light);">Lesson ' + (li + 1) + '</strong>'
+                +   '<button type="button" data-lesson-up="' + i + ':' + li + '" title="Move up" style="background:transparent;border:1px solid var(--border);padding:3px 8px;border-radius:6px;font-size:0.78rem;cursor:pointer;">&uarr;</button>'
+                +   '<button type="button" data-lesson-down="' + i + ':' + li + '" title="Move down" style="background:transparent;border:1px solid var(--border);padding:3px 8px;border-radius:6px;font-size:0.78rem;cursor:pointer;">&darr;</button>'
+                +   '<button type="button" data-lesson-delete="' + i + ':' + li + '" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:#dc2626;padding:4px 10px;border-radius:6px;font-size:0.78rem;cursor:pointer;">Delete</button>'
+                + '</div>'
+                + '<input type="text" placeholder="Lesson title" value="' + esc(l.title || '') + '" data-lesson-field="' + i + ':' + li + ':title" style="width:100%; margin-bottom:8px;">'
+                + '<input type="url" placeholder="Video URL (YouTube, Vimeo, Drive — optional)" value="' + esc(l.videoUrl || '') + '" data-lesson-field="' + i + ':' + li + ':videoUrl" style="width:100%; margin-bottom:8px;">'
+                + '<textarea rows="2" placeholder="Short description (shown on the course page)" data-lesson-field="' + i + ':' + li + ':description" style="width:100%; margin-bottom:8px;">' + esc(l.description || '') + '</textarea>'
+                + '<textarea rows="5" placeholder="Lesson content / instructions (Markdown or plain text)" data-lesson-field="' + i + ':' + li + ':content" style="width:100%;">' + esc(l.content || '') + '</textarea>'
+                + '</div>';
+            }).join('');
+            lessonsEditor = ''
+              + '<div style="margin-top:14px; padding:14px 16px; background:rgba(99,91,255,0.04); border:1px solid var(--border); border-radius:12px;">'
+              + '<h5 style="margin:0 0 12px; font-size:0.94rem;">Lessons in this course (' + lessonCount + ')</h5>'
+              + (lessonsHtml || '<p style="margin:0 0 12px; color:var(--text-light); font-size:0.86rem;">No lessons yet. Click <strong>+ Add Lesson</strong> to start.</p>')
+              + '<button type="button" data-lesson-add="' + i + '" style="background:var(--primary); color:white; border:none; padding:9px 16px; border-radius:8px; font-weight:600; font-size:0.86rem; cursor:pointer;">+ Add Lesson</button>'
+              + '</div>';
+          }
           return ''
-            + '<div style="display:flex; gap:14px; align-items:center; padding:14px 16px; background:var(--bg); border:1px solid var(--border); border-radius:12px;">'
-            + img
-            + '<div style="flex:1; min-width:0;">'
-            + '<h4 style="margin:0 0 4px; font-size:1rem; font-weight:700;">' + esc(c.title) + metaStr + '</h4>'
-            + (c.description ? '<p style="margin:0; color:var(--text-light); font-size:0.86rem; line-height:1.4;">' + esc(c.description) + '</p>' : '')
+            + '<div style="padding:14px 16px; background:var(--bg); border:1px solid var(--border); border-radius:12px;">'
+            + '<div style="display:flex; gap:14px; align-items:center;">'
+            +   img
+            +   '<div style="flex:1; min-width:0;">'
+            +     '<h4 style="margin:0 0 4px; font-size:1rem; font-weight:700;">' + esc(c.title) + '<span style="color:var(--text-light); font-weight:400;">' + metaStr + '</span></h4>'
+            +     (c.description ? '<p style="margin:0; color:var(--text-light); font-size:0.86rem; line-height:1.4;">' + esc(c.description) + '</p>' : '')
+            +   '</div>'
+            +   '<button type="button" data-bonus-edit="' + i + '" style="background:transparent; border:1px solid var(--primary); color:var(--primary); padding:7px 12px; border-radius:8px; font-size:0.82rem; cursor:pointer; font-weight:600;">' + (expanded ? '✕ Close' : 'Manage Lessons') + '</button>'
+            +   '<button type="button" data-bonus-delete="' + i + '" style="background:transparent; border:1px solid var(--border); color:var(--text-light); padding:7px 12px; border-radius:8px; font-size:0.82rem; cursor:pointer;">Delete</button>'
             + '</div>'
-            + '<button type="button" data-bonus-delete="' + i + '" style="background:transparent; border:1px solid var(--border); color:var(--text-light); padding:7px 12px; border-radius:8px; font-size:0.82rem; cursor:pointer;">Delete</button>'
+            + lessonsEditor
             + '</div>';
         }).join('');
+
+        // Wire delete buttons
         list.querySelectorAll('[data-bonus-delete]').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var idx = parseInt(btn.dataset.bonusDelete, 10);
-            if (!confirm('Delete this bonus course?')) return;
+            if (!confirm('Delete this course and all its lessons?')) return;
             var arr = loadCourses();
             arr.splice(idx, 1);
             saveCourses(arr);
+            expandedCourseId = null;
             render();
+          });
+        });
+
+        // Wire Manage Lessons (toggle) buttons
+        list.querySelectorAll('[data-bonus-edit]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var idx = parseInt(btn.dataset.bonusEdit, 10);
+            var arr = loadCourses();
+            var course = arr[idx];
+            if (!course) return;
+            expandedCourseId = (expandedCourseId === course.id) ? null : course.id;
+            render();
+          });
+        });
+
+        // Wire Add Lesson buttons
+        list.querySelectorAll('[data-lesson-add]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var idx = parseInt(btn.dataset.lessonAdd, 10);
+            var arr = loadCourses();
+            if (!arr[idx].lessons) arr[idx].lessons = [];
+            arr[idx].lessons.push({
+              id: 'l_' + (Date.now() + Math.random()),
+              title: 'New lesson',
+              description: '',
+              videoUrl: '',
+              content: '',
+              createdAt: Date.now()
+            });
+            saveCourses(arr);
+            render();
+          });
+        });
+
+        // Wire Delete Lesson buttons
+        list.querySelectorAll('[data-lesson-delete]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var parts = btn.dataset.lessonDelete.split(':');
+            var ci = parseInt(parts[0], 10);
+            var li = parseInt(parts[1], 10);
+            if (!confirm('Delete this lesson?')) return;
+            var arr = loadCourses();
+            arr[ci].lessons.splice(li, 1);
+            saveCourses(arr);
+            render();
+          });
+        });
+
+        // Wire Move Up/Down
+        list.querySelectorAll('[data-lesson-up]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var parts = btn.dataset.lessonUp.split(':');
+            var ci = parseInt(parts[0], 10);
+            var li = parseInt(parts[1], 10);
+            if (li === 0) return;
+            var arr = loadCourses();
+            var temp = arr[ci].lessons[li - 1];
+            arr[ci].lessons[li - 1] = arr[ci].lessons[li];
+            arr[ci].lessons[li] = temp;
+            saveCourses(arr);
+            render();
+          });
+        });
+        list.querySelectorAll('[data-lesson-down]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var parts = btn.dataset.lessonDown.split(':');
+            var ci = parseInt(parts[0], 10);
+            var li = parseInt(parts[1], 10);
+            var arr = loadCourses();
+            if (li >= arr[ci].lessons.length - 1) return;
+            var temp = arr[ci].lessons[li + 1];
+            arr[ci].lessons[li + 1] = arr[ci].lessons[li];
+            arr[ci].lessons[li] = temp;
+            saveCourses(arr);
+            render();
+          });
+        });
+
+        // Wire field auto-save (on blur) — keeps lessons up to date
+        // as the admin edits them without needing a "Save" button.
+        list.querySelectorAll('[data-lesson-field]').forEach(function (input) {
+          input.addEventListener('blur', function () {
+            var parts = input.dataset.lessonField.split(':');
+            var ci = parseInt(parts[0], 10);
+            var li = parseInt(parts[1], 10);
+            var field = parts[2];
+            var arr = loadCourses();
+            if (!arr[ci] || !arr[ci].lessons[li]) return;
+            arr[ci].lessons[li][field] = input.value;
+            saveCourses(arr);
           });
         });
       }
@@ -827,7 +967,7 @@
             id: 'bc_' + Date.now(),
             title: title,
             description: ($('bonusCourseDesc').value || '').trim(),
-            lessons: parseInt($('bonusCourseLessons').value, 10) || 0,
+            lessons: [],
             duration: ($('bonusCourseDuration').value || '').trim(),
             image: ($('bonusCourseImage').value || '').trim(),
             link: ($('bonusCourseLink').value || '').trim(),
@@ -840,6 +980,8 @@
           ['bonusCourseTitle','bonusCourseDesc','bonusCourseLessons','bonusCourseDuration','bonusCourseImage','bonusCourseLink'].forEach(function (id) {
             var el = $(id); if (el) el.value = '';
           });
+          // Auto-expand the new course so admin can add lessons immediately
+          expandedCourseId = course.id;
           render();
         });
       }
