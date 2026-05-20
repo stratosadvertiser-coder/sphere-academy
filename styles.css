@@ -13508,3 +13508,65 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   .video-empty-form input[type="url"],
   .video-empty-form .btn { width: 100% !important; }
 }
+
+/* ============================================================
+   DARK MODE VISIBILITY BOOST — Against the flat #18181B base,
+   the previous translucent card/button styles were too dim.
+   This block lifts contrast on every foreground element so
+   cards, buttons, and helper text all pop against the dark.
+   ============================================================ */
+
+/* Bento cards (Sphere Academy, Live community, Marketing Intern
+   Graduate) — bump background + border so they read as distinct
+   surfaces on the dark backdrop instead of melting into it. */
+[data-theme="dark"] .bento-card,
+[data-theme="dark"] .bento-logo-centered {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.50) !important;
+}
+[data-theme="dark"] .bento-card:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(99, 91, 255, 0.55) !important;
+}
+
+/* Hero eyebrow pill (MARKETING INTERN TRAINING PROGRAM) — same
+   treatment so the chip is clearly framed. */
+[data-theme="dark"] .hero-eyebrow {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  color: #f4f4f5 !important;
+}
+
+/* Outline button (View Roadmap) — was purple-on-dark which gets
+   lost on #18181B. Switch to a high-contrast white outline with
+   bright text so it sits next to the primary CTA at equal weight. */
+[data-theme="dark"] .btn-outline {
+  color: #f4f4f5 !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+[data-theme="dark"] .btn-outline:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  color: #ffffff !important;
+}
+
+/* "8 marketing interns training the Stratos way" caption — the
+   default --text-light (#a3a3a3) was reading too soft. Bump it
+   so it's a clear secondary line, not a whisper. */
+[data-theme="dark"] .hero-trust p {
+  color: #d4d4d8 !important;
+  font-weight: 500;
+}
+
+/* Mini-card titles + sublabels — make sure the white pops and
+   the grey sublabel isn't fading into the card background. */
+[data-theme="dark"] .bento-outcome-title,
+[data-theme="dark"] .bento-logo-text strong {
+  color: #ffffff !important;
+}
+[data-theme="dark"] .bento-outcome-sub,
+[data-theme="dark"] .bento-logo-text span {
+  color: #d4d4d8 !important;
+}
