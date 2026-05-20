@@ -14027,28 +14027,12 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
    visible on viewports ≥ 1200px. Below that, it hides so the
    feed can use the full width.
    ============================================================ */
-@media (min-width: 1200px) {
-  /* Grid becomes 3 columns: rail | feed | profile card */
-  .dash-layout {
-    grid-template-columns: 64px 1fr 320px !important;
-    column-gap: 28px !important;
-    padding-right: 32px !important;
-  }
-  /* Center the feed within its 1fr column. Was previously
-     right-aligned via margin-left:auto + margin-right:0, but
-     that left a big empty space on the left of the feed when
-     the profile card was hidden or narrow. Keep it centered
-     symmetrically — the profile card just sits in its own
-     320px column to the right. */
-  .dash-main {
-    max-width: 720px !important;
-    margin: 0 auto !important;
-  }
-  .dash-profile-card {
-    display: block;
-    grid-column: 3;
-  }
-}
+/* Profile card hidden on all viewports — was visually pushing
+   the feed off-center because the 320px column reservation made
+   the 1fr column asymmetric vs the viewport. Feed is now truly
+   centered on the viewport (within its 1fr column from the rail
+   to the right edge). */
+.dash-profile-card { display: none !important; }
 
 /* Hidden on narrower viewports — feed takes the full row */
 .dash-profile-card { display: none; }
