@@ -13223,16 +13223,11 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   }
 }
 
-/* Subheadline — adds the mechanism right under the promise */
-.hero.hero-v2 .hero-sub {
-  font-size: clamp(15px, 1.4vw, 18px) !important;
-  line-height: 1.55 !important;
-  color: var(--text-light) !important;
-  max-width: 560px !important;
-  margin: -10px auto 0 !important;
-  font-weight: 400 !important;
-  letter-spacing: -0.005em !important;
-}
+/* Subheadline rules removed — the .hero-sub element was deleted
+   from index.html per user request ("remove the text 16 hands-on
+   lessons..."), so its dedicated rules here would only apply to
+   ghosts. Other .hero-sub rules elsewhere in the file are scoped
+   to different sections (course/lesson) and stay in place. */
 
 /* Testimonial cards — the Emil theme flattened their dark gradient
    background to white but the text inside is still styled white,
