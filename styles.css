@@ -12203,14 +12203,60 @@ code, pre, .lesson-id, .phase-week {
 }
 
 /* ============================================================
-   SOLID DARK BACKGROUND — flat #18181B on every page.
-   No stars, no galaxy, no nebula. Single source of truth so
-   nothing competes for visual attention with the foreground.
+   DARK BACKGROUND — flat #18181B + scattered star field.
+   Solid black base (no nebula clouds) so foreground content
+   stays crisp, with ~35 stars in 3 size tiers giving the
+   viewport a quiet galaxy texture. Fixed attachment so the
+   sky doesn't scroll with the page.
    ============================================================ */
 [data-theme="dark"] body {
   background-color: #18181B !important;
-  background-image: none !important;
+  background-image:
+    /* ─── BRIGHT ACCENT STARS (5) ─── */
+    radial-gradient(2.5px 2.5px at 12% 18%, rgba(255,255,255,1),   transparent 55%),
+    radial-gradient(2.5px 2.5px at 76% 28%, rgba(200,210,255,0.95),transparent 55%),
+    radial-gradient(3px 3px     at 42% 72%, rgba(255,255,255,0.95),transparent 55%),
+    radial-gradient(2.5px 2.5px at 88% 82%, rgba(255,255,255,0.9), transparent 55%),
+    radial-gradient(2.5px 2.5px at 22% 88%, rgba(200,210,255,0.9), transparent 55%),
+
+    /* ─── MEDIUM STARS (12) ─── */
+    radial-gradient(1.5px 1.5px at 5%  42%, rgba(255,255,255,0.75),transparent 55%),
+    radial-gradient(1.5px 1.5px at 18% 8%,  rgba(255,255,255,0.7), transparent 55%),
+    radial-gradient(1.5px 1.5px at 31% 35%, rgba(200,210,255,0.7), transparent 55%),
+    radial-gradient(1.5px 1.5px at 38% 58%, rgba(255,255,255,0.75),transparent 55%),
+    radial-gradient(1.5px 1.5px at 48% 16%, rgba(255,255,255,0.7), transparent 55%),
+    radial-gradient(1.5px 1.5px at 55% 88%, rgba(200,210,255,0.7), transparent 55%),
+    radial-gradient(1.5px 1.5px at 62% 48%, rgba(255,255,255,0.75),transparent 55%),
+    radial-gradient(1.5px 1.5px at 68% 14%, rgba(255,255,255,0.7), transparent 55%),
+    radial-gradient(1.5px 1.5px at 81% 55%, rgba(200,210,255,0.7), transparent 55%),
+    radial-gradient(1.5px 1.5px at 92% 22%, rgba(255,255,255,0.75),transparent 55%),
+    radial-gradient(1.5px 1.5px at 96% 68%, rgba(255,255,255,0.7), transparent 55%),
+    radial-gradient(1.5px 1.5px at 8%  68%, rgba(255,255,255,0.7), transparent 55%),
+
+    /* ─── TINY DISTANT STARS (18) ─── */
+    radial-gradient(1px 1px at 3%  12%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 14% 52%, rgba(255,255,255,0.45),transparent 60%),
+    radial-gradient(1px 1px at 22% 25%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 26% 76%, rgba(255,255,255,0.45),transparent 60%),
+    radial-gradient(1px 1px at 33% 4%,  rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 36% 92%, rgba(255,255,255,0.45),transparent 60%),
+    radial-gradient(1px 1px at 44% 38%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 51% 64%, rgba(255,255,255,0.45),transparent 60%),
+    radial-gradient(1px 1px at 58% 26%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 64% 80%, rgba(255,255,255,0.45),transparent 60%),
+    radial-gradient(1px 1px at 71% 38%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 78% 72%, rgba(255,255,255,0.45),transparent 60%),
+    radial-gradient(1px 1px at 84% 8%,  rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 86% 44%, rgba(255,255,255,0.45),transparent 60%),
+    radial-gradient(1px 1px at 91% 58%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 94% 92%, rgba(255,255,255,0.45),transparent 60%),
+    radial-gradient(1px 1px at 99% 38%, rgba(255,255,255,0.5), transparent 60%),
+    radial-gradient(1px 1px at 1%  85%, rgba(255,255,255,0.45),transparent 60%) !important;
+
+  background-repeat: no-repeat !important;
   background-attachment: fixed !important;
+  background-size: 100% 100% !important;
+  background-position: 0 0 !important;
 }
 [data-theme="light"] body {
   background-color: #fafafa !important;
