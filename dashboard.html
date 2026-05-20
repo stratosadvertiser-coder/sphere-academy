@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-cards">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-profile">
 </head>
 <body class="page-loaded">
 
@@ -438,6 +438,59 @@
 
       </main><!-- /dash-main -->
 
+      <!-- LinkedIn-style profile overview — sits in the empty
+           right-side space on wide screens. Sticky-positioned
+           so it stays visible while the feed scrolls. Hidden on
+           narrower viewports (where the feed itself stretches). -->
+      <aside class="dash-profile-card" id="dashProfileCard">
+        <div class="dash-profile-cover" aria-hidden="true"></div>
+        <div class="dash-profile-avatar" id="dashProfileAvatar">
+          <span id="dashProfileInitials">U</span>
+        </div>
+        <div class="dash-profile-info">
+          <h3 id="dashProfileName">Loading…</h3>
+          <p class="dash-profile-role" id="dashProfileRole">Marketing Intern</p>
+          <p class="dash-profile-tagline" id="dashProfileTagline">Building digital marketing skills with Stratos.</p>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="dash-profile-section">
+          <div class="dash-profile-section-label">
+            <span>Program Progress</span>
+            <span id="dashProfileProgressText">0 / 16</span>
+          </div>
+          <div class="dash-profile-progress-bar">
+            <div class="dash-profile-progress-fill" id="dashProfileProgressFill" style="width:0%;"></div>
+          </div>
+          <p class="dash-profile-progress-hint" id="dashProfileProgressHint">Lessons completed</p>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="dash-profile-stats">
+          <div class="dash-profile-stat">
+            <strong id="dashProfileStatLessons">0</strong>
+            <span>Lessons</span>
+          </div>
+          <div class="dash-profile-stat">
+            <strong id="dashProfileStatWins">0</strong>
+            <span>Wins</span>
+          </div>
+          <div class="dash-profile-stat">
+            <strong id="dashProfileStatPosts">0</strong>
+            <span>Posts</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="dash-profile-actions">
+          <a href="course.html" class="btn btn-primary dash-profile-cta">
+            Continue Learning
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-left:6px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a href="profile.html" class="btn btn-outline dash-profile-view">View Profile</a>
+        </div>
+      </aside>
+
     </div><!-- /dash-layout -->
   </section>
 
@@ -470,7 +523,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-cards"></script>
+  <script src="script.js?v=2025-05-19-profile"></script>
 
   <!-- Sidebar action wiring — search, theme, logout buttons in the
        new icon rail delegate to their existing handlers in the
@@ -499,6 +552,95 @@
           adminIcon.style.display = 'flex';
         }
       } catch (_) {}
+
+      // -------------------------------------------------------
+      // Populate the LinkedIn-style profile overview card.
+      // Reads from AUTH, localStorage (auth_profile, auth_avatar),
+      // PROGRESS (lesson count), and tries POSTS / WINS for the
+      // stats. Falls back to zeros if anything is missing.
+      // -------------------------------------------------------
+      try {
+        var $ = function (id) { return document.getElementById(id); };
+
+        // Name + role
+        var username = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+        var profile = null;
+        try { profile = JSON.parse(localStorage.getItem('auth_profile') || 'null'); } catch (_) {}
+        var fullName = profile && (profile.firstName || profile.lastName)
+          ? ((profile.firstName || '') + ' ' + (profile.lastName || '')).trim()
+          : (username || 'Sphere Member');
+        var role = (typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin())
+          ? 'Admin · Marketing Coach'
+          : 'Marketing Intern';
+
+        var nameEl = $('dashProfileName');
+        var roleEl = $('dashProfileRole');
+        if (nameEl) nameEl.textContent = fullName;
+        if (roleEl) roleEl.textContent = role;
+
+        // Avatar — use stored auth_avatar (data URL or Firestore-mirrored
+        // URL) if present, otherwise show initials in a gradient circle.
+        var avatarUrl = '';
+        try { avatarUrl = localStorage.getItem('auth_avatar') || ''; } catch (_) {}
+        var avatarBox = $('dashProfileAvatar');
+        if (avatarBox) {
+          if (avatarUrl) {
+            avatarBox.innerHTML = '<img src="' + avatarUrl.replace(/"/g, '&quot;') + '" alt="">';
+          } else {
+            var initials = (fullName || username || 'U')
+              .split(/\s+/).filter(Boolean).slice(0, 2)
+              .map(function (s) { return s.charAt(0).toUpperCase(); })
+              .join('') || 'U';
+            var initEl = $('dashProfileInitials');
+            if (initEl) initEl.textContent = initials;
+          }
+        }
+
+        // Progress — lessons completed out of 16
+        var completed = 0;
+        try {
+          if (typeof PROGRESS !== 'undefined' && PROGRESS.getCompletedCount) {
+            completed = PROGRESS.getCompletedCount() || 0;
+          }
+        } catch (_) {}
+        var total = 16;
+        var pct = Math.max(0, Math.min(100, Math.round((completed / total) * 100)));
+        var progressText = $('dashProfileProgressText');
+        var progressFill = $('dashProfileProgressFill');
+        var progressHint = $('dashProfileProgressHint');
+        if (progressText) progressText.textContent = completed + ' / ' + total;
+        if (progressFill) progressFill.style.width = pct + '%';
+        if (progressHint) {
+          progressHint.textContent = completed === 0
+            ? 'Tara, simulan na natin!'
+            : (completed >= total ? 'Marketing Intern Graduate 🎓' : pct + '% through the program');
+        }
+
+        // Stats — lessons / wins / posts. WINS + POSTS counts come
+        // from the user-scoped data if those modules expose helpers,
+        // otherwise default to 0.
+        $('dashProfileStatLessons').textContent = completed;
+
+        try {
+          var winsCount = 0;
+          if (typeof WINS !== 'undefined' && WINS.getAll) {
+            var all = WINS.getAll() || [];
+            winsCount = all.filter(function (w) { return (w.username || '').toLowerCase() === (username || '').toLowerCase(); }).length;
+          }
+          $('dashProfileStatWins').textContent = winsCount;
+        } catch (_) {}
+
+        try {
+          var postsCount = 0;
+          if (typeof POSTS !== 'undefined' && POSTS.getAll) {
+            var allPosts = POSTS.getAll() || [];
+            postsCount = allPosts.filter(function (p) { return (p.username || '').toLowerCase() === (username || '').toLowerCase(); }).length;
+          }
+          $('dashProfileStatPosts').textContent = postsCount;
+        } catch (_) {}
+      } catch (e) {
+        console.warn('[PROFILE CARD] populate failed:', e && e.message);
+      }
 
       // Mirror the navbar's #notifBadge value into the sidebar's
       // #sidebarNotifBadge so the rail icon shows the unread count
