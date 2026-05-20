@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-float">
+  <link rel="stylesheet" href="styles.css?v=2025-05-20-features">
 </head>
 <body class="page-loaded">
 
@@ -48,6 +48,20 @@
   <!-- Profile Page -->
   <section class="profile-page">
     <div class="container">
+
+      <!-- Facebook-style cover banner — sits above the profile
+           layout. Falls back to a gradient if no photo uploaded.
+           Click the camera button to upload a custom cover. -->
+      <div class="profile-cover-banner" id="profileCoverBanner">
+        <img class="profile-cover-img" id="profileCoverImg" src="" alt="Cover" style="display:none;">
+        <label class="profile-cover-edit" for="coverPhotoUpload" title="Change cover photo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Change cover</span>
+        </label>
+        <button type="button" class="profile-cover-remove" id="coverPhotoRemove" style="display:none;" title="Remove cover photo">×</button>
+        <input type="file" id="coverPhotoUpload" accept="image/*" hidden>
+      </div>
+
       <div class="profile-layout">
 
         <!-- Profile Sidebar -->
@@ -76,6 +90,9 @@
             </a>
             <a class="profile-nav-item" data-section="progress">
               <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span> My Progress
+            </a>
+            <a class="profile-nav-item" data-section="activity">
+              <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> My Activity
             </a>
             <a class="profile-nav-item" data-section="certificate">
               <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span> Certificate
@@ -260,6 +277,32 @@
             </div>
           </div>
 
+          <!-- My Activity Section — user's own posts + wins, like
+               a personal feed. Tab toggle between posts and wins. -->
+          <div class="profile-section" id="section-activity">
+            <div class="profile-section-header">
+              <h2>My Activity</h2>
+              <p>Everything you've posted or shared with the community.</p>
+            </div>
+            <div class="activity-tabs">
+              <button type="button" class="activity-tab active" data-activity-tab="posts">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Posts
+                <span class="activity-tab-count" id="activityPostsCount">0</span>
+              </button>
+              <button type="button" class="activity-tab" data-activity-tab="wins">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                Wins
+                <span class="activity-tab-count" id="activityWinsCount">0</span>
+              </button>
+            </div>
+            <div class="activity-feed" id="activityFeed">
+              <div class="activity-empty" id="activityEmpty">
+                <p>No activity yet. Share something on the Feed or Big Wins tab — it'll show up here.</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Certificate Section -->
           <div class="profile-section" id="section-certificate">
             <div class="profile-section-header">
@@ -361,6 +404,201 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-float"></script>
+  <script src="script.js?v=2025-05-20-features"></script>
+
+  <!-- Cover photo upload + My Activity feed.
+       Cover photo persists in localStorage (auth_cover_<username>)
+       and is mirrored to Firestore via USER_SYNC.save when
+       available, so it follows the user across devices.
+       Activity feed filters POSTS + WINS by the current
+       username and renders them as a personal timeline. -->
+  <script>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      var username = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+      if (!username) return;
+
+      // ---------- COVER PHOTO ----------
+      var coverImg = $('profileCoverImg');
+      var coverRemoveBtn = $('coverPhotoRemove');
+      var coverInput = $('coverPhotoUpload');
+      var coverKey = 'auth_cover_' + username.toLowerCase();
+
+      function applyCover(dataUrl) {
+        if (!coverImg) return;
+        if (dataUrl) {
+          coverImg.src = dataUrl;
+          coverImg.style.display = 'block';
+          if (coverRemoveBtn) coverRemoveBtn.style.display = 'flex';
+        } else {
+          coverImg.style.display = 'none';
+          coverImg.src = '';
+          if (coverRemoveBtn) coverRemoveBtn.style.display = 'none';
+        }
+      }
+      // Load existing cover
+      try { applyCover(localStorage.getItem(coverKey) || ''); } catch (_) {}
+
+      // Pull from Firestore in case the user uploaded on another device
+      try {
+        if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+          DATA_SYNC.db.collection('sphere_users').doc(username.toLowerCase()).get()
+            .then(function (snap) {
+              if (!snap.exists) return;
+              var remote = (snap.data() || {}).coverPhoto;
+              if (remote && !localStorage.getItem(coverKey)) {
+                localStorage.setItem(coverKey, remote);
+                applyCover(remote);
+              }
+            }).catch(function () {});
+        }
+      } catch (_) {}
+
+      if (coverInput) {
+        coverInput.addEventListener('change', function (e) {
+          var file = e.target.files && e.target.files[0];
+          if (!file) return;
+          if (file.size > 4 * 1024 * 1024) {
+            alert('Cover photo too large — please upload under 4MB.');
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            var dataUrl = ev.target.result;
+            try { localStorage.setItem(coverKey, dataUrl); } catch (_) {}
+            applyCover(dataUrl);
+            // Sync to Firestore
+            try {
+              if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+                DATA_SYNC.db.collection('sphere_users').doc(username.toLowerCase())
+                  .set({ coverPhoto: dataUrl, coverUpdatedAt: Date.now() }, { merge: true })
+                  .catch(function (err) { console.warn('[COVER] Firestore sync failed:', err.message); });
+              }
+            } catch (_) {}
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      if (coverRemoveBtn) {
+        coverRemoveBtn.addEventListener('click', function () {
+          if (!confirm('Remove your cover photo?')) return;
+          try { localStorage.removeItem(coverKey); } catch (_) {}
+          applyCover('');
+          try {
+            if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && typeof firebase !== 'undefined') {
+              DATA_SYNC.db.collection('sphere_users').doc(username.toLowerCase())
+                .set({ coverPhoto: firebase.firestore.FieldValue.delete() }, { merge: true })
+                .catch(function () {});
+            }
+          } catch (_) {}
+        });
+      }
+
+      // ---------- MY ACTIVITY ----------
+      var activeTab = 'posts';
+      var feedEl = $('activityFeed');
+      var emptyEl = $('activityEmpty');
+      var postsCountEl = $('activityPostsCount');
+      var winsCountEl = $('activityWinsCount');
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      function timeAgo(ts) {
+        if (!ts) return '';
+        var diff = Date.now() - ts;
+        var m = Math.floor(diff / 60000);
+        if (m < 1) return 'just now';
+        if (m < 60) return m + 'm ago';
+        var h = Math.floor(m / 60);
+        if (h < 24) return h + 'h ago';
+        var d = Math.floor(h / 24);
+        if (d < 7) return d + 'd ago';
+        return new Date(ts).toLocaleDateString();
+      }
+      function userMatches(item) {
+        return (item.username || '').toLowerCase() === username.toLowerCase();
+      }
+      function getMine(mod) {
+        try {
+          if (typeof mod === 'undefined' || !mod || typeof mod.getAll !== 'function') return [];
+          return (mod.getAll() || []).filter(userMatches).sort(function (a, b) {
+            return (b.createdAt || 0) - (a.createdAt || 0);
+          });
+        } catch (_) { return []; }
+      }
+      function renderItem(item, type) {
+        var media = '';
+        if (Array.isArray(item.media) && item.media.length) {
+          media = '<div class="activity-item-media">';
+          item.media.slice(0, 4).forEach(function (m) {
+            if (m && m.type && m.type.indexOf('video') === 0) {
+              media += '<video src="' + esc(m.url || m.data || '') + '" controls></video>';
+            } else {
+              media += '<img src="' + esc(m.url || m.data || m) + '" alt="">';
+            }
+          });
+          media += '</div>';
+        }
+        var title = type === 'wins' && item.title
+          ? '<h4>' + esc(item.title) + '</h4>'
+          : '';
+        var body = item.description || item.text || '';
+        return ''
+          + '<div class="activity-item">'
+          + '<div class="activity-item-header">'
+          + '<span class="activity-item-type">' + (type === 'wins' ? '🏆 Win' : '💬 Post') + '</span>'
+          + '<span class="activity-item-time">' + esc(timeAgo(item.createdAt)) + '</span>'
+          + '</div>'
+          + title
+          + (body ? '<div class="activity-item-text">' + esc(body).replace(/\n/g, '<br>') + '</div>' : '')
+          + media
+          + '</div>';
+      }
+      function renderActivity() {
+        if (!feedEl) return;
+        var posts = getMine(window.POSTS);
+        var wins = getMine(window.WINS);
+        if (postsCountEl) postsCountEl.textContent = posts.length;
+        if (winsCountEl) winsCountEl.textContent = wins.length;
+        var items = activeTab === 'posts' ? posts : wins;
+        if (!items.length) {
+          if (emptyEl) {
+            emptyEl.style.display = 'block';
+            emptyEl.querySelector('p').textContent = activeTab === 'posts'
+              ? "No posts yet. Share something on the Feed and it'll show up here."
+              : "No wins shared yet. Post a win on the Big Wins tab to track your achievements.";
+          }
+          // Clear any rendered items but keep the empty state
+          Array.prototype.slice.call(feedEl.querySelectorAll('.activity-item')).forEach(function (n) { n.remove(); });
+          return;
+        }
+        if (emptyEl) emptyEl.style.display = 'none';
+        // Clear and re-render
+        Array.prototype.slice.call(feedEl.querySelectorAll('.activity-item')).forEach(function (n) { n.remove(); });
+        items.forEach(function (it) {
+          feedEl.insertAdjacentHTML('beforeend', renderItem(it, activeTab));
+        });
+      }
+      // Tab switching
+      document.querySelectorAll('.activity-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          activeTab = btn.dataset.activityTab;
+          document.querySelectorAll('.activity-tab').forEach(function (b) {
+            b.classList.toggle('active', b === btn);
+          });
+          renderActivity();
+        });
+      });
+      // Re-render whenever the user clicks the Activity nav item
+      document.querySelectorAll('.profile-nav-item[data-section="activity"]').forEach(function (a) {
+        a.addEventListener('click', renderActivity);
+      });
+      // Initial render
+      renderActivity();
+    })();
+  </script>
 </body>
 </html>

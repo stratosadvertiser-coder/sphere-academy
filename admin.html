@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-float">
+  <link rel="stylesheet" href="styles.css?v=2025-05-20-features">
 </head>
 <body class="page-loaded">
 
@@ -72,6 +72,7 @@
       <div class="admin-tabs">
         <button class="admin-tab active" data-tab="lessons"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Lesson Editor</button>
         <button class="admin-tab" data-tab="cards"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Course Card Images</button>
+        <button class="admin-tab" data-tab="bonus"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Bonus Courses</button>
         <button class="admin-tab" data-tab="site"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Site Settings</button>
         <button class="admin-tab" data-tab="students"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Students</button>
         <button class="admin-tab" data-tab="community"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M3 11l18-8v18l-18-8z"/><path d="M11 13v8"/></svg> Community</button>
@@ -299,6 +300,57 @@
             </div>
 
           </div>
+        </div>
+      </div>
+
+      <!-- Bonus Courses Tab — admins can add ADDITIONAL courses
+           beyond the main 16-lesson curriculum. Stored as a
+           simple JSON list in localStorage + Firestore. Each
+           bonus course renders as a card on course.html below
+           the main program. -->
+      <div class="admin-tab-panel" id="adminTab-bonus" style="display:none;">
+        <div class="admin-editor-card" style="margin-bottom:24px;">
+          <h3><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Bonus Courses</h3>
+          <p style="color:var(--text-light); font-size:0.88rem; margin-bottom:18px;">Add extra training programs beyond the main 16-lesson curriculum. These appear as cards below the main course on the Course page — useful for next-level training, advanced topics, or guest masterclasses.</p>
+
+          <!-- Existing bonus courses list -->
+          <div id="bonusCoursesList" style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;"></div>
+
+          <!-- Add new bonus course form -->
+          <details style="border:1px solid var(--border); border-radius:10px; padding:14px 16px; background:var(--bg-alt, rgba(99,91,255,0.04));">
+            <summary style="cursor:pointer; font-weight:600; font-size:0.94rem;">+ Add a new bonus course</summary>
+            <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
+              <div>
+                <label style="font-size:0.82rem; font-weight:600; color:var(--text-light); display:block; margin-bottom:6px;">Title</label>
+                <input type="text" id="bonusCourseTitle" placeholder="e.g. Advanced Meta Ads Mastery" style="width:100%;">
+              </div>
+              <div>
+                <label style="font-size:0.82rem; font-weight:600; color:var(--text-light); display:block; margin-bottom:6px;">Short description</label>
+                <textarea id="bonusCourseDesc" rows="3" placeholder="One or two sentences about what this course covers." style="width:100%;"></textarea>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                  <label style="font-size:0.82rem; font-weight:600; color:var(--text-light); display:block; margin-bottom:6px;">Lessons count (optional)</label>
+                  <input type="number" id="bonusCourseLessons" placeholder="e.g. 8" min="1" max="100" style="width:100%;">
+                </div>
+                <div>
+                  <label style="font-size:0.82rem; font-weight:600; color:var(--text-light); display:block; margin-bottom:6px;">Duration (optional)</label>
+                  <input type="text" id="bonusCourseDuration" placeholder="e.g. 2 months" style="width:100%;">
+                </div>
+              </div>
+              <div>
+                <label style="font-size:0.82rem; font-weight:600; color:var(--text-light); display:block; margin-bottom:6px;">Cover image URL (optional)</label>
+                <input type="url" id="bonusCourseImage" placeholder="https://… (or leave blank for a gradient)" style="width:100%;">
+              </div>
+              <div>
+                <label style="font-size:0.82rem; font-weight:600; color:var(--text-light); display:block; margin-bottom:6px;">Link / next step (optional)</label>
+                <input type="url" id="bonusCourseLink" placeholder="e.g. dashboard.html or external URL" style="width:100%;">
+              </div>
+              <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:4px;">
+                <button type="button" class="btn btn-primary" id="bonusCourseAddBtn" style="padding:9px 18px; font-size:0.86rem;">Add bonus course</button>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -681,6 +733,119 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-float"></script>
+  <script src="script.js?v=2025-05-20-features"></script>
+
+  <!-- Bonus Courses admin logic — CRUD over the bonus_courses
+       localStorage key with Firestore mirror at sphere_settings/
+       bonusCourses. Renders the existing list + handles add/delete. -->
+  <script>
+    (function () {
+      var STORAGE_KEY = 'bonus_courses';
+      var $ = function (id) { return document.getElementById(id); };
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function loadCourses() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+        catch (_) { return []; }
+      }
+      function saveCourses(list) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (_) {}
+        try {
+          if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+            DATA_SYNC.db.collection('sphere_settings').doc('bonusCourses')
+              .set({ courses: list, updatedAt: Date.now() }, { merge: true })
+              .catch(function (e) { console.warn('[BONUS] Firestore sync failed:', e.message); });
+          }
+        } catch (_) {}
+      }
+
+      // Pull from Firestore on load (so admin's local copy stays
+      // in sync with whatever was set elsewhere).
+      try {
+        if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+          DATA_SYNC.db.collection('sphere_settings').doc('bonusCourses').get()
+            .then(function (snap) {
+              if (!snap.exists) return;
+              var remote = (snap.data() || {}).courses;
+              if (Array.isArray(remote) && remote.length) {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); } catch (_) {}
+                render();
+              }
+            }).catch(function () {});
+        }
+      } catch (_) {}
+
+      function render() {
+        var list = $('bonusCoursesList');
+        if (!list) return;
+        var courses = loadCourses();
+        if (!courses.length) {
+          list.innerHTML = '<p style="margin:0; padding:18px; text-align:center; color:var(--text-light); background:var(--bg-alt, rgba(99,91,255,0.04)); border-radius:10px; border:1px dashed var(--border); font-size:0.9rem;">No bonus courses yet. Add one below to see it appear on the Course page.</p>';
+          return;
+        }
+        list.innerHTML = courses.map(function (c, i) {
+          var img = c.image
+            ? '<img src="' + esc(c.image) + '" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:10px;">'
+            : '<div style="width:64px; height:64px; border-radius:10px; background:linear-gradient(135deg,#635bff,#8b5cf6,#c084fc); flex-shrink:0;"></div>';
+          var meta = [];
+          if (c.lessons) meta.push(c.lessons + ' lessons');
+          if (c.duration) meta.push(esc(c.duration));
+          var metaStr = meta.length ? ' · ' + meta.join(' · ') : '';
+          return ''
+            + '<div style="display:flex; gap:14px; align-items:center; padding:14px 16px; background:var(--bg); border:1px solid var(--border); border-radius:12px;">'
+            + img
+            + '<div style="flex:1; min-width:0;">'
+            + '<h4 style="margin:0 0 4px; font-size:1rem; font-weight:700;">' + esc(c.title) + metaStr + '</h4>'
+            + (c.description ? '<p style="margin:0; color:var(--text-light); font-size:0.86rem; line-height:1.4;">' + esc(c.description) + '</p>' : '')
+            + '</div>'
+            + '<button type="button" data-bonus-delete="' + i + '" style="background:transparent; border:1px solid var(--border); color:var(--text-light); padding:7px 12px; border-radius:8px; font-size:0.82rem; cursor:pointer;">Delete</button>'
+            + '</div>';
+        }).join('');
+        list.querySelectorAll('[data-bonus-delete]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var idx = parseInt(btn.dataset.bonusDelete, 10);
+            if (!confirm('Delete this bonus course?')) return;
+            var arr = loadCourses();
+            arr.splice(idx, 1);
+            saveCourses(arr);
+            render();
+          });
+        });
+      }
+
+      var addBtn = $('bonusCourseAddBtn');
+      if (addBtn) {
+        addBtn.addEventListener('click', function () {
+          var title = ($('bonusCourseTitle').value || '').trim();
+          if (!title) { alert('Please give the course a title.'); return; }
+          var course = {
+            id: 'bc_' + Date.now(),
+            title: title,
+            description: ($('bonusCourseDesc').value || '').trim(),
+            lessons: parseInt($('bonusCourseLessons').value, 10) || 0,
+            duration: ($('bonusCourseDuration').value || '').trim(),
+            image: ($('bonusCourseImage').value || '').trim(),
+            link: ($('bonusCourseLink').value || '').trim(),
+            createdAt: Date.now()
+          };
+          var arr = loadCourses();
+          arr.push(course);
+          saveCourses(arr);
+          // Reset form
+          ['bonusCourseTitle','bonusCourseDesc','bonusCourseLessons','bonusCourseDuration','bonusCourseImage','bonusCourseLink'].forEach(function (id) {
+            var el = $(id); if (el) el.value = '';
+          });
+          render();
+        });
+      }
+
+      render();
+    })();
+  </script>
 </body>
 </html>
