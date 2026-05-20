@@ -11700,7 +11700,21 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   border-radius: 14px;
   position: relative;
   z-index: 1;
-  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.5);
+  /* Premium app-icon container — violet brand gradient
+     behind the transparent logo so it reads as a polished
+     icon, not just floating strokes on the card. Same vibe
+     as the favicon at a smaller scale. */
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #c084fc 100%);
+  padding: 8px;
+  object-fit: contain;
+  box-sizing: border-box;  /* keep 56×56 outer, padding eats inward */
+  box-shadow: 0 6px 16px -4px rgba(99, 91, 255, 0.45);
+}
+/* Inside the bento card, the navbar's light-mode invert filter
+   would flip our white planet to black against the violet — kill
+   it here so the white glyph stays white on the gradient. */
+[data-theme="light"] .bento-logo-img {
+  filter: none !important;
 }
 .bento-logo-meta {
   position: relative;
