@@ -13749,6 +13749,28 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   body:has(.dash-sidebar-rail) .nav-cta #themeToggle {
     display: none !important;
   }
+
+  /* On non-dashboard pages with the rail (course.html, events.html,
+     marked with body.with-rail), the rail is overlaid via fixed
+     positioning but the page content needs 64px of left padding
+     so it doesn't sit underneath. Dashboard handles this via the
+     .dash-layout grid, but those pages don't use that grid. */
+  body.with-rail .course-content,
+  body.with-rail .events-page,
+  body.with-rail > section:not(.navbar):not(.dash-page) {
+    padding-left: calc(64px + 24px) !important;
+    box-sizing: border-box;
+  }
+}
+
+/* On mobile, the rail collapses back to a slide-out drawer (per
+   .dash-sidebar mobile rules), so the page content doesn't need
+   the 64px shift. */
+@media (max-width: 900px) {
+  body.with-rail .course-content,
+  body.with-rail .events-page {
+    padding-left: 0;
+  }
 }
 
 /* On mobile, the sidebar reverts to its existing drawer behavior

@@ -10090,7 +10090,13 @@ function bindDashboardSidebar() {
   const toggleBtn = document.getElementById('dashSidebarToggle');
   const closeBtn = document.getElementById('dashSidebarClose');
   const toggleLabel = document.getElementById('dashSidebarToggleLabel');
-  const links = document.querySelectorAll('.dash-sidebar-link');
+  // Scope this to ONLY links that have a data-tab attribute. Otherwise
+  // the new rail action buttons (Search, Notifications, Profile, Theme,
+  // Log out) — which share the .dash-sidebar-link class but have no
+  // data-tab — would be wired up as if they were tabs. Clicking them
+  // would call activate(undefined), strip the active class from the
+  // real tab, and leave the dashboard blank with no panel showing.
+  const links = document.querySelectorAll('.dash-sidebar-link[data-tab]');
   const panels = document.querySelectorAll('.dash-panel');
 
   function openSidebar()  { if (sidebar) sidebar.classList.add('is-open'); }
