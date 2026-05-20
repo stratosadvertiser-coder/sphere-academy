@@ -12052,10 +12052,11 @@ document.addEventListener('mouseover', (e) => {
 }, true);
 
 // ============================================================
-// SIDEBAR RAIL TOGGLE — injects a chevron button at the top of
-// the rail that expands it from 64px to 220px (revealing the
-// text labels) and back. State persists in localStorage so the
-// user's preferred mode follows them across pages.
+// SIDEBAR RAIL TOGGLE + PREMIUM POLISH — injects:
+//   - A chevron toggle button (collapse/expand)
+//   - A brand header with logo + "Sphere Academy" wordmark
+//   - "COMMUNITY" and "ACCOUNT" section labels above each group
+// All visible only when expanded. State persists in localStorage.
 // Runs on every page that has the rail (dashboard, course,
 // events, profile, bonus-course, etc).
 // ============================================================
@@ -12073,8 +12074,14 @@ document.addEventListener('mouseover', (e) => {
     try { expanded = localStorage.getItem('sidebar_expanded') === '1'; } catch (_) {}
     if (expanded) rail.classList.add('is-expanded');
 
-    // Build the toggle button. Chevron-right when collapsed (means
-    // "expand right") → rotates to chevron-left via CSS when expanded.
+    // ----- Brand header (visible only when expanded) -----
+    const brand = document.createElement('div');
+    brand.className = 'dash-sidebar-brand';
+    brand.innerHTML =
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-05-sorbit" alt=""></div>' +
+      '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
+
+    // ----- Toggle button -----
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'dash-sidebar-toggle-btn';
@@ -12087,8 +12094,28 @@ document.addEventListener('mouseover', (e) => {
       try { localStorage.setItem('sidebar_expanded', now ? '1' : '0'); } catch (_) {}
     });
 
-    // Insert at the very top of the nav, above the Feed icon
+    // ----- Section labels (above each group) -----
+    function makeLabel(text) {
+      const l = document.createElement('div');
+      l.className = 'dash-sidebar-section-label';
+      l.textContent = text;
+      return l;
+    }
+    const communityLabel = makeLabel('Community');
+
+    // Insert brand FIRST, then toggle button, then the community
+    // section label, all before the existing nav items.
+    nav.insertBefore(communityLabel, nav.firstChild);
     nav.insertBefore(btn, nav.firstChild);
+    nav.insertBefore(brand, nav.firstChild);
+
+    // The existing divider in the HTML separates community from
+    // account actions. Insert an "Account" label right after it.
+    const divider = nav.querySelector('.dash-sidebar-divider');
+    if (divider) {
+      const accountLabel = makeLabel('Account');
+      divider.parentNode.insertBefore(accountLabel, divider.nextSibling);
+    }
   }
 
   if (document.readyState === 'loading') {

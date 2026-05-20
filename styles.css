@@ -13740,36 +13740,83 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     display: none !important;
   }
 
-  /* ----- EXPANDED RAIL MODE -----
+  /* ----- EXPANDED RAIL MODE — premium polish -----
      When the user clicks the toggle button, the sidebar grows
-     from 64px to 220px and the text labels become visible.
-     Icons stay left-aligned, labels appear next to them. */
+     from 64px to 240px and labels become visible. Icons stay
+     left-aligned, labels sit right next to them, badges float
+     to the right edge. Premium touches: brand header at top,
+     section labels, refined active + hover states. */
   .dash-sidebar-rail.is-expanded {
-    width: 220px !important;
-    padding: 14px 12px !important;
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 240px !important;
+    padding: 14px 10px !important;
+    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .dash-sidebar-rail {
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
+  /* Links + action buttons get identical treatment when expanded */
   .dash-sidebar-rail.is-expanded .dash-sidebar-link {
     width: 100% !important;
-    height: 44px !important;
+    height: 42px !important;
     justify-content: flex-start !important;
-    padding: 0 14px !important;
-    gap: 14px !important;
+    padding: 0 12px !important;
+    gap: 12px !important;
+    text-align: left !important;
+    font-family: inherit !important;
   }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link svg {
+    flex-shrink: 0;
+  }
+  /* Text label — left-aligned, takes available space, truncates.
+     text-align: left forces buttons (which inherit text-align:
+     center from the UA stylesheet) to align like anchors do. */
   .dash-sidebar-rail.is-expanded .dash-sidebar-link > span:not(.sidebar-badge) {
-    display: inline !important;
-    font-size: 0.92rem;
+    display: inline-block !important;
+    font-size: 0.9rem;
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     flex: 1;
     min-width: 0;
+    text-align: left !important;
+    letter-spacing: -0.005em;
   }
-  /* Hide tooltips when expanded — text labels are right there */
+  /* Active state — subtle violet fill + left edge bar for the
+     "premium product app" feel (think Linear / Notion). */
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link.active {
+    background: rgba(99, 91, 255, 0.10) !important;
+    color: var(--primary) !important;
+    position: relative;
+    font-weight: 600;
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: var(--primary);
+    border-radius: 0 3px 3px 0;
+  }
+  [data-theme="dark"] .dash-sidebar-rail.is-expanded .dash-sidebar-link.active {
+    background: rgba(139, 92, 246, 0.16) !important;
+    color: #c4b5fd !important;
+  }
+  /* Hover state — gentle background lift */
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link:hover {
+    background: rgba(99, 91, 255, 0.06) !important;
+  }
+  [data-theme="dark"] .dash-sidebar-rail.is-expanded .dash-sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+  /* Logout hover — soft red tint to flag destructive action */
+  .dash-sidebar-rail.is-expanded .dash-sidebar-logout:hover {
+    background: rgba(220, 38, 38, 0.08) !important;
+    color: #dc2626 !important;
+  }
+  /* Hide tooltips when expanded — labels are right there */
   .dash-sidebar-rail.is-expanded .dash-sidebar-link[data-tooltip]::after,
   .dash-sidebar-rail.is-expanded .dash-sidebar-link[data-tooltip]::before {
     display: none !important;
@@ -13780,29 +13827,82 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     margin-left: auto !important;
     flex-shrink: 0;
   }
-  /* Wider divider for expanded mode */
+  /* Wider divider in expanded mode */
   .dash-sidebar-rail.is-expanded .dash-sidebar-divider {
     width: auto !important;
-    margin: 8px 4px !important;
+    margin: 10px 12px !important;
+  }
+  /* Section labels — only visible when expanded. Inserted via JS
+     above each section so admin can see "COMMUNITY" and "ACCOUNT"
+     groupings. Hidden when collapsed (icon-only mode). */
+  .dash-sidebar-section-label {
+    display: none;
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-section-label {
+    display: block;
+    padding: 6px 14px 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    opacity: 0.65;
   }
   /* When expanded, the layout reserves more space on the left */
   body:has(.dash-sidebar-rail.is-expanded) .dash-layout {
-    grid-template-columns: 220px 1fr !important;
+    grid-template-columns: 240px 1fr !important;
   }
   body.with-rail:has(.dash-sidebar-rail.is-expanded) .course-content,
   body.with-rail:has(.dash-sidebar-rail.is-expanded) .events-page,
   body.with-rail:has(.dash-sidebar-rail.is-expanded) > section:not(.navbar):not(.dash-page) {
-    padding-left: calc(220px + 24px) !important;
+    padding-left: calc(240px + 24px) !important;
   }
 
-  /* The toggle button itself — sits at the very top of the rail.
-     Rotates the chevron when expanded so its direction always
-     points toward where the click will go. */
+  /* Brand header inside the expanded rail — small "Sphere Academy"
+     wordmark above the toggle. Adds polish + branding without
+     stealing nav real estate. */
+  .dash-sidebar-rail .dash-sidebar-brand {
+    display: none;
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 12px 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .dash-sidebar-brand-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #635bff, #8b5cf6, #c084fc);
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dash-sidebar-brand-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .dash-sidebar-brand-text {
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  /* The toggle button — chevron at the top of the rail. Sits in
+     a compact icon slot when collapsed, becomes a right-aligned
+     "collapse" affordance when expanded. */
   .dash-sidebar-rail .dash-sidebar-toggle-btn {
     display: flex !important;
-    width: 48px;
-    height: 36px;
-    margin: 0 auto 10px;
+    width: 40px;
+    height: 32px;
+    margin: 0 auto 8px;
     align-items: center;
     justify-content: center;
     background: transparent;
@@ -13813,19 +13913,19 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     transition: background 0.15s ease, color 0.15s ease;
   }
   .dash-sidebar-rail .dash-sidebar-toggle-btn:hover {
-    background: var(--bg-alt, rgba(99, 91, 255, 0.10));
+    background: rgba(99, 91, 255, 0.10);
     color: var(--primary);
   }
   .dash-sidebar-rail .dash-sidebar-toggle-btn svg {
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .dash-sidebar-rail.is-expanded .dash-sidebar-toggle-btn svg {
     transform: rotate(180deg);
   }
   .dash-sidebar-rail.is-expanded .dash-sidebar-toggle-btn {
-    width: 100% !important;
-    justify-content: flex-end !important;
-    padding: 0 16px !important;
+    margin: 0 0 12px auto !important;
+    width: 32px !important;
+    height: 32px !important;
   }
   /* Hide the ENTIRE right-side navbar group when the icon rail
      is present. The rail now owns search, notifications, theme
