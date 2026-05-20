@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-cards">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-scroll">
 </head>
 <body class="page-loaded">
 
@@ -187,13 +187,13 @@
   <!-- What You'll Learn -->
   <section class="features" id="features" style="margin-top:2cm;">
     <div class="container">
-      <div class="features-header">
+      <div class="features-header reveal-on-scroll">
         <h2 class="section-title">Skills You'll Build in This Course</h2>
         <div class="features-tags" id="featureTags">
           <!-- Populated by JS from admin settings -->
         </div>
       </div>
-      <div class="features-grid" id="featuresGrid">
+      <div class="features-grid reveal-children" id="featuresGrid">
         <div class="feature-card">
           <div class="feature-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2 4 4 .5-3 3 .7 4.2L12 12l-3.7 1.7.7-4.2-3-3L10 6z"/></svg></div>
           <h3>Image Creatives</h3>
@@ -231,12 +231,12 @@
   <!-- Curriculum / Roadmap -->
   <section class="curriculum" id="curriculum">
     <div class="container">
-      <div class="curriculum-header">
+      <div class="curriculum-header reveal-on-scroll">
         <p class="section-label">4-Month Roadmap</p>
         <h2 class="section-title">Your Learning Path</h2>
         <p class="section-desc">A structured growth path from creative skills to full ads management, organized into 4 phases.</p>
       </div>
-      <div class="modules-list">
+      <div class="modules-list reveal-children">
 
         <!-- MONTH 1: Creatives -->
         <div class="module-item open">
@@ -324,7 +324,7 @@
 
   <!-- Program Outcome -->
   <section class="instructor" id="outcome">
-    <div class="container">
+    <div class="container reveal-on-scroll">
       <div class="outcome-carousel" id="outcomeCarousel">
         <div class="outcome-slides" id="outcomeSlides">
           <!-- Slides populated by JS. Empty placeholder shown when no images. -->
@@ -366,12 +366,12 @@
   <!-- Testimonials -->
   <section class="testimonials" id="testimonials">
     <div class="container">
-      <div class="testimonials-header">
+      <div class="testimonials-header reveal-on-scroll">
         <p class="section-label">Intern Reviews</p>
         <h2 class="section-title">What Our Interns Say</h2>
         <p class="section-desc">Real feedback from interns who completed the program and joined the marketing team.</p>
       </div>
-      <div class="testimonials-grid" id="testimonialsGrid">
+      <div class="testimonials-grid reveal-children" id="testimonialsGrid">
         <div class="testimonial-card">
           <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
           <blockquote>"The creatives phase gave me so much confidence. I went from never opening Canva to producing ad-ready content that actually performed."</blockquote>
@@ -411,7 +411,7 @@
 
   <!-- About -->
   <section class="about-section" id="about">
-    <div class="container">
+    <div class="container reveal-on-scroll">
       <div class="about-logo-wrap">
         <div class="about-logo-frame">
           <img src="logo.png?v=2025-05-05-sorbit" alt="Stratos Sphere Academy" class="about-logo">
@@ -518,7 +518,7 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script defer src="firebase-config.js"></script>
-  <script defer src="script.js?v=2025-05-19-cards"></script>
+  <script defer src="script.js?v=2025-05-19-scroll"></script>
 
   <!-- Rotating headline word: GROW → SCALE → LEAD → DELIVER → ALIGN.
        Small inline script (no external dep) that swaps the text at
@@ -562,6 +562,34 @@
         rotate();
         setInterval(rotate, 3500);
       }, 2800);
+    })();
+  </script>
+
+  <!-- Scroll fade-in — uses IntersectionObserver to add .is-visible
+       to any element with .reveal-on-scroll or .reveal-children when
+       it crosses the viewport. Fires once per element. Respects
+       prefers-reduced-motion by marking everything visible upfront. -->
+  <script>
+    (function () {
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var targets = document.querySelectorAll('.reveal-on-scroll, .reveal-children');
+      if (!targets.length) return;
+      if (!('IntersectionObserver' in window) || reduced) {
+        targets.forEach(function (el) { el.classList.add('is-visible'); });
+        return;
+      }
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.12,
+        rootMargin: '0px 0px -50px 0px'
+      });
+      targets.forEach(function (el) { observer.observe(el); });
     })();
   </script>
 </body>

@@ -13955,3 +13955,68 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
 [data-theme="dark"] .bento-logo-text span {
   color: #d4d4d8 !important;
 }
+
+/* ============================================================
+   SCROLL FADE-IN — sections + cards smoothly fade up into view
+   as the user scrolls past. Pure CSS state with IntersectionObserver
+   adding .is-visible when the element crosses the viewport.
+   The .reveal-children variant cascades all direct children with
+   a staggered delay so feature cards / phase cards / testimonial
+   cards appear one after another instead of all at once.
+   Respects prefers-reduced-motion.
+   ============================================================ */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  /* GPU hint — kept light so we don't burn memory on every
+     section. Only triggers a paint layer when the element is
+     about to animate. */
+  will-change: opacity, transform;
+}
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered children — when .reveal-children gets .is-visible,
+   each direct child runs the slide-up animation with an
+   8% offset so they appear one after another. */
+.reveal-children > * {
+  opacity: 0;
+}
+.reveal-children.is-visible > * {
+  animation: revealChildSlide 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.reveal-children.is-visible > *:nth-child(1)  { animation-delay: 0s;    }
+.reveal-children.is-visible > *:nth-child(2)  { animation-delay: 0.08s; }
+.reveal-children.is-visible > *:nth-child(3)  { animation-delay: 0.16s; }
+.reveal-children.is-visible > *:nth-child(4)  { animation-delay: 0.24s; }
+.reveal-children.is-visible > *:nth-child(5)  { animation-delay: 0.32s; }
+.reveal-children.is-visible > *:nth-child(6)  { animation-delay: 0.40s; }
+.reveal-children.is-visible > *:nth-child(7)  { animation-delay: 0.48s; }
+.reveal-children.is-visible > *:nth-child(8)  { animation-delay: 0.56s; }
+.reveal-children.is-visible > *:nth-child(9)  { animation-delay: 0.64s; }
+.reveal-children.is-visible > *:nth-child(10) { animation-delay: 0.72s; }
+
+@keyframes revealChildSlide {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .reveal-children > * { opacity: 1 !important; }
+  .reveal-children.is-visible > * { animation: none !important; }
+}
