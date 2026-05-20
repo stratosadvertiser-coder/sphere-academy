@@ -12050,3 +12050,50 @@ document.addEventListener('mouseover', (e) => {
   const img = e.target && e.target.closest && e.target.closest('.post-media img');
   if (img && img.style.cursor !== 'zoom-in') img.style.cursor = 'zoom-in';
 }, true);
+
+// ============================================================
+// SIDEBAR RAIL TOGGLE — injects a chevron button at the top of
+// the rail that expands it from 64px to 220px (revealing the
+// text labels) and back. State persists in localStorage so the
+// user's preferred mode follows them across pages.
+// Runs on every page that has the rail (dashboard, course,
+// events, profile, bonus-course, etc).
+// ============================================================
+(function () {
+  function init() {
+    const rail = document.querySelector('.dash-sidebar-rail');
+    if (!rail) return;
+    const nav = rail.querySelector('.dash-sidebar-nav');
+    if (!nav) return;
+    // Only inject once per page
+    if (rail.querySelector('.dash-sidebar-toggle-btn')) return;
+
+    // Restore persisted state — default to collapsed (icons only)
+    let expanded = false;
+    try { expanded = localStorage.getItem('sidebar_expanded') === '1'; } catch (_) {}
+    if (expanded) rail.classList.add('is-expanded');
+
+    // Build the toggle button. Chevron-right when collapsed (means
+    // "expand right") → rotates to chevron-left via CSS when expanded.
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'dash-sidebar-toggle-btn';
+    btn.setAttribute('aria-label', 'Toggle sidebar');
+    btn.title = 'Toggle sidebar';
+    btn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+    btn.addEventListener('click', function () {
+      const now = rail.classList.toggle('is-expanded');
+      try { localStorage.setItem('sidebar_expanded', now ? '1' : '0'); } catch (_) {}
+    });
+
+    // Insert at the very top of the nav, above the Feed icon
+    nav.insertBefore(btn, nav.firstChild);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

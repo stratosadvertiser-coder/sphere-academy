@@ -13739,6 +13739,94 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   .dash-sidebar-rail .dash-sidebar-close {
     display: none !important;
   }
+
+  /* ----- EXPANDED RAIL MODE -----
+     When the user clicks the toggle button, the sidebar grows
+     from 64px to 220px and the text labels become visible.
+     Icons stay left-aligned, labels appear next to them. */
+  .dash-sidebar-rail.is-expanded {
+    width: 220px !important;
+    padding: 14px 12px !important;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .dash-sidebar-rail {
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link {
+    width: 100% !important;
+    height: 44px !important;
+    justify-content: flex-start !important;
+    padding: 0 14px !important;
+    gap: 14px !important;
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link > span:not(.sidebar-badge) {
+    display: inline !important;
+    font-size: 0.92rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+  }
+  /* Hide tooltips when expanded — text labels are right there */
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link[data-tooltip]::after,
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link[data-tooltip]::before {
+    display: none !important;
+  }
+  /* Badges move inline next to the text instead of top-right corner */
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link .sidebar-badge {
+    position: static !important;
+    margin-left: auto !important;
+    flex-shrink: 0;
+  }
+  /* Wider divider for expanded mode */
+  .dash-sidebar-rail.is-expanded .dash-sidebar-divider {
+    width: auto !important;
+    margin: 8px 4px !important;
+  }
+  /* When expanded, the layout reserves more space on the left */
+  body:has(.dash-sidebar-rail.is-expanded) .dash-layout {
+    grid-template-columns: 220px 1fr !important;
+  }
+  body.with-rail:has(.dash-sidebar-rail.is-expanded) .course-content,
+  body.with-rail:has(.dash-sidebar-rail.is-expanded) .events-page,
+  body.with-rail:has(.dash-sidebar-rail.is-expanded) > section:not(.navbar):not(.dash-page) {
+    padding-left: calc(220px + 24px) !important;
+  }
+
+  /* The toggle button itself — sits at the very top of the rail.
+     Rotates the chevron when expanded so its direction always
+     points toward where the click will go. */
+  .dash-sidebar-rail .dash-sidebar-toggle-btn {
+    display: flex !important;
+    width: 48px;
+    height: 36px;
+    margin: 0 auto 10px;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .dash-sidebar-rail .dash-sidebar-toggle-btn:hover {
+    background: var(--bg-alt, rgba(99, 91, 255, 0.10));
+    color: var(--primary);
+  }
+  .dash-sidebar-rail .dash-sidebar-toggle-btn svg {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-toggle-btn svg {
+    transform: rotate(180deg);
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-toggle-btn {
+    width: 100% !important;
+    justify-content: flex-end !important;
+    padding: 0 16px !important;
+  }
   /* Hide the ENTIRE right-side navbar group when the icon rail
      is present. The rail now owns search, notifications, theme
      toggle, profile, admin panel, and log out — so the navbar's
