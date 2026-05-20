@@ -11466,26 +11466,31 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
    through the indigo family (deep → mid → pale → mid → deep) so it
    reads as motion without the green/pink off-tones. */
 .hero-title-gradient {
+  /* Dark violet family but every stop is bright enough to
+     stay visible against the #18181B background. The
+     previous gradient had #312e81 at the edges which is
+     SO dark it disappeared into the page when the gradient
+     position landed there, making the word invisible.
+     Now the darkest stop is #7c3aed (rich violet) which
+     still pops against dark backgrounds. */
   background: linear-gradient(90deg,
-    #312e81 0%,
-    #4338ca 12%,
-    #635bff 25%,
-    #8b9eff 40%,
-    #c5cbf5 50%,
-    #a78bfa 60%,
-    #8b9eff 75%,
-    #635bff 88%,
-    #312e81 100%
+    #7c3aed 0%,
+    #8b5cf6 18%,
+    #a78bfa 35%,
+    #c084fc 50%,
+    #a78bfa 65%,
+    #8b5cf6 82%,
+    #7c3aed 100%
   );
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  /* 6s gives a clearly visible flow without burning CPU.
-     The 300% background-size means the gradient travels
-     further per cycle, so the color motion feels richer. */
-  animation: gradientShift 6s linear infinite;
+  /* 5s linear infinite — gradient flows continuously, never
+     pauses, and you can clearly see the color motion travel
+     across each word in the rotation. */
+  animation: gradientShift 5s linear infinite;
   display: inline-block;
 }
 @keyframes gradientShift {
@@ -12526,21 +12531,26 @@ code, pre, .lesson-id, .phase-week {
   animation: none !important;
 }
 .hero-title-gradient {
+  /* Same bright-violet palette as the primary rule above —
+     just re-declared here with !important so this block,
+     which lives inside the Emil-theme overrides, can't fall
+     back to the old dark gradient that was invisible against
+     the #18181B background. */
   background: linear-gradient(90deg,
-    #312e81 0%,
-    #635bff 25%,
-    #8b9eff 50%,
-    #c5cbf5 65%,
-    #8b9eff 80%,
-    #635bff 95%,
-    #312e81 100%
+    #7c3aed 0%,
+    #8b5cf6 18%,
+    #a78bfa 35%,
+    #c084fc 50%,
+    #a78bfa 65%,
+    #8b5cf6 82%,
+    #7c3aed 100%
   ) !important;
-  background-size: 250% 100% !important;
+  background-size: 300% 100% !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
-  animation: gradientShift 6s linear infinite !important;
+  animation: gradientShift 5s linear infinite !important;
 }
 
 /* "Skills You'll Build" section — trimmed back to a normal section
