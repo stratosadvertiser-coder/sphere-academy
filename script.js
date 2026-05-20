@@ -214,31 +214,46 @@ const DATA_SYNC = {
 
       // Sign in anonymously so Firestore writes work (required for rule "request.auth != null")
       // Only if no user is already signed in (e.g. via Google OAuth)
-      if (firebase.auth) {
+      //
+      // Also expose this.ready — a promise that resolves once auth has
+      // settled either way. Callers like the login.html fallback can
+      // `await DATA_SYNC.ready` before issuing reads, so they don't
+      // race against the initial signInAnonymously() and get a
+      // permission-denied error on the very first login attempt.
+      this.ready = new Promise(resolve => {
+        if (!firebase.auth) { resolve(); return; }
+        let resolved = false;
+        const markReady = () => { if (!resolved) { resolved = true; resolve(); } };
         firebase.auth().onAuthStateChanged(user => {
           if (!user) {
             firebase.auth().signInAnonymously()
               .then(() => {
                 console.log('[SYNC] Firebase anonymous auth ready');
-                // Once auth is live, push any local-only items up to
-                // Firestore — items that were saved locally back when
-                // security rules were blocking the write.
                 if (typeof backfillCommunityToFirestore === 'function') {
                   backfillCommunityToFirestore();
                 }
+                markReady();
               })
-              .catch(e => console.warn('[SYNC] Anonymous auth failed (writes may fail):', e.message));
+              .catch(e => {
+                console.warn('[SYNC] Anonymous auth failed (writes may fail):', e.message);
+                markReady(); // still resolve so login form doesn't hang
+              });
           } else {
-            // Already authenticated (e.g. existing anon session) — still
-            // run the backfill once per session.
             if (typeof backfillCommunityToFirestore === 'function') {
               backfillCommunityToFirestore();
             }
+            markReady();
           }
         });
-      }
+        // Safety net — if onAuthStateChanged never fires (e.g. Firebase
+        // is blocked by ad blocker or CSP), resolve after 4s so the
+        // login form falls through to localStorage-only mode.
+        setTimeout(markReady, 4000);
+      });
     } catch (e) {
       console.error('Firestore init failed:', e);
+      // Even on init failure, resolve `ready` so awaits don't hang.
+      this.ready = Promise.resolve();
     }
   },
 
@@ -2213,6 +2228,50 @@ const AUTH = {
     try {
       const users = safeGetJSON(this.USERS_KEY, []);
       let dirty = false;
+
+      // Normalize EVERY username to lowercase + trimmed. Legacy
+      // accounts from before the casing rollout may have stored
+      // mixed-case usernames like "Maria" — those need to be
+      // lowercased so login + Firestore doc-ids stay consistent.
+      // Whitespace from copy-paste also gets stripped here.
+      users.forEach(u => {
+        if (!u || typeof u.username !== 'string') return;
+        const norm = u.username.toLowerCase().trim();
+        if (norm !== u.username) {
+          u.username = norm;
+          dirty = true;
+        }
+      });
+
+      // De-duplicate any records that collide after normalization
+      // (e.g. both "Maria" and "maria" existed). Keep the one with
+      // the more complete record (password + fullName).
+      const seen = new Map();
+      const deduped = [];
+      users.forEach(u => {
+        if (!u || !u.username) { deduped.push(u); return; }
+        const key = u.username;
+        if (!seen.has(key)) {
+          seen.set(key, deduped.length);
+          deduped.push(u);
+        } else {
+          const existing = deduped[seen.get(key)];
+          // Prefer the record that has both password + fullName
+          const existingScore = (existing.password ? 1 : 0) + (existing.fullName ? 1 : 0);
+          const newScore = (u.password ? 1 : 0) + (u.fullName ? 1 : 0);
+          if (newScore > existingScore) {
+            deduped[seen.get(key)] = u;
+            dirty = true;
+          } else {
+            dirty = true; // dropping a dupe still counts as dirty
+          }
+        }
+      });
+      if (deduped.length !== users.length) {
+        users.length = 0;
+        users.push.apply(users, deduped);
+      }
+
       users.forEach(u => {
         if (u.role !== 'admin') return;
         if (u.fullName === 'Admin' || u.fullName === 'admin' || !u.fullName) {
@@ -2313,16 +2372,32 @@ const AUTH = {
       // login time, so the admin Students tab sees them immediately —
       // doesn't have to wait for USER_SYNC.save() to fire 1.5s later
       // on the dashboard (which can race the page load).
+      //
+      // CRITICAL: we also mirror the password here. Legacy accounts
+      // created before the signup-writes-password fix have a Firestore
+      // doc with no `password` field, so cross-device login fails.
+      // By mirroring on every successful login, any account becomes
+      // cross-device capable after a single login from any device.
+      // The Firestore rules already require auth for sphere_users
+      // writes, so this stays within the existing security model.
       try {
         if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && typeof firebase !== 'undefined') {
-          DATA_SYNC.db.collection('sphere_users').doc(user.username).set({
-            username: user.username,
-            displayName: user.fullName || user.username,
+          // Normalize the username for the Firestore doc id so all
+          // writes target the same canonical doc, even if the local
+          // record stored a mixed-case original.
+          const canonicalUsername = (user.username || '').toLowerCase().trim();
+          const payload = {
+            username: canonicalUsername,
+            displayName: user.fullName || canonicalUsername,
             email: user.email || '',
             role: user.role || 'student',
             lastActive: firebase.firestore.FieldValue.serverTimestamp(),
             lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true })
+          };
+          // Only mirror the password if it's a real value — never
+          // overwrite with an empty string.
+          if (user.password) payload.password = user.password;
+          DATA_SYNC.db.collection('sphere_users').doc(canonicalUsername).set(payload, { merge: true })
             .catch(e => console.warn('[LOGIN] Firestore lastActive update failed:', e.message));
         }
       } catch (e) { /* non-fatal */ }
@@ -2333,11 +2408,23 @@ const AUTH = {
 
   register(fullName, email, username, password) {
     this.initUsers();
+    // Normalize username + email so every storage path uses the same
+    // canonical form. Mixed-case or whitespace-padded usernames here
+    // are what cause Firestore doc-id mismatches at login time.
+    username = String(username || '').toLowerCase().trim();
+    email = String(email || '').toLowerCase().trim();
+    fullName = String(fullName || '').trim();
+    password = String(password || '');
+
+    if (!username || !password) {
+      return { success: false, error: 'Username and password are required.' };
+    }
+
     const users = this.getAllUsers();
-    if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+    if (users.find(u => (u.username || '').toLowerCase().trim() === username)) {
       return { success: false, error: 'Username already taken.' };
     }
-    if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+    if (email && users.find(u => (u.email || '').toLowerCase().trim() === email)) {
       return { success: false, error: 'Email already registered.' };
     }
     users.push({
@@ -2354,10 +2441,17 @@ const AUTH = {
     // log in for the first time. USER_SYNC.save() will merge real
     // progress into this doc once the student actually starts using
     // the site.
+    //
+    // CRITICAL: include the `password` field so the student can log in
+    // on a DIFFERENT device — the login.html fallback queries
+    // sphere_users/{username}.password to verify cross-device logins.
+    // Without this, every new signup is single-device-locked until an
+    // admin manually resets the password.
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && typeof firebase !== 'undefined') {
         DATA_SYNC.db.collection('sphere_users').doc(username).set({
           username: username,
+          password: password,
           displayName: fullName,
           email: email,
           role: 'student',
@@ -3508,10 +3602,23 @@ if (loginForm) {
     console.log('[LOGIN] Local check failed, trying Firestore fallback…');
 
     // Fallback — check Firestore in case the admin recently reset the
-    // password on another device.
+    // password on another device, OR this is a fresh device for an
+    // account that signed up elsewhere.
     if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.originalLabel = submitBtn.textContent; submitBtn.textContent = 'Signing in…'; }
     let remoteHit = false;
     let remoteAttempted = false;
+
+    // Wait for Firebase anonymous auth to finish before issuing
+    // reads — otherwise the very first login attempt on a fresh page
+    // load races signInAnonymously() and Firestore rejects the read
+    // with permission-denied, leaving the user staring at "Invalid
+    // username or password" when their credentials are actually right.
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.ready) {
+        await DATA_SYNC.ready;
+      }
+    } catch (_) { /* non-fatal — fall through to the read attempt */ }
+
     try {
       if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && username) {
         remoteAttempted = true;
@@ -3521,6 +3628,7 @@ if (loginForm) {
 
         let matchedData = null;
         let foundDocButPwMismatch = false;
+        let foundDocButNoPassword = false;
         for (const id of tryIds) {
           try {
             const snap = await DATA_SYNC.db.collection('sphere_users').doc(id).get();
@@ -3542,6 +3650,14 @@ if (loginForm) {
                   foundDocButPwMismatch = true;
                   console.log('[LOGIN] ✗ Password did NOT match. Stored length:', storedPw.length, 'Input length:', password.length);
                 }
+              } else {
+                // Doc exists but has no password — likely a legacy
+                // account created before the signup-writes-password
+                // fix. The student needs to either log in once from
+                // their original device (which auto-backfills the
+                // password to Firestore), or have an admin reset it.
+                foundDocButNoPassword = true;
+                console.log('[LOGIN] ✗ Doc exists but has no password field — legacy account');
               }
             } else {
               console.log('[LOGIN] No doc at:', id);
@@ -3588,6 +3704,11 @@ if (loginForm) {
 
         if (foundDocButPwMismatch && loginError) {
           loginError.textContent = 'Wrong password for that account. (If your admin just reset it, double-check the exact characters.)';
+          loginError.style.display = 'block';
+          return;
+        }
+        if (foundDocButNoPassword && loginError) {
+          loginError.textContent = 'This account needs to be re-activated for cross-device login. Please log in once from the device you originally signed up on, or ask your admin to reset your password.';
           loginError.style.display = 'block';
           return;
         }
@@ -10936,9 +11057,15 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
       // the table reflects the change immediately.
       studentsTbody.querySelectorAll('.students-role-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
-          const username = btn.dataset.username;
+          const rawUsername = btn.dataset.username;
           const nextRole = btn.dataset.nextRole;
-          if (!username || !nextRole) return;
+          if (!rawUsername || !nextRole) return;
+          // Normalize to the canonical lowercase form so we hit the
+          // SAME Firestore doc that signup + login use. Writing
+          // sphere_users/Maria when the canonical doc is at
+          // sphere_users/maria creates a ghost record that login
+          // never reads, leaving the role change effectively invisible.
+          const username = rawUsername.toLowerCase().trim();
 
           const confirmMsg = nextRole === 'admin'
             ? 'Promote @' + username + ' to ADMIN?\n\nThey will get full admin access — editing lessons, managing students, viewing all submissions, etc.\n\nThis takes effect on their next login.'
@@ -10964,7 +11091,7 @@ if (currentPage === 'admin.html' && typeof AUTH !== 'undefined' && AUTH.isAdmin 
           // 2) localStorage — so this admin's view updates instantly
           try {
             const users = AUTH.getAllUsers();
-            const idx = users.findIndex(u => (u.username || '').toLowerCase() === username.toLowerCase());
+            const idx = users.findIndex(u => (u.username || '').toLowerCase().trim() === username);
             if (idx !== -1) {
               users[idx].role = nextRole;
               safeSetItem(AUTH.USERS_KEY, JSON.stringify(users));
