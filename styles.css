@@ -11468,24 +11468,29 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
 .hero-title-gradient {
   background: linear-gradient(90deg,
     #312e81 0%,
+    #4338ca 12%,
     #635bff 25%,
-    #8b9eff 50%,
-    #c5cbf5 65%,
-    #8b9eff 80%,
-    #635bff 95%,
+    #8b9eff 40%,
+    #c5cbf5 50%,
+    #a78bfa 60%,
+    #8b9eff 75%,
+    #635bff 88%,
     #312e81 100%
   );
-  background-size: 250% 100%;
+  background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: gradientShift 9s linear infinite;
+  /* 6s gives a clearly visible flow without burning CPU.
+     The 300% background-size means the gradient travels
+     further per cycle, so the color motion feels richer. */
+  animation: gradientShift 6s linear infinite;
   display: inline-block;
 }
 @keyframes gradientShift {
-  0%   { background-position: 250% 50%; }
-  100% { background-position: -250% 50%; }
+  0%   { background-position: 300% 50%; }
+  100% { background-position: -300% 50%; }
 }
 
 .hero-sub {
@@ -12535,7 +12540,7 @@ code, pre, .lesson-id, .phase-week {
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
-  animation: gradientShift 9s linear infinite !important;
+  animation: gradientShift 6s linear infinite !important;
 }
 
 /* "Skills You'll Build" section — trimmed back to a normal section
@@ -13468,28 +13473,53 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
 
 /* ============================================================
    ROTATING WORD — the headline's last word cycles through
-   GROW → SCALE → LEAD → DELIVER → ALIGN with a slide+fade.
-   The gradient wrapper (.hero-title-gradient) keeps its
-   animated indigo shimmer; this inner span just handles
-   the text swap. JS toggles .is-swapping every ~3s.
+   GROW → SCALE → LEAD → DELIVER → ALIGN with a soft
+   scale+blur+fade swap. The gradient wrapper
+   (.hero-title-gradient) keeps its animated indigo shimmer
+   continuous through the swap so the color flow never stops;
+   this inner span just handles the text crossfade. JS toggles
+   .is-swapping every ~3.5s.
    ============================================================ */
 .rotating-word {
   display: inline-block;
-  /* line-height: 1 ensures the translateY doesn't bleed into
-     the line above or below */
+  /* line-height: 1 ensures the transform doesn't bleed into
+     the line above or below. will-change reserves a paint
+     layer so the swap animates on the GPU without juddering
+     the rest of the headline. */
   line-height: 1;
+  will-change: opacity, transform, filter;
 }
 .rotating-word.is-swapping {
-  animation: wordSwap 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Slow, soft easing — feels like a premium product
+     transition instead of a hard slide. Total 0.9s with the
+     midpoint at 50%, which is when JS swaps the textContent
+     so the user never sees the change. */
+  animation: wordSwap 0.9s cubic-bezier(0.65, 0, 0.35, 1);
 }
 @keyframes wordSwap {
-  0%   { opacity: 1; transform: translateY(0); }
-  45%  { opacity: 0; transform: translateY(-18px); }
-  55%  { opacity: 0; transform: translateY(18px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+  45% {
+    opacity: 0;
+    transform: scale(0.82);
+    filter: blur(8px);
+  }
+  55% {
+    opacity: 0;
+    transform: scale(1.18);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
 }
 /* Respect motion preferences — users who asked for reduced
-   motion get an instant text swap with no slide animation. */
+   motion get an instant text swap with no scale animation. */
 @media (prefers-reduced-motion: reduce) {
   .rotating-word.is-swapping { animation: none; }
 }
