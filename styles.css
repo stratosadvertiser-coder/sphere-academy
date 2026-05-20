@@ -13467,6 +13467,34 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
 }
 
 /* ============================================================
+   ROTATING WORD — the headline's last word cycles through
+   GROW → SCALE → LEAD → DELIVER → ALIGN with a slide+fade.
+   The gradient wrapper (.hero-title-gradient) keeps its
+   animated indigo shimmer; this inner span just handles
+   the text swap. JS toggles .is-swapping every ~3s.
+   ============================================================ */
+.rotating-word {
+  display: inline-block;
+  /* line-height: 1 ensures the translateY doesn't bleed into
+     the line above or below */
+  line-height: 1;
+}
+.rotating-word.is-swapping {
+  animation: wordSwap 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes wordSwap {
+  0%   { opacity: 1; transform: translateY(0); }
+  45%  { opacity: 0; transform: translateY(-18px); }
+  55%  { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+/* Respect motion preferences — users who asked for reduced
+   motion get an instant text swap with no slide animation. */
+@media (prefers-reduced-motion: reduce) {
+  .rotating-word.is-swapping { animation: none; }
+}
+
+/* ============================================================
    DARK MODE VISIBILITY BOOST — Against the flat #18181B base,
    the previous translucent card/button styles were too dim.
    This block lifts contrast on every foreground element so

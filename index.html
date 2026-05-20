@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-smooth">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-rotate">
 </head>
 <body class="page-loaded">
 
@@ -68,7 +68,7 @@
 
       <h1 class="hero-title fade-up" style="font-size:clamp(18px,2.6vw,36px);line-height:1.15;letter-spacing:-0.02em;font-weight:800;text-transform:uppercase;text-align:center;max-width:1200px;margin:0 auto 22px;display:block;white-space:normal;">
         <span class="hero-line" style="display:block;white-space:nowrap;overflow:visible;width:auto;max-width:none;">Become a marketer businesses</span>
-        <span class="hero-line" style="display:block;white-space:nowrap;overflow:visible;width:auto;max-width:none;">can trust to <span class="hero-title-gradient">grow</span>.</span>
+        <span class="hero-line" style="display:block;white-space:nowrap;overflow:visible;width:auto;max-width:none;">can trust to <span class="hero-title-gradient"><span class="rotating-word" id="rotatingWord">grow</span></span>.</span>
       </h1>
 
       <div class="hero-actions fade-up">
@@ -518,6 +518,48 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script defer src="firebase-config.js"></script>
-  <script defer src="script.js?v=2025-05-19-smooth"></script>
+  <script defer src="script.js?v=2025-05-19-rotate"></script>
+
+  <!-- Rotating headline word: GROW → SCALE → LEAD → DELIVER → ALIGN.
+       Small inline script (no external dep) that swaps the text at
+       the midpoint of the .is-swapping animation, when opacity is 0,
+       so the user never sees the transition. Respects
+       prefers-reduced-motion. -->
+  <script>
+    (function () {
+      var el = document.getElementById('rotatingWord');
+      if (!el) return;
+      var words = ['grow', 'scale', 'lead', 'deliver', 'align'];
+      var idx = 0;
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function rotate() {
+        if (reduced) {
+          // No animation — just swap the text directly.
+          idx = (idx + 1) % words.length;
+          el.textContent = words[idx];
+          return;
+        }
+        // Trigger the slide+fade animation, swap text at the
+        // midpoint (300ms in, when opacity is 0), then let the
+        // second half slide the new word into view.
+        el.classList.add('is-swapping');
+        setTimeout(function () {
+          idx = (idx + 1) % words.length;
+          el.textContent = words[idx];
+        }, 300);
+        setTimeout(function () {
+          el.classList.remove('is-swapping');
+        }, 620);
+      }
+
+      // First swap after 2.4s so users see "grow" first, then
+      // every 3s after that. Tunable if it feels too fast/slow.
+      setTimeout(function () {
+        rotate();
+        setInterval(rotate, 3000);
+      }, 2400);
+    })();
+  </script>
 </body>
 </html>
