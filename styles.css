@@ -13745,14 +13745,51 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
      from 64px to 240px and labels become visible. Icons stay
      left-aligned, labels sit right next to them, badges float
      to the right edge. Premium touches: brand header at top,
-     section labels, refined active + hover states. */
+     section labels, refined active + hover states.
+
+     Smooth motion: width transitions with a longer, gentler
+     cubic-bezier so the rail eases into position. Labels +
+     brand + section labels fade in once the rail has reached
+     full width (staggered via animation-delay) for that
+     "premium app reveal" feel. */
+  .dash-sidebar-rail {
+    transition: width 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow-x: hidden;
+  }
   .dash-sidebar-rail.is-expanded {
     width: 240px !important;
     padding: 14px 10px !important;
-    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .dash-sidebar-rail {
-    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Fade for the text labels + brand + section headers.
+     Directional timing for that "premium app" feel:
+     - On COLLAPSE: labels fade out FIRST (fast, 0.12s, no delay),
+       then the rail shrinks behind them. Otherwise the text
+       would awkwardly clip mid-collapse.
+     - On EXPAND: rail widens FIRST, then labels fade in AFTER
+       the rail has reached enough width (0.18s delay). Feels
+       like the app is "revealing" content. */
+  .dash-sidebar-rail .dash-sidebar-link > span:not(.sidebar-badge),
+  .dash-sidebar-rail .dash-sidebar-brand,
+  .dash-sidebar-rail .dash-sidebar-section-label {
+    opacity: 0;
+    transform: translateX(-6px);
+    /* Default state = collapsed → labels fade OUT fast */
+    transition: opacity 0.12s ease, transform 0.12s ease;
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link > span:not(.sidebar-badge),
+  .dash-sidebar-rail.is-expanded .dash-sidebar-brand,
+  .dash-sidebar-rail.is-expanded .dash-sidebar-section-label {
+    opacity: 1;
+    transform: translateX(0);
+    /* Expanded state → labels fade IN after the rail widens */
+    transition: opacity 0.25s ease 0.18s, transform 0.25s ease 0.18s;
+  }
+  /* Smooth the dash-layout grid column reflow too. CSS can't
+     transition grid-template-columns directly, but we can
+     animate the .dash-main margin so the visual shift feels
+     like a slide instead of a snap. */
+  .dash-main {
+    transition: margin-left 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   }
   /* Links + action buttons get identical treatment when expanded.
      The aggressive selectors include both a.dash-sidebar-link and
@@ -14248,10 +14285,15 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     display: block !important;
     position: fixed !important;
     top: 92px !important;
-    /* Default position (sidebar collapsed): feed centers near
-       viewport center, so card sits at 50% + 470px (right of
-       the feed's 430px half-width + 40px gap). Fits on ≥ 1560px. */
-    left: calc(50% + 470px) !important;
+    /* PINNED to the right edge of the viewport — does NOT move
+       when the sidebar toggles. Previously we used
+       `left: calc(50% + 470px)` which anchored to viewport
+       center, so the card stayed put but the feed shifted
+       around it. Worse, expanding the sidebar shifted the feed
+       INTO the card. Now the card is anchored to the right
+       edge, so it never moves regardless of sidebar state. */
+    right: 24px !important;
+    left: auto !important;
     width: 300px !important;
     max-height: calc(100vh - 110px);
     overflow-y: auto;
@@ -14259,21 +14301,12 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     grid-column: auto !important;
     z-index: 80;
   }
-  /* When sidebar is EXPANDED (240px), the feed shifts ~88px to
-     the right (centered in the smaller 1fr column). Shift the
-     profile card by the matching amount so it stays clear of
-     the feed's right edge. New position: 50% + 580px, which
-     places the card immediately right of the shifted feed +
-     gap. Needs a wider viewport (~1760px+) to fit. */
-  body:has(.dash-sidebar-rail.is-expanded) .dash-profile-card {
-    left: calc(50% + 580px) !important;
-  }
 }
 
-/* On medium-width viewports (1560-1759px) the shifted position
-   would push the card off-screen, so fall back to hiding it in
-   expanded mode for that range. The card reappears the moment
-   the user collapses the sidebar — no info is permanently lost. */
+/* On medium-width viewports (1560-1759px) the expanded sidebar
+   pushes the feed into the right-edge-anchored card. Hide the
+   card in that range when expanded; it reappears the moment
+   the user collapses the sidebar. */
 @media (min-width: 1560px) and (max-width: 1759px) {
   body:has(.dash-sidebar-rail.is-expanded) .dash-profile-card {
     display: none !important;
