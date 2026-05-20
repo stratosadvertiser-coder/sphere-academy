@@ -13664,24 +13664,51 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     line-height: 16px !important;
     text-align: center !important;
   }
-  /* Tooltip on hover — slides out to the right of the icon so
-     users discover the label without taking up rail space. */
-  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]:hover::after {
+  /* Tooltip — dark "macOS-style" with a small arrow pointing
+     at the icon, fades + slides in 4px on hover for that
+     polished product feel. Uses fixed dark colors (not
+     var(--text)/var(--bg)) so contrast is identical in both
+     light and dark themes. */
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]::after {
     content: attr(data-tooltip);
     position: absolute;
     left: calc(100% + 14px);
     top: 50%;
-    transform: translateY(-50%);
-    background: var(--text);
-    color: var(--bg);
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    font-weight: 500;
+    background: #0a0a0a;
+    color: #fafafa;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     white-space: nowrap;
     pointer-events: none;
     z-index: 1000;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.30), 0 1px 3px rgba(0, 0, 0, 0.20);
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+    transition: opacity 0.15s ease 0.05s, transform 0.15s ease 0.05s;
+  }
+  /* Small triangle arrow on the left edge of the tooltip,
+     pointing toward the icon. Built with CSS borders. */
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    border-style: solid;
+    border-width: 5px 6px 5px 0;
+    border-color: transparent #0a0a0a transparent transparent;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+    transition: opacity 0.15s ease 0.05s, transform 0.15s ease 0.05s;
+  }
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]:hover::after,
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]:hover::before {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
   }
   /* Divider between navigation and account actions. */
   .dash-sidebar-rail .dash-sidebar-divider {
@@ -13712,12 +13739,13 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   .dash-sidebar-rail .dash-sidebar-close {
     display: none !important;
   }
-  /* Hide the search + theme toggle in the navbar ONLY when the
-     icon rail is present (i.e. on the dashboard). :has() scopes
-     this so we don't accidentally strip these buttons from
-     other pages that share the same stylesheet. Keep the notif
-     button visible since the rail doesn't have an equivalent. */
+  /* Hide the search, notif + theme toggle in the navbar ONLY
+     when the icon rail is present (i.e. on the dashboard).
+     :has() scopes this so we don't accidentally strip these
+     buttons from other pages that share the same stylesheet.
+     All three actions now live in the rail's bottom section. */
   body:has(.dash-sidebar-rail) .nav-cta #searchBtn,
+  body:has(.dash-sidebar-rail) .nav-cta #notifBtn,
   body:has(.dash-sidebar-rail) .nav-cta #themeToggle {
     display: none !important;
   }
