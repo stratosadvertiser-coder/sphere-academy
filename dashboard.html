@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-19-fix">
+  <link rel="stylesheet" href="styles.css?v=2025-05-19-navcenter">
 </head>
 <body class="page-loaded">
 
@@ -109,6 +109,13 @@
           <a href="profile.html" class="dash-sidebar-link" data-tooltip="Profile">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <span>Profile</span>
+          </a>
+
+          <!-- Admin Panel (only visible for admin users — JS toggles via
+               AUTH.isAdmin() in the inline script at the end of body) -->
+          <a href="admin.html" class="dash-sidebar-link" id="sidebarAdmin" data-tooltip="Admin Panel" style="display:none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Admin Panel</span>
           </a>
 
           <!-- Night mode toggle (delegates to existing #themeToggle handler) -->
@@ -463,7 +470,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-19-fix"></script>
+  <script src="script.js?v=2025-05-19-navcenter"></script>
 
   <!-- Sidebar action wiring — search, theme, logout buttons in the
        new icon rail delegate to their existing handlers in the
@@ -483,6 +490,15 @@
       delegateClick('sidebarSearch', 'searchBtn');
       delegateClick('sidebarTheme', 'themeToggle');
       delegateClick('sidebarNotif', 'notifBtn');
+
+      // Show the Admin Panel icon only for admin users.
+      // AUTH.isAdmin() reads from localStorage so it's instant.
+      try {
+        var adminIcon = document.getElementById('sidebarAdmin');
+        if (adminIcon && typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin()) {
+          adminIcon.style.display = 'flex';
+        }
+      } catch (_) {}
 
       // Mirror the navbar's #notifBadge value into the sidebar's
       // #sidebarNotifBadge so the rail icon shows the unread count

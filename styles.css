@@ -13739,15 +13739,26 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   .dash-sidebar-rail .dash-sidebar-close {
     display: none !important;
   }
-  /* Hide the search, notif + theme toggle in the navbar ONLY
-     when the icon rail is present (i.e. on the dashboard).
-     :has() scopes this so we don't accidentally strip these
-     buttons from other pages that share the same stylesheet.
-     All three actions now live in the rail's bottom section. */
-  body:has(.dash-sidebar-rail) .nav-cta #searchBtn,
-  body:has(.dash-sidebar-rail) .nav-cta #notifBtn,
-  body:has(.dash-sidebar-rail) .nav-cta #themeToggle {
+  /* Hide the ENTIRE right-side navbar group when the icon rail
+     is present. The rail now owns search, notifications, theme
+     toggle, profile, admin panel, and log out — so the navbar's
+     .nav-cta cluster is fully redundant. Same applies to the
+     mobile-only "Log In" CTA in .nav-links (which only shows for
+     logged-out users, and logged-in users see the rail anyway). */
+  body:has(.dash-sidebar-rail) .nav-cta {
     display: none !important;
+  }
+  /* With .nav-cta gone, the flex-justify:space-between layout
+     would push .nav-links to the right edge of the navbar.
+     Absolutely-center .nav-links so the Home / Course / Events
+     tabs sit perfectly in the middle of the navbar. */
+  body:has(.dash-sidebar-rail) .navbar .container {
+    position: relative;
+  }
+  body:has(.dash-sidebar-rail) .nav-links {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   /* On non-dashboard pages with the rail (course.html, events.html,
