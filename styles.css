@@ -77,12 +77,7 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 [data-theme="dark"] body {
-  background:
-    radial-gradient(ellipse at 18% 12%, rgba(139, 158, 255, 0.10) 0%, transparent 50%),
-    radial-gradient(ellipse at 82% 35%, rgba(240, 160, 196, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 30% 70%, rgba(139, 158, 255, 0.07) 0%, transparent 55%),
-    radial-gradient(ellipse at 75% 92%, rgba(240, 160, 196, 0.06) 0%, transparent 50%),
-    var(--bg);
+  background: #18181B;
   background-attachment: fixed;
 }
 
@@ -12208,67 +12203,14 @@ code, pre, .lesson-id, .phase-week {
 }
 
 /* ============================================================
-   GLOBAL STAR FIELD + GALAXY — fixed body background, every page
-   ~60 stars in 3 size tiers + 3 soft nebula clouds painting a
-   galaxy across the viewport. Anchored via background-attachment
-   so the cosmos stays put as you scroll.
+   SOLID DARK BACKGROUND — flat #18181B on every page.
+   No stars, no galaxy, no nebula. Single source of truth so
+   nothing competes for visual attention with the foreground.
    ============================================================ */
 [data-theme="dark"] body {
-  /* Slightly purple base — provides the cosmos color baseline so we
-     can use fewer & softer nebula gradients on top. */
-  background-color: #14112e !important;
-  background-image:
-    /* ─── HIGHLIGHT STARS (4 brightest) ─── */
-    radial-gradient(3px 3px     at 18% 24%, rgba(255,255,255,1),   transparent 55%),
-    radial-gradient(3px 3px     at 72% 38%, rgba(165,172,255,1),   transparent 55%),
-    radial-gradient(2.5px 2.5px at 45% 80%, rgba(255,255,255,0.95), transparent 55%),
-    radial-gradient(2.5px 2.5px at 88% 14%, rgba(255,255,255,0.95), transparent 55%),
-
-    /* ─── MEDIUM STARS (8) ─── */
-    radial-gradient(2px 2px at 8%  14%, rgba(255,255,255,0.8), transparent 50%),
-    radial-gradient(2px 2px at 28% 60%, rgba(255,255,255,0.75), transparent 50%),
-    radial-gradient(2px 2px at 36% 6%,  rgba(255,255,255,0.8), transparent 50%),
-    radial-gradient(2px 2px at 55% 22%, rgba(165,172,255,0.8), transparent 50%),
-    radial-gradient(2px 2px at 62% 68%, rgba(255,255,255,0.8), transparent 50%),
-    radial-gradient(2px 2px at 76% 65%, rgba(165,172,255,0.75), transparent 50%),
-    radial-gradient(2px 2px at 95% 72%, rgba(255,255,255,0.75), transparent 50%),
-    radial-gradient(2px 2px at 5%  78%, rgba(255,255,255,0.8), transparent 50%),
-
-    /* ─── TINY STARS (~22 — light constellation) ─── */
-    radial-gradient(1.5px 1.5px at 14% 33%, rgba(255,255,255,0.55), transparent 60%),
-    radial-gradient(1px 1px     at 22% 8%,  rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1.5px 1.5px at 24% 13%, rgba(255,255,255,0.55), transparent 60%),
-    radial-gradient(1px 1px     at 31% 62%, rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1px 1px     at 38% 31%, rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1.5px 1.5px at 45% 12%, rgba(255,255,255,0.55), transparent 60%),
-    radial-gradient(1px 1px     at 50% 91%, rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1.5px 1.5px at 53% 39%, rgba(255,255,255,0.55), transparent 60%),
-    radial-gradient(1px 1px     at 59% 57%, rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1.5px 1.5px at 61% 84%, rgba(255,255,255,0.55), transparent 60%),
-    radial-gradient(1px 1px     at 67% 16%, rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1.5px 1.5px at 74% 33%, rgba(255,255,255,0.55), transparent 60%),
-    radial-gradient(1px 1px     at 80% 4%,  rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1.5px 1.5px at 83% 58%, rgba(255,255,255,0.55), transparent 60%),
-    radial-gradient(1px 1px     at 89% 41%, rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1.5px 1.5px at 92% 86%, rgba(255,255,255,0.5),  transparent 60%),
-    radial-gradient(1px 1px     at 98% 63%, rgba(255,255,255,0.5),  transparent 60%),
-
-    /* ─── GALAXY NEBULA — 2 softly-blended clouds (reduced from 5)
-       Lower opacities + the deeper base color = smooth ambient cosmos
-       at a fraction of the previous paint cost. */
-    radial-gradient(ellipse 120% 110% at 50% 50%,
-      rgba(99, 91, 255, 0.18) 0%,
-      rgba(99, 91, 255, 0.10) 45%,
-      transparent 100%),
-    radial-gradient(circle 1000px at 80% 65%,
-      rgba(140, 90, 220, 0.16) 0%,
-      rgba(140, 90, 220, 0.06) 50%,
-      transparent 80%) !important;
-
-  background-repeat: no-repeat !important;
+  background-color: #18181B !important;
+  background-image: none !important;
   background-attachment: fixed !important;
-  background-size: 100% 100% !important;
-  background-position: 0 0 !important;
 }
 [data-theme="light"] body {
   background-color: #fafafa !important;
@@ -12363,12 +12305,10 @@ code, pre, .lesson-id, .phase-week {
 
 /* (Legacy liquid sphere CSS retained below for fallback / easy revert) */
 
-/* Legacy Saturn base — only apply solid color to html (body has
-   its own cosmos bg with nebula + stars). Hero stays transparent
-   so the body's nebula shows through and there's no seam between
-   the hero and the section below. */
+/* Solid dark base — html and hero both stay on the same flat
+   #18181B so there's no seam between sections. */
 [data-theme="dark"] html {
-  background-color: #0d0a24 !important;
+  background-color: #18181B !important;
 }
 [data-theme="dark"] .hero.hero-v2 {
   background-color: transparent !important;
