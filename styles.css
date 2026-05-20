@@ -13784,6 +13784,102 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   }
 }
 
+/* ============================================================
+   FEED VISIBILITY BOOST — feed cards (composer, posts, quote)
+   were melting into the page background because every surface
+   used the same var(--bg). Bumping card backgrounds to a
+   distinctly-contrasting tone + stronger borders + bigger
+   shadows so each card reads as a separate "window" on top
+   of the page.
+   ============================================================ */
+
+/* LIGHT MODE — cards become bright white against the #fafafa
+   page background, with a darker border so edges are crisp. */
+[data-theme="light"] .fb-composer-card,
+[data-theme="light"] .fb-post-list .post-item,
+[data-theme="light"] .post-comments-section,
+[data-theme="light"] .ann-card,
+[data-theme="light"] .faq-card,
+[data-theme="light"] .win-card,
+[data-theme="light"] .chat-message,
+[data-theme="light"] .member-card,
+[data-theme="light"] .dm-conversation-card,
+[data-theme="light"] .event-card,
+[data-theme="light"] .course-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 14px -8px rgba(15, 23, 42, 0.08) !important;
+}
+[data-theme="light"] .fb-composer-card:hover,
+[data-theme="light"] .fb-post-list .post-item:hover,
+[data-theme="light"] .ann-card:hover,
+[data-theme="light"] .faq-card:hover,
+[data-theme="light"] .win-card:hover,
+[data-theme="light"] .event-card:hover,
+[data-theme="light"] .course-card:hover {
+  border-color: rgba(99, 91, 255, 0.35) !important;
+  box-shadow: 0 6px 20px -8px rgba(99, 91, 255, 0.22), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Inputs (textarea, composer trigger) — same contrast bump so
+   the "What's on your mind" pill clearly reads as interactive. */
+[data-theme="light"] .fb-composer-trigger,
+[data-theme="light"] .fb-composer-expanded textarea {
+  background: #f3f4f6 !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+}
+[data-theme="light"] .fb-composer-trigger:hover {
+  background: #e5e7eb !important;
+}
+[data-theme="light"] .fb-composer-expanded textarea:focus {
+  background: #ffffff !important;
+  border-color: #635bff !important;
+}
+
+/* DARK MODE — flat #18181B is the page; cards lift to a slightly
+   lighter shade (#27272a, zinc-800) with brighter borders. */
+[data-theme="dark"] .fb-composer-card,
+[data-theme="dark"] .fb-post-list .post-item,
+[data-theme="dark"] .post-comments-section,
+[data-theme="dark"] .ann-card,
+[data-theme="dark"] .faq-card,
+[data-theme="dark"] .win-card,
+[data-theme="dark"] .chat-message,
+[data-theme="dark"] .member-card,
+[data-theme="dark"] .dm-conversation-card,
+[data-theme="dark"] .event-card,
+[data-theme="dark"] .course-card {
+  background: #27272a !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), 0 8px 24px -10px rgba(0, 0, 0, 0.50) !important;
+}
+[data-theme="dark"] .fb-composer-card:hover,
+[data-theme="dark"] .fb-post-list .post-item:hover,
+[data-theme="dark"] .ann-card:hover,
+[data-theme="dark"] .faq-card:hover,
+[data-theme="dark"] .win-card:hover,
+[data-theme="dark"] .event-card:hover,
+[data-theme="dark"] .course-card:hover {
+  border-color: rgba(139, 158, 255, 0.40) !important;
+  background: #2d2d31 !important;
+  box-shadow: 0 8px 28px -8px rgba(99, 91, 255, 0.30), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Composer inputs in dark mode */
+[data-theme="dark"] .fb-composer-trigger,
+[data-theme="dark"] .fb-composer-expanded textarea {
+  background: #1f1f23 !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  color: #f4f4f5 !important;
+}
+[data-theme="dark"] .fb-composer-trigger:hover {
+  background: #2a2a2e !important;
+}
+[data-theme="dark"] .fb-composer-expanded textarea:focus {
+  background: #1a1a1d !important;
+  border-color: #8b5cf6 !important;
+}
+
 /* On mobile, the sidebar reverts to its existing drawer behavior
    — text labels become visible again since space isn't tight. */
 @media (max-width: 900px) {
