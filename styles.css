@@ -78,7 +78,6 @@ body {
 }
 [data-theme="dark"] body {
   background: #18181B;
-  background-attachment: fixed;
 }
 
 /* Tight modern display tracking on big marketing titles */
@@ -486,8 +485,9 @@ img {
 .hero-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  will-change: transform;
+  /* Lower blur radius — was 80px which is heavy on GPU.
+     30px still looks soft and atmospheric, just smoother. */
+  filter: blur(30px);
 }
 .blob-a {
   width: 540px;
@@ -11480,7 +11480,7 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: gradientShift 5s linear infinite;
+  animation: gradientShift 9s linear infinite;
   display: inline-block;
 }
 @keyframes gradientShift {
@@ -11664,7 +11664,7 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   background: radial-gradient(circle at 80% 30%, rgba(232, 121, 168, 0.25), transparent 50%),
               radial-gradient(circle at 20% 70%, rgba(99, 91, 255, 0.30), transparent 55%);
   pointer-events: none;
-  animation: bentoLogoGlow 8s ease-in-out infinite;
+  animation: bentoLogoGlow 16s ease-in-out infinite;
 }
 @keyframes bentoLogoGlow {
   0%, 100% { transform: scale(1); opacity: 1; }
@@ -11868,7 +11868,7 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   display: flex;
   gap: 32px;
   width: max-content;
-  animation: marqueeScroll 30s linear infinite;
+  animation: marqueeScroll 55s linear infinite;
 }
 .tools-marquee:hover .tools-marquee-track {
   animation-play-state: paused;
@@ -12203,60 +12203,17 @@ code, pre, .lesson-id, .phase-week {
 }
 
 /* ============================================================
-   DARK BACKGROUND — flat #18181B + scattered star field.
-   Solid black base (no nebula clouds) so foreground content
-   stays crisp, with ~35 stars in 3 size tiers giving the
-   viewport a quiet galaxy texture. Fixed attachment so the
-   sky doesn't scroll with the page.
+   DARK BACKGROUND — pure flat #18181B. No stars, no galaxy,
+   no nebula. Removed because the star field's 35 radial
+   gradients + background-attachment: fixed combo was forcing
+   a full-page repaint on every scroll pixel, especially
+   painful on mobile. Net result: dramatically smoother scroll,
+   no jank, no lag. The foreground content (cards, headline,
+   buttons) does all the visual work now.
    ============================================================ */
 [data-theme="dark"] body {
   background-color: #18181B !important;
-  background-image:
-    /* ─── BRIGHT ACCENT STARS (5) ─── */
-    radial-gradient(2.5px 2.5px at 12% 18%, rgba(255,255,255,1),   transparent 55%),
-    radial-gradient(2.5px 2.5px at 76% 28%, rgba(200,210,255,0.95),transparent 55%),
-    radial-gradient(3px 3px     at 42% 72%, rgba(255,255,255,0.95),transparent 55%),
-    radial-gradient(2.5px 2.5px at 88% 82%, rgba(255,255,255,0.9), transparent 55%),
-    radial-gradient(2.5px 2.5px at 22% 88%, rgba(200,210,255,0.9), transparent 55%),
-
-    /* ─── MEDIUM STARS (12) ─── */
-    radial-gradient(1.5px 1.5px at 5%  42%, rgba(255,255,255,0.75),transparent 55%),
-    radial-gradient(1.5px 1.5px at 18% 8%,  rgba(255,255,255,0.7), transparent 55%),
-    radial-gradient(1.5px 1.5px at 31% 35%, rgba(200,210,255,0.7), transparent 55%),
-    radial-gradient(1.5px 1.5px at 38% 58%, rgba(255,255,255,0.75),transparent 55%),
-    radial-gradient(1.5px 1.5px at 48% 16%, rgba(255,255,255,0.7), transparent 55%),
-    radial-gradient(1.5px 1.5px at 55% 88%, rgba(200,210,255,0.7), transparent 55%),
-    radial-gradient(1.5px 1.5px at 62% 48%, rgba(255,255,255,0.75),transparent 55%),
-    radial-gradient(1.5px 1.5px at 68% 14%, rgba(255,255,255,0.7), transparent 55%),
-    radial-gradient(1.5px 1.5px at 81% 55%, rgba(200,210,255,0.7), transparent 55%),
-    radial-gradient(1.5px 1.5px at 92% 22%, rgba(255,255,255,0.75),transparent 55%),
-    radial-gradient(1.5px 1.5px at 96% 68%, rgba(255,255,255,0.7), transparent 55%),
-    radial-gradient(1.5px 1.5px at 8%  68%, rgba(255,255,255,0.7), transparent 55%),
-
-    /* ─── TINY DISTANT STARS (18) ─── */
-    radial-gradient(1px 1px at 3%  12%, rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 14% 52%, rgba(255,255,255,0.45),transparent 60%),
-    radial-gradient(1px 1px at 22% 25%, rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 26% 76%, rgba(255,255,255,0.45),transparent 60%),
-    radial-gradient(1px 1px at 33% 4%,  rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 36% 92%, rgba(255,255,255,0.45),transparent 60%),
-    radial-gradient(1px 1px at 44% 38%, rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 51% 64%, rgba(255,255,255,0.45),transparent 60%),
-    radial-gradient(1px 1px at 58% 26%, rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 64% 80%, rgba(255,255,255,0.45),transparent 60%),
-    radial-gradient(1px 1px at 71% 38%, rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 78% 72%, rgba(255,255,255,0.45),transparent 60%),
-    radial-gradient(1px 1px at 84% 8%,  rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 86% 44%, rgba(255,255,255,0.45),transparent 60%),
-    radial-gradient(1px 1px at 91% 58%, rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 94% 92%, rgba(255,255,255,0.45),transparent 60%),
-    radial-gradient(1px 1px at 99% 38%, rgba(255,255,255,0.5), transparent 60%),
-    radial-gradient(1px 1px at 1%  85%, rgba(255,255,255,0.45),transparent 60%) !important;
-
-  background-repeat: no-repeat !important;
-  background-attachment: fixed !important;
-  background-size: 100% 100% !important;
-  background-position: 0 0 !important;
+  background-image: none !important;
 }
 [data-theme="light"] body {
   background-color: #fafafa !important;
@@ -12395,8 +12352,8 @@ code, pre, .lesson-id, .phase-week {
     rgba(99, 91, 255, 0.12) 35%,
     rgba(99, 91, 255, 0.04) 60%,
     transparent 80%);
-  filter: blur(60px);
-  animation: sphereHaloBreathe 10s ease-in-out infinite;
+  filter: blur(24px);
+  animation: sphereHaloBreathe 18s ease-in-out infinite;
   will-change: transform, opacity;
 }
 [data-theme="light"] .hero.hero-v2 .hero-sphere-halo {
@@ -12578,7 +12535,7 @@ code, pre, .lesson-id, .phase-week {
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
-  animation: gradientShift 5s linear infinite !important;
+  animation: gradientShift 9s linear infinite !important;
 }
 
 /* "Skills You'll Build" section — trimmed back to a normal section
