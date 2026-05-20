@@ -13607,8 +13607,14 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     padding: 14px 8px !important;
     background: var(--bg) !important;
     z-index: 90 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    /* overflow: visible — critical so the hover tooltips
+       (positioned 14px to the right of each icon via ::after)
+       can extend OUTSIDE the 64px rail. With overflow:hidden
+       or overflow-y:auto, the tooltips get clipped by the rail
+       edge and never appear. The 11 icons + dividers fit well
+       within any normal-height viewport (~660px tall total) so
+       we don't need scrolling. */
+    overflow: visible !important;
   }
   /* The grid still allocates 64px on the left for the sidebar,
      so the main content's flow position is correct. The fixed
@@ -13623,7 +13629,7 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   .dash-main {
     grid-column: 2 !important;
     width: 100% !important;
-    max-width: 1080px !important;
+    max-width: 860px !important;
     margin: 0 auto !important;
     padding-left: 24px !important;
     padding-right: 24px !important;
