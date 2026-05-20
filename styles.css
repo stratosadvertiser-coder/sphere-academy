@@ -13574,6 +13574,154 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
 }
 
 /* ============================================================
+   DASHBOARD SIDEBAR — ICON RAIL MODE (desktop only)
+   Converts the original 240px text+icon sidebar into a slim
+   64px icon-only rail pinned to the left edge of the viewport.
+   Mobile keeps its existing drawer behavior. The rail also
+   absorbs the search / profile / night-mode / logout actions
+   that used to live in the top navbar.
+   ============================================================ */
+@media (min-width: 901px) {
+  /* Pin the rail to the screen edge, full-height. The grid
+     padding is removed on the LEFT so nothing sits to the
+     left of the rail. */
+  .dash-layout {
+    grid-template-columns: 64px 1fr !important;
+    gap: 0 !important;
+    padding: 0 24px 0 0 !important;
+    max-width: none !important;
+  }
+  .dash-sidebar.dash-sidebar-rail {
+    position: fixed !important;
+    left: 0 !important;
+    top: 72px !important;       /* sits flush under the navbar */
+    bottom: 0 !important;
+    width: 64px !important;
+    align-self: stretch !important;
+    border-radius: 0 !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: 1px solid var(--border) !important;
+    box-shadow: none !important;
+    padding: 14px 8px !important;
+    background: var(--bg) !important;
+    z-index: 90 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  /* The grid still allocates 64px on the left for the sidebar,
+     so the main content's flow position is correct. The fixed
+     position of the rail just paints it; the grid column
+     prevents the main content from sliding underneath. */
+  .dash-main {
+    grid-column: 2 !important;
+    padding-left: 8px !important;
+  }
+  /* Each link becomes a centered 48×48 button. Text labels are
+     hidden by default; tooltip shows on hover via the
+     data-tooltip attribute. */
+  .dash-sidebar-rail .dash-sidebar-link {
+    width: 48px !important;
+    height: 48px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    position: relative !important;
+    margin: 0 auto !important;
+    gap: 0 !important;
+  }
+  .dash-sidebar-rail .dash-sidebar-link > span:not(.sidebar-badge) {
+    display: none !important;
+  }
+  /* Badges (Announcements count, online dot, DM unread) need
+     to float over the top-right corner of the icon since the
+     text label they normally sit beside is gone. */
+  .dash-sidebar-rail .dash-sidebar-link .sidebar-badge {
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    padding: 0 4px !important;
+    font-size: 0.65rem !important;
+    line-height: 16px !important;
+    text-align: center !important;
+  }
+  /* Tooltip on hover — slides out to the right of the icon so
+     users discover the label without taking up rail space. */
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--text);
+    color: var(--bg);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  }
+  /* Divider between navigation and account actions. */
+  .dash-sidebar-rail .dash-sidebar-divider {
+    width: 32px;
+    height: 1px;
+    background: var(--border);
+    margin: 8px auto;
+  }
+  /* Action buttons (search/theme/logout) should match link styling.
+     Reset native button defaults so they render identically to <a>. */
+  .dash-sidebar-rail .dash-sidebar-action {
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    color: var(--text) !important;
+    font-family: inherit !important;
+  }
+  .dash-sidebar-rail .dash-sidebar-action:hover {
+    background: var(--bg-alt) !important;
+  }
+  /* Logout gets a subtle warning hue on hover so destructive
+     actions read differently from navigation. */
+  .dash-sidebar-rail .dash-sidebar-logout:hover {
+    background: rgba(220, 38, 38, 0.08) !important;
+    color: #dc2626 !important;
+  }
+  /* Mobile close button is irrelevant in rail mode. */
+  .dash-sidebar-rail .dash-sidebar-close {
+    display: none !important;
+  }
+  /* Hide the search + theme toggle in the navbar ONLY when the
+     icon rail is present (i.e. on the dashboard). :has() scopes
+     this so we don't accidentally strip these buttons from
+     other pages that share the same stylesheet. Keep the notif
+     button visible since the rail doesn't have an equivalent. */
+  body:has(.dash-sidebar-rail) .nav-cta #searchBtn,
+  body:has(.dash-sidebar-rail) .nav-cta #themeToggle {
+    display: none !important;
+  }
+}
+
+/* On mobile, the sidebar reverts to its existing drawer behavior
+   — text labels become visible again since space isn't tight. */
+@media (max-width: 900px) {
+  .dash-sidebar-rail .dash-sidebar-link > span:not(.sidebar-badge) {
+    display: inline !important;
+  }
+  .dash-sidebar-rail .dash-sidebar-divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+  }
+}
+
+/* ============================================================
    DARK MODE VISIBILITY BOOST — Against the flat #18181B base,
    the previous translucent card/button styles were too dim.
    This block lifts contrast on every foreground element so
