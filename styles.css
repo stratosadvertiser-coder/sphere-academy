@@ -14027,12 +14027,35 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
    visible on viewports ≥ 1200px. Below that, it hides so the
    feed can use the full width.
    ============================================================ */
-/* Profile card hidden on all viewports — was visually pushing
-   the feed off-center because the 320px column reservation made
-   the 1fr column asymmetric vs the viewport. Feed is now truly
-   centered on the viewport (within its 1fr column from the rail
-   to the right edge). */
-.dash-profile-card { display: none !important; }
+/* Profile card — hidden by default, then revealed as a floating
+   widget on wide screens (≥1560px) where there's enough room
+   beside the centered feed. Positioned via fixed + viewport-
+   center math so it sits right next to the feed without
+   pushing it off-center. */
+.dash-profile-card { display: none; }
+
+@media (min-width: 1560px) {
+  .dash-profile-card {
+    display: block !important;
+    position: fixed !important;
+    top: 92px !important;
+    /* Feed is max 860px wide, centered on viewport. Half-width
+       = 430px. Add 24px gap and we're at the right edge of the
+       feed + a comfortable gap. The card extends 300px from
+       there, so the total reach is 50% + 754px. Fits cleanly
+       on viewports ≥ 1560px. */
+    left: calc(50% + 470px) !important;
+    width: 300px !important;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    align-self: auto !important;
+    grid-column: auto !important;
+    z-index: 80;
+  }
+  /* Hide the card if the viewport shrinks mid-session — pure
+     defense, the media query already takes care of this but
+     belt-and-suspenders is fine here. */
+}
 
 /* Hidden on narrower viewports — feed takes the full row */
 .dash-profile-card { display: none; }
