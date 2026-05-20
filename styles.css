@@ -13545,10 +13545,17 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
    Use deeper violets so every stop has at least 4.5:1 contrast
    against the light background. The animation stays the same
    so motion is identical between themes.
+
+   CRITICAL: use `background-image` instead of the `background`
+   shorthand. The shorthand resets `background-clip` to its
+   initial value (border-box), which makes the gradient render
+   as a solid violet rectangle instead of being clipped to the
+   text shape. Setting `background-image` alone leaves clip,
+   color, etc. untouched from the base rule.
    ============================================================ */
 [data-theme="light"] .hero-title-gradient,
 [data-theme="light"] .hero-title-gradient.rotating-word {
-  background: linear-gradient(90deg,
+  background-image: linear-gradient(90deg,
     #4c1d95 0%,
     #5b21b6 18%,
     #6d28d9 35%,
@@ -13558,6 +13565,12 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     #4c1d95 100%
   ) !important;
   background-size: 300% 100% !important;
+  /* Belt-and-suspenders: re-assert the clip + transparent
+     fill so this override can't accidentally lose them. */
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
 }
 
 /* ============================================================
