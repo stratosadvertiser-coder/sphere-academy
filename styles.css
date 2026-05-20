@@ -359,20 +359,21 @@ img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: transform 0.3s ease, filter 0.2s ease;
+  transition: transform 0.3s ease;
   background: transparent;
   border: none;
   display: block;
+  /* Subtle rounding so the black logo square doesn't read as a
+     hard rectangle on the navbar — matches the favicon's
+     app-icon vibe at a smaller scale. */
+  border-radius: 8px;
 }
-
-/* Logo is white strokes on transparent background — perfect on
-   dark navbars. In light mode, we need to invert it to black so
-   it's visible on the white navbar. invert(1) flips white → black
-   while keeping the transparent areas transparent. */
-[data-theme="light"] .logo-icon img,
-[data-theme="light"] .dash-sidebar-brand-logo img {
-  filter: invert(1);
+.dash-sidebar-brand-logo img {
+  border-radius: 7px;
 }
+/* No theme filter — the logo has its own black background that
+   stands out on both light and dark navbars, so we don't need
+   to invert its colors per theme. */
 
 .nav-links {
   display: flex;
