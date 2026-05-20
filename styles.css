@@ -14248,11 +14248,9 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     display: block !important;
     position: fixed !important;
     top: 92px !important;
-    /* Feed is max 860px wide, centered on viewport. Half-width
-       = 430px. Add 24px gap and we're at the right edge of the
-       feed + a comfortable gap. The card extends 300px from
-       there, so the total reach is 50% + 754px. Fits cleanly
-       on viewports ≥ 1560px. */
+    /* Default position (sidebar collapsed): feed centers near
+       viewport center, so card sits at 50% + 470px (right of
+       the feed's 430px half-width + 40px gap). Fits on ≥ 1560px. */
     left: calc(50% + 470px) !important;
     width: 300px !important;
     max-height: calc(100vh - 110px);
@@ -14261,11 +14259,22 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     grid-column: auto !important;
     z-index: 80;
   }
-  /* When the sidebar is EXPANDED, the feed shifts right (centered
-     in the smaller 1fr column) and starts overlapping with the
-     profile card's fixed position. Hide the card in expanded mode
-     so nothing collides — the user can still get all the profile
-     info via the sidebar's Profile icon. */
+  /* When sidebar is EXPANDED (240px), the feed shifts ~88px to
+     the right (centered in the smaller 1fr column). Shift the
+     profile card by the matching amount so it stays clear of
+     the feed's right edge. New position: 50% + 580px, which
+     places the card immediately right of the shifted feed +
+     gap. Needs a wider viewport (~1760px+) to fit. */
+  body:has(.dash-sidebar-rail.is-expanded) .dash-profile-card {
+    left: calc(50% + 580px) !important;
+  }
+}
+
+/* On medium-width viewports (1560-1759px) the shifted position
+   would push the card off-screen, so fall back to hiding it in
+   expanded mode for that range. The card reappears the moment
+   the user collapses the sidebar — no info is permanently lost. */
+@media (min-width: 1560px) and (max-width: 1759px) {
   body:has(.dash-sidebar-rail.is-expanded) .dash-profile-card {
     display: none !important;
   }
