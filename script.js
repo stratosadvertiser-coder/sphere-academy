@@ -2053,7 +2053,7 @@ const DMS = {
 
 // Shared reaction palette + per-user "mark as read" tracker.
 // Used by POSTS, ANNOUNCEMENTS (and easily by WINS later).
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏', '🙌', '💯'];
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏', '🙌', '💡', '💯'];
 
 function _toggleReaction(item, emoji, username) {
   if (!username) return item;
@@ -4851,6 +4851,12 @@ if (currentPage === 'lesson.html') {
         if (!wasComplete && nowComplete) {
           try { if (typeof ACTIVITY !== 'undefined') ACTIVITY.log('lesson_completed', weekId, 'W' + lesson.week + ': ' + lesson.title); } catch (e) {}
           if (typeof checkBadges === 'function') checkBadges();
+          // Celebrate the moment — animated checkmark + confetti burst
+          // from the button origin. Only fires on first-time completion
+          // so re-clicking doesn't spam the user.
+          if (typeof celebrateLessonComplete === 'function') {
+            try { celebrateLessonComplete(this); } catch (e) {}
+          }
         }
         this.classList.toggle('completed', nowComplete);
         this.innerHTML = nowComplete
@@ -6013,6 +6019,105 @@ if (searchBtn && searchOverlay) {
 }
 
 // ===== NOTIFICATIONS =====
+// Slack-style chime — generated on the fly via Web Audio API so we
+// don't need to ship an audio file. Two short tones (A5 → E6)
+// that fade out in ~0.4s — soft, not jarring. Respects a user
+// preference at localStorage.notif_sound === 'off'.
+// Confetti + checkmark celebration when a lesson is marked complete
+// for the first time. Particles burst from the button's center and
+// fall with rotation. A success chime plays too. Auto-cleans up
+// after ~1.6s.
+function celebrateLessonComplete(originEl) {
+  try { playSuccessChime(); } catch (_) {}
+  if (!originEl) return;
+  const rect = originEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  // Confetti burst
+  const burst = document.createElement('div');
+  burst.className = 'confetti-burst';
+  burst.style.left = cx + 'px';
+  burst.style.top = cy + 'px';
+  const colors = ['#635bff', '#8b5cf6', '#c084fc', '#10b981', '#fbbf24', '#ec4899', '#06b6d4'];
+  const count = 24;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.background = colors[i % colors.length];
+    const angle = (Math.PI * 2 * i / count) + (Math.random() * 0.4 - 0.2);
+    const dist = 90 + Math.random() * 90;
+    p.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+    p.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+    p.style.animationDelay = (Math.random() * 0.08) + 's';
+    burst.appendChild(p);
+  }
+  document.body.appendChild(burst);
+  setTimeout(function () { burst.remove(); }, 1700);
+
+  // Big animated checkmark overlay — SVG with stroke-dashoffset
+  // animation so the check draws itself.
+  const check = document.createElement('div');
+  check.className = 'lesson-complete-check';
+  check.style.left = cx + 'px';
+  check.style.top = cy + 'px';
+  check.innerHTML = '<svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-18"/></svg>';
+  document.body.appendChild(check);
+  setTimeout(function () { check.remove(); }, 1700);
+}
+
+// Brighter success chime for lesson completion — major triad arpeggio
+// (C5 → E5 → G5) that feels like an accomplishment.
+function playSuccessChime() {
+  try {
+    if (localStorage.getItem('notif_sound') === 'off') return;
+  } catch (_) {}
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+    notes.forEach(function (freq, i) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.value = freq;
+      const t0 = ctx.currentTime + i * 0.08;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.16, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.45);
+      o.start(t0);
+      o.stop(t0 + 0.48);
+    });
+    setTimeout(function () { try { ctx.close(); } catch (_) {} }, 800);
+  } catch (e) {}
+}
+
+function playNotifChime() {
+  try {
+    if (localStorage.getItem('notif_sound') === 'off') return;
+  } catch (_) {}
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);                       // A5
+    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.09); // glide to E6
+    g.gain.setValueAtTime(0.12, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.40);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.42);
+    // Close the context after the tone ends so we don't leak
+    setTimeout(function () { try { ctx.close(); } catch (_) {} }, 700);
+  } catch (e) { /* audio blocked — silent fail */ }
+}
+
 const NOTIFS = {
   STORAGE_KEY: 'notifications',
   getAll() { return safeGetJSON(this.STORAGE_KEY, []); },
@@ -6028,9 +6133,10 @@ const NOTIFS = {
     if (all.length > 30) all.pop();
     safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
     // Re-render the bell badge + dropdown immediately so new alerts
-    // surface without waiting for a manual refresh.
+    // surface without waiting for a manual refresh. Also play the
+    // chime so users get an audio cue.
     if (typeof renderNotifications === 'function') {
-      try { renderNotifications(); pulseBell(); } catch (e) {}
+      try { renderNotifications(); pulseBell(); playNotifChime(); } catch (e) {}
     }
   },
   markAllRead() {
@@ -8692,9 +8798,21 @@ if (currentPage === 'dashboard.html') {
 // COMMUNITY FEED + BIG WINS — Dashboard render + composer handlers
 // ============================================================
 function _avatarHTML(item) {
-  if (item && item.avatar) return '<img src="' + item.avatar + '" alt="">';
+  // Avatar ring color depends on the user's role:
+  //   admin → gold (.avatar-role-admin)
+  //   graduate → blue (.avatar-role-graduate, set when isGraduate is true)
+  //   everyone else → no ring (.avatar-role-student or omitted)
+  // We add the class to the avatar element itself so the ring
+  // wraps the visible avatar regardless of which wrapper div the
+  // caller uses (.post-avatar / .comment-avatar / .chat-avatar / etc).
+  const role = (item && item.role) || '';
+  const isGrad = !!(item && (item.isGraduate || item.graduate));
+  const cls = role === 'admin'
+    ? ' avatar-role-admin'
+    : (isGrad ? ' avatar-role-graduate' : '');
+  if (item && item.avatar) return '<img src="' + item.avatar + '" alt="" class="avatar-inner' + cls + '">';
   const initials = (item && item.initials) ? item.initials : 'U';
-  return '<span>' + initials + '</span>';
+  return '<span class="avatar-inner' + cls + '">' + initials + '</span>';
 }
 
 function _esc(s) {
