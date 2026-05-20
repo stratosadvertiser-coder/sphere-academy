@@ -13484,14 +13484,13 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
 /* ============================================================
    ROTATING WORD — the headline's last word cycles through
    GROW → SCALE → LEAD → DELIVER → ALIGN with a soft
-   scale+blur+fade swap. The gradient wrapper
-   (.hero-title-gradient) keeps its animated indigo shimmer
-   continuous through the swap so the color flow never stops;
-   this inner span just handles the text crossfade. JS toggles
-   .is-swapping every ~3.5s.
+   scale+blur+fade swap. This class is now applied to the
+   same element as .hero-title-gradient so the gradient
+   clips directly to the text (avoids the nested-span
+   background-clip issue that left the word invisible in
+   some browsers). JS toggles .is-swapping every ~3.5s.
    ============================================================ */
 .rotating-word {
-  display: inline-block;
   /* line-height: 1 ensures the transform doesn't bleed into
      the line above or below. will-change reserves a paint
      layer so the swap animates on the GPU without juddering
@@ -13499,12 +13498,14 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   line-height: 1;
   will-change: opacity, transform, filter;
 }
-.rotating-word.is-swapping {
-  /* Slow, soft easing — feels like a premium product
-     transition instead of a hard slide. Total 0.9s with the
-     midpoint at 50%, which is when JS swaps the textContent
-     so the user never sees the change. */
-  animation: wordSwap 0.9s cubic-bezier(0.65, 0, 0.35, 1);
+/* When the rotating-word is ALSO the gradient element, we
+   need both gradientShift (continuous) AND wordSwap (one-shot)
+   running together. Use comma-separated animation values so
+   the gradient flow never pauses during the text swap. */
+.hero-title-gradient.rotating-word.is-swapping {
+  animation:
+    gradientShift 5s linear infinite,
+    wordSwap 0.9s cubic-bezier(0.65, 0, 0.35, 1) !important;
 }
 @keyframes wordSwap {
   0% {
@@ -13532,6 +13533,31 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
    motion get an instant text swap with no scale animation. */
 @media (prefers-reduced-motion: reduce) {
   .rotating-word.is-swapping { animation: none; }
+  .hero-title-gradient.rotating-word.is-swapping {
+    animation: gradientShift 5s linear infinite !important;
+  }
+}
+
+/* ============================================================
+   LIGHT MODE OVERRIDE — the dark-mode gradient (#7c3aed →
+   #c084fc) goes too light against a white background. The
+   #c084fc and #a78bfa stops are nearly invisible on #fafafa.
+   Use deeper violets so every stop has at least 4.5:1 contrast
+   against the light background. The animation stays the same
+   so motion is identical between themes.
+   ============================================================ */
+[data-theme="light"] .hero-title-gradient,
+[data-theme="light"] .hero-title-gradient.rotating-word {
+  background: linear-gradient(90deg,
+    #4c1d95 0%,
+    #5b21b6 18%,
+    #6d28d9 35%,
+    #7c3aed 50%,
+    #6d28d9 65%,
+    #5b21b6 82%,
+    #4c1d95 100%
+  ) !important;
+  background-size: 300% 100% !important;
 }
 
 /* ============================================================
