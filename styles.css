@@ -13754,8 +13754,16 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   .dash-sidebar-rail {
     transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  /* Links + action buttons get identical treatment when expanded */
-  .dash-sidebar-rail.is-expanded .dash-sidebar-link {
+  /* Links + action buttons get identical treatment when expanded.
+     The aggressive selectors include both a.dash-sidebar-link and
+     button.dash-sidebar-link explicitly so the UA stylesheet
+     defaults on <button> (text-align:center, appearance, padding)
+     can't push the text away from the icon. */
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link,
+  .dash-sidebar-rail.is-expanded a.dash-sidebar-link,
+  .dash-sidebar-rail.is-expanded button.dash-sidebar-link {
+    display: flex !important;
+    align-items: center !important;
     width: 100% !important;
     height: 42px !important;
     justify-content: flex-start !important;
@@ -13763,24 +13771,37 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     gap: 12px !important;
     text-align: left !important;
     font-family: inherit !important;
+    font-size: 0.9rem !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
   }
   .dash-sidebar-rail.is-expanded .dash-sidebar-link svg {
-    flex-shrink: 0;
+    flex-shrink: 0 !important;
+    width: 18px !important;
+    height: 18px !important;
   }
   /* Text label — left-aligned, takes available space, truncates.
      text-align: left forces buttons (which inherit text-align:
-     center from the UA stylesheet) to align like anchors do. */
-  .dash-sidebar-rail.is-expanded .dash-sidebar-link > span:not(.sidebar-badge) {
-    display: inline-block !important;
-    font-size: 0.9rem;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    min-width: 0;
+     center from the UA stylesheet) to align like anchors do.
+     We use block display + width:100% so the span fills the row
+     and the badge can float to its right end. */
+  .dash-sidebar-rail.is-expanded .dash-sidebar-link > span:not(.sidebar-badge),
+  .dash-sidebar-rail.is-expanded button.dash-sidebar-link > span:not(.sidebar-badge),
+  .dash-sidebar-rail.is-expanded a.dash-sidebar-link > span:not(.sidebar-badge) {
+    display: block !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
     text-align: left !important;
-    letter-spacing: -0.005em;
+    letter-spacing: -0.005em !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   /* Active state — subtle violet fill + left edge bar for the
      "premium product app" feel (think Linear / Notion). */
@@ -14240,9 +14261,14 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     grid-column: auto !important;
     z-index: 80;
   }
-  /* Hide the card if the viewport shrinks mid-session — pure
-     defense, the media query already takes care of this but
-     belt-and-suspenders is fine here. */
+  /* When the sidebar is EXPANDED, the feed shifts right (centered
+     in the smaller 1fr column) and starts overlapping with the
+     profile card's fixed position. Hide the card in expanded mode
+     so nothing collides — the user can still get all the profile
+     info via the sidebar's Profile icon. */
+  body:has(.dash-sidebar-rail.is-expanded) .dash-profile-card {
+    display: none !important;
+  }
 }
 
 /* Hidden on narrower viewports — feed takes the full row */
