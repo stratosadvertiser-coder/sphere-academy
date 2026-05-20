@@ -14034,15 +14034,12 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     column-gap: 28px !important;
     padding-right: 32px !important;
   }
-  /* Center the feed within its 1fr column. Was previously
-     right-aligned via margin-left:auto + margin-right:0, but
-     that left a big empty space on the left of the feed when
-     the profile card was hidden or narrow. Keep it centered
-     symmetrically — the profile card just sits in its own
-     320px column to the right. */
+  /* Pull the feed column max-width down a touch since we're
+     sharing the row with the profile card now. */
   .dash-main {
     max-width: 720px !important;
-    margin: 0 auto !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
   }
   .dash-profile-card {
     display: block;
