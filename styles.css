@@ -13613,10 +13613,20 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   /* The grid still allocates 64px on the left for the sidebar,
      so the main content's flow position is correct. The fixed
      position of the rail just paints it; the grid column
-     prevents the main content from sliding underneath. */
+     prevents the main content from sliding underneath.
+
+     Main content is constrained to a comfortable reading width
+     and centered within the remaining viewport space (the 1fr
+     column from the rail's right edge to the viewport's right
+     edge). This keeps the feed visually balanced instead of
+     stretching all the way across on wide monitors. */
   .dash-main {
     grid-column: 2 !important;
-    padding-left: 8px !important;
+    width: 100% !important;
+    max-width: 1080px !important;
+    margin: 0 auto !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
   }
   /* Each link becomes a centered 48×48 button. Text labels are
      hidden by default; tooltip shows on hover via the
