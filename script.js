@@ -5679,6 +5679,10 @@ profileNavItems.forEach(item => {
       s.classList.remove('active');
       if (s.id === 'section-' + sectionId) s.classList.add('active');
     });
+    // Lazy-render the Saved section on demand
+    if (sectionId === 'saved' && typeof renderSavedSection === 'function') {
+      renderSavedSection();
+    }
   });
 });
 
@@ -5989,7 +5993,10 @@ if (heroVisual) {
   });
 }
 
-// ===== SEARCH FUNCTIONALITY =====
+// ===== GLOBAL SEARCH =====
+// Searches across lessons, bonus courses, posts (wins/feed),
+// members, announcements, and resources. Results are grouped by
+// type with category headers and keyboard navigation (↑/↓/Enter).
 const searchBtn = document.getElementById('searchBtn');
 const searchOverlay = document.getElementById('searchOverlay');
 const searchInput = document.getElementById('searchInput');
@@ -5997,41 +6004,290 @@ const searchClose = document.getElementById('searchClose');
 const searchResults = document.getElementById('searchResults');
 
 if (searchBtn && searchOverlay) {
+  // Update placeholder to reflect the new scope
+  if (searchInput && !searchInput.dataset.placeholderUpgraded) {
+    searchInput.placeholder = 'Search lessons, posts, people, courses…';
+    searchInput.dataset.placeholderUpgraded = '1';
+  }
+
   searchBtn.addEventListener('click', () => {
     searchOverlay.classList.add('active');
-    if (searchInput) setTimeout(() => searchInput.focus(), 100);
+    if (searchInput) {
+      setTimeout(() => searchInput.focus(), 100);
+      // Show suggestions for an empty query (recent + top picks)
+      if (!searchInput.value.trim()) renderSearchEmpty();
+    }
   });
 
   if (searchClose) searchClose.addEventListener('click', () => searchOverlay.classList.remove('active'));
   searchOverlay.addEventListener('click', (e) => { if (e.target === searchOverlay) searchOverlay.classList.remove('active'); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') searchOverlay.classList.remove('active'); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') searchOverlay.classList.remove('active');
+    // Global ⌘K / Ctrl+K to open search from anywhere
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      searchBtn.click();
+    }
+  });
 
+  // ---- helpers ----
+  function escHTML(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function highlight(text, q) {
+    if (!q) return escHTML(text);
+    const t = String(text || '');
+    const lo = t.toLowerCase();
+    const i = lo.indexOf(q.toLowerCase());
+    if (i < 0) return escHTML(t);
+    return escHTML(t.slice(0, i)) + '<mark>' + escHTML(t.slice(i, i + q.length)) + '</mark>' + escHTML(t.slice(i + q.length));
+  }
+  function safeBonusCourses() {
+    try { return JSON.parse(localStorage.getItem('bonus_courses') || '[]') || []; }
+    catch (_) { return []; }
+  }
+  function safeResources() {
+    try { return JSON.parse(localStorage.getItem('sphere_resources') || '[]') || []; }
+    catch (_) { return []; }
+  }
+
+  // SVG icons for each result type
+  const ICONS = {
+    lesson:   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    bonus:    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    post:     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    member:   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    ann:      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8v18l-18-8z"/></svg>',
+    resource: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+  };
+
+  function renderSearchEmpty() {
+    if (!searchResults) return;
+    searchResults.innerHTML =
+      '<div class="search-empty">'
+      + '<div class="search-empty-title">Find anything across Sphere Academy</div>'
+      + '<div class="search-empty-hints">'
+      +   '<span>Lessons</span><span>Bonus courses</span><span>Posts</span>'
+      +   '<span>People</span><span>Announcements</span><span>Resources</span>'
+      + '</div>'
+      + '<div class="search-shortcut-hint">Tip: press <kbd>⌘</kbd><kbd>K</kbd> from anywhere</div>'
+      + '</div>';
+  }
+
+  function runSearch(query) {
+    if (!searchResults) return;
+    const q = query.trim().toLowerCase();
+    if (!q) { renderSearchEmpty(); return; }
+
+    const results = [];
+
+    // -- Lessons --
+    try {
+      LESSONS.getAll().forEach(l => {
+        const hay = [l.title, l.category, l.difficulty, l.assignment && l.assignment.title].filter(Boolean).join(' ').toLowerCase();
+        if (hay.indexOf(q) >= 0) {
+          results.push({
+            type: 'lesson',
+            href: 'lesson.html?week=' + l.id,
+            title: 'W' + l.week + ': ' + l.title,
+            sub:   'Month ' + l.month + ' • ' + l.category + ' • ' + l.difficulty,
+            rank: hay.indexOf(q)
+          });
+        }
+      });
+    } catch (_) {}
+
+    // -- Bonus courses & their lessons --
+    try {
+      safeBonusCourses().forEach(c => {
+        const ctitle = c.title || c.name || 'Untitled';
+        if (ctitle.toLowerCase().indexOf(q) >= 0 || (c.description || '').toLowerCase().indexOf(q) >= 0) {
+          results.push({
+            type: 'bonus',
+            href: 'bonus-course.html?id=' + encodeURIComponent(c.id || ''),
+            title: ctitle,
+            sub:   'Bonus course' + (Array.isArray(c.lessons) ? ' • ' + c.lessons.length + ' lesson' + (c.lessons.length === 1 ? '' : 's') : ''),
+            rank: 0
+          });
+        }
+        if (Array.isArray(c.lessons)) {
+          c.lessons.forEach(ln => {
+            const lt = (ln.title || '').toLowerCase();
+            if (lt && lt.indexOf(q) >= 0) {
+              results.push({
+                type: 'bonus',
+                href: 'bonus-course.html?id=' + encodeURIComponent(c.id || '') + '&lesson=' + encodeURIComponent(ln.id || ''),
+                title: ln.title,
+                sub:   ctitle + ' • Bonus lesson',
+                rank: 1
+              });
+            }
+          });
+        }
+      });
+    } catch (_) {}
+
+    // -- Posts / Wins --
+    try {
+      if (typeof POSTS !== 'undefined' && POSTS.getAll) {
+        POSTS.getAll().slice(0, 200).forEach(p => {
+          const txt = (p.text || '').toLowerCase();
+          const author = (p.displayName || p.username || '').toLowerCase();
+          if (txt.indexOf(q) >= 0 || author.indexOf(q) >= 0) {
+            const snippet = (p.text || '').slice(0, 100) + ((p.text || '').length > 100 ? '…' : '');
+            results.push({
+              type: 'post',
+              href: 'dashboard.html#post=' + p.id,
+              title: snippet || '(post with media)',
+              sub:   (p.displayName || p.username || 'Member') + ' • ' + _searchTimeAgo(p.createdAt),
+              rank: txt.indexOf(q) >= 0 ? txt.indexOf(q) : 50
+            });
+          }
+        });
+      }
+    } catch (_) {}
+
+    // -- Members --
+    try {
+      const members = (typeof _MEMBERS_CACHE !== 'undefined' && Array.isArray(_MEMBERS_CACHE))
+        ? _MEMBERS_CACHE
+        : [];
+      members.forEach(u => {
+        const dn = (u.displayName || '').toLowerCase();
+        const un = (u.username || '').toLowerCase();
+        if (dn.indexOf(q) >= 0 || un.indexOf(q) >= 0) {
+          results.push({
+            type: 'member',
+            href: 'profile.html?u=' + encodeURIComponent(u.username || ''),
+            title: u.displayName || u.username || 'Member',
+            sub:   '@' + (u.username || '') + (u.role === 'admin' ? ' • Admin' : ''),
+            avatar: u.avatar || null,
+            initials: u.initials || (u.displayName || u.username || 'U').slice(0, 1).toUpperCase(),
+            rank: dn.indexOf(q) >= 0 ? dn.indexOf(q) : un.indexOf(q)
+          });
+        }
+      });
+    } catch (_) {}
+
+    // -- Announcements --
+    try {
+      if (typeof ANNOUNCEMENTS !== 'undefined' && ANNOUNCEMENTS.getAll) {
+        ANNOUNCEMENTS.getAll().forEach(a => {
+          const hay = ((a.title || '') + ' ' + (a.body || '')).toLowerCase();
+          if (hay.indexOf(q) >= 0) {
+            results.push({
+              type: 'ann',
+              href: 'dashboard.html#tab=announcements',
+              title: a.title || 'Announcement',
+              sub:   (a.authorName || 'Sphere') + ' • ' + _searchTimeAgo(a.createdAt),
+              rank: hay.indexOf(q)
+            });
+          }
+        });
+      }
+    } catch (_) {}
+
+    // -- Resources (if any saved) --
+    try {
+      safeResources().forEach(r => {
+        const hay = ((r.title || '') + ' ' + (r.description || '') + ' ' + (r.category || '')).toLowerCase();
+        if (hay.indexOf(q) >= 0) {
+          results.push({
+            type: 'resource',
+            href: r.url || 'dashboard.html#tab=resources',
+            title: r.title || 'Resource',
+            sub:   (r.category || 'Resource') + (r.kind ? ' • ' + r.kind : ''),
+            rank: hay.indexOf(q),
+            external: !!r.url
+          });
+        }
+      });
+    } catch (_) {}
+
+    if (results.length === 0) {
+      searchResults.innerHTML =
+        '<div class="search-empty">'
+        + '<div class="search-empty-title">No results for "' + escHTML(query) + '"</div>'
+        + '<div class="search-empty-hint">Try a shorter keyword or a different page</div>'
+        + '</div>';
+      return;
+    }
+
+    // Group by type, preserve rank within group
+    const order = ['lesson', 'bonus', 'post', 'member', 'ann', 'resource'];
+    const labels = {
+      lesson:   'Lessons',
+      bonus:    'Bonus courses',
+      post:     'Posts',
+      member:   'People',
+      ann:      'Announcements',
+      resource: 'Resources'
+    };
+    const grouped = {};
+    results.forEach(r => { (grouped[r.type] = grouped[r.type] || []).push(r); });
+    Object.keys(grouped).forEach(k => grouped[k].sort((a, b) => (a.rank || 0) - (b.rank || 0)));
+
+    let html = '';
+    order.forEach(t => {
+      const items = grouped[t];
+      if (!items || items.length === 0) return;
+      html += '<div class="search-group-label">' + labels[t] + ' <span class="search-group-count">' + items.length + '</span></div>';
+      items.slice(0, 6).forEach(r => {
+        const isExternal = r.external ? ' target="_blank" rel="noopener"' : '';
+        let iconHTML;
+        if (r.type === 'member' && r.avatar) {
+          iconHTML = '<div class="search-result-icon search-result-avatar"><img src="' + escHTML(r.avatar) + '" alt=""></div>';
+        } else if (r.type === 'member') {
+          iconHTML = '<div class="search-result-icon search-result-avatar"><span>' + escHTML(r.initials) + '</span></div>';
+        } else {
+          iconHTML = '<div class="search-result-icon search-result-icon-' + r.type + '">' + ICONS[r.type] + '</div>';
+        }
+        html += '<a class="search-result-item" href="' + escHTML(r.href) + '"' + isExternal + ' data-type="' + r.type + '">'
+          + iconHTML
+          + '<div class="search-result-info"><h4>' + highlight(r.title, q) + '</h4><span>' + highlight(r.sub, q) + '</span></div>'
+          + '</a>';
+      });
+    });
+
+    searchResults.innerHTML = html;
+  }
+
+  // Debounce input → search
   if (searchInput) {
+    let _searchT;
     searchInput.addEventListener('input', () => {
-      const query = searchInput.value.trim().toLowerCase();
-      if (!query) {
-        searchResults.innerHTML = '<div class="search-empty">Type to search across all 16 lessons</div>';
+      clearTimeout(_searchT);
+      _searchT = setTimeout(() => runSearch(searchInput.value), 80);
+    });
+    // Keyboard navigation: ↑ / ↓ / Enter
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter') return;
+      const items = searchResults.querySelectorAll('.search-result-item');
+      if (!items.length) return;
+      let idx = -1;
+      items.forEach((el, i) => { if (el.classList.contains('is-active')) idx = i; });
+      if (e.key === 'Enter') {
+        if (idx >= 0) { e.preventDefault(); items[idx].click(); }
+        else if (items[0]) { e.preventDefault(); items[0].click(); }
         return;
       }
-      const lessons = LESSONS.getAll();
-      const matches = lessons.filter(l =>
-        l.title.toLowerCase().includes(query) ||
-        l.category.toLowerCase().includes(query) ||
-        (l.assignment && l.assignment.title && l.assignment.title.toLowerCase().includes(query))
-      );
-      if (matches.length === 0) {
-        searchResults.innerHTML = '<div class="search-empty">No lessons found for "' + query + '"</div>';
-        return;
-      }
-      searchResults.innerHTML = matches.map(l => {
-        const icon = l.published ? '&#9654;' : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-        return '<a class="search-result-item" href="lesson.html?week=' + l.id + '">'
-          + '<div class="search-result-icon">' + icon + '</div>'
-          + '<div class="search-result-info"><h4>W' + l.week + ': ' + l.title + '</h4>'
-          + '<span>Month ' + l.month + ' &bull; ' + l.category + ' &bull; ' + l.difficulty + '</span></div></a>';
-      }).join('');
+      e.preventDefault();
+      const next = e.key === 'ArrowDown'
+        ? Math.min(items.length - 1, idx + 1)
+        : Math.max(0, idx - 1);
+      items.forEach(el => el.classList.remove('is-active'));
+      items[next].classList.add('is-active');
+      items[next].scrollIntoView({ block: 'nearest' });
     });
   }
+}
+
+// _timeAgo helper used by global search.
+function _searchTimeAgo(ts) {
+  if (!ts) return '';
+  const s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
 }
 
 // ===== NOTIFICATIONS =====
@@ -10335,6 +10591,11 @@ function bindDashboardSidebar() {
       renderMembers();
     }
 
+    // Resources panel
+    if (tab === 'resources' && typeof RESOURCES !== 'undefined') {
+      RESOURCES.fetchRemote().then(function () { RESOURCES.render(); }).catch(function () { RESOURCES.render(); });
+    }
+
     // Messages panel: render conversation list + restore active thread.
     if (tab === 'messages') {
       renderDMConversations();
@@ -12556,3 +12817,656 @@ window.BOOKMARKS = {
     return this._load();
   }
 };
+
+// ============================================================
+// LESSON NOTES — per-lesson personal notes that auto-save to
+// localStorage and mirror to Firestore (so notes follow the
+// student across devices). Each lesson has its own note doc
+// keyed by week id ("w1", "w2", ...) and scoped to the logged-in
+// username so multiple students sharing a device stay isolated.
+//
+// Public API:
+//   NOTES.get(weekId)          → string  (note body)
+//   NOTES.set(weekId, body)    → void    (debounced sync)
+//   NOTES.all()                → { wId: { body, updatedAt } }
+// ============================================================
+window.NOTES = {
+  COLLECTION: 'sphere_lesson_notes',
+  _key: function () {
+    var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? (AUTH.getUser() || '').toLowerCase() : '';
+    return 'sphere_notes_' + (u || 'anon');
+  },
+  _load: function () {
+    try { return JSON.parse(localStorage.getItem(this._key()) || '{}') || {}; }
+    catch (_) { return {}; }
+  },
+  _save: function (obj) {
+    try { localStorage.setItem(this._key(), JSON.stringify(obj)); } catch (_) {}
+  },
+  get: function (weekId) {
+    var all = this._load();
+    return (all[weekId] && all[weekId].body) || '';
+  },
+  all: function () {
+    return this._load();
+  },
+  _syncTimers: {},
+  set: function (weekId, body) {
+    if (!weekId) return;
+    var all = this._load();
+    all[weekId] = { body: String(body || ''), updatedAt: Date.now() };
+    this._save(all);
+    // Debounce Firestore writes by 1.2s so we don't hammer it
+    // while the user is actively typing.
+    var self = this;
+    if (this._syncTimers[weekId]) clearTimeout(this._syncTimers[weekId]);
+    this._syncTimers[weekId] = setTimeout(function () {
+      self._syncToFirestore(weekId, all[weekId]);
+    }, 1200);
+  },
+  _syncToFirestore: function (weekId, entry) {
+    try {
+      if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+      var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? (AUTH.getUser() || '').toLowerCase() : '';
+      if (!u) return;
+      DATA_SYNC.db.collection(this.COLLECTION)
+        .doc(u)
+        .set({ ['notes.' + weekId]: entry }, { merge: true })
+        .catch(function (e) { console.warn('[NOTES] sync:', e.message); });
+      // Firestore doesn't support dot-key merge on top-level, so use a nested object:
+      var payload = { notes: {} };
+      payload.notes[weekId] = entry;
+      DATA_SYNC.db.collection(this.COLLECTION).doc(u).set(payload, { merge: true })
+        .catch(function (e) { console.warn('[NOTES] sync:', e.message); });
+    } catch (e) { /* non-fatal */ }
+  },
+  fetchRemote: async function () {
+    try {
+      if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+      var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? (AUTH.getUser() || '').toLowerCase() : '';
+      if (!u) return;
+      var snap = await DATA_SYNC.db.collection(this.COLLECTION).doc(u).get();
+      if (!snap || !snap.exists) return;
+      var data = snap.data() || {};
+      var remote = data.notes || {};
+      var local = this._load();
+      // Take whichever copy is more recent per lesson
+      var merged = Object.assign({}, local);
+      Object.keys(remote).forEach(function (k) {
+        var r = remote[k];
+        var l = local[k];
+        if (!l || (r.updatedAt || 0) > (l.updatedAt || 0)) merged[k] = r;
+      });
+      this._save(merged);
+    } catch (e) { console.warn('[NOTES] fetchRemote:', e.message); }
+  }
+};
+
+// ============================================================
+// LESSON NOTES UI — only mounts on lesson.html. Floating
+// "Notes" button bottom-right that opens a slide-in drawer
+// with a textarea. Auto-saves on input. Shows a small "dot"
+// on the button when notes exist for this lesson.
+// ============================================================
+(function () {
+  function init() {
+    // Only run on lesson.html
+    if (!/lesson\.html(\?|$)/.test(location.pathname + location.search)) {
+      var path = (location.pathname.split('/').pop() || '').toLowerCase();
+      if (path !== 'lesson.html') return;
+    }
+    var params = new URLSearchParams(location.search);
+    var weekId = params.get('week') || 'w1';
+
+    // Don't show notes UI on the locked / coming-soon / not-found screens.
+    // We detect by checking if a normal lesson title (h1) is visible.
+    var titleEl = document.querySelector('.lesson-content h1');
+    if (!titleEl) {
+      // Wait a tick — script.js may render the lesson body asynchronously
+      setTimeout(maybeMount, 300);
+      return;
+    }
+    maybeMount();
+
+    function maybeMount() {
+      if (document.getElementById('lessonNotesFab')) return;
+      var content = document.querySelector('.lesson-content');
+      if (!content) return;
+
+      // FAB
+      var fab = document.createElement('button');
+      fab.id = 'lessonNotesFab';
+      fab.className = 'lesson-notes-fab';
+      fab.setAttribute('type', 'button');
+      fab.setAttribute('aria-label', 'My notes');
+      fab.title = 'My notes for this lesson';
+      fab.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>'
+        + '<span class="lesson-notes-fab-label">Notes</span>'
+        + '<span class="lesson-notes-dot" id="lessonNotesDot" style="display:none;"></span>';
+      document.body.appendChild(fab);
+
+      // Drawer
+      var drawer = document.createElement('aside');
+      drawer.id = 'lessonNotesDrawer';
+      drawer.className = 'lesson-notes-drawer';
+      drawer.setAttribute('aria-label', 'My lesson notes');
+      drawer.innerHTML = ''
+        + '<div class="lesson-notes-header">'
+        +   '<div>'
+        +     '<div class="lesson-notes-title">My notes</div>'
+        +     '<div class="lesson-notes-sub">For ' + (titleEl ? titleEl.textContent : 'this lesson') + '</div>'
+        +   '</div>'
+        +   '<button type="button" class="lesson-notes-close" aria-label="Close notes">✕</button>'
+        + '</div>'
+        + '<textarea class="lesson-notes-textarea" id="lessonNotesText" placeholder="Take notes as you go… Auto-saves while you type. Available across devices when signed in."></textarea>'
+        + '<div class="lesson-notes-foot">'
+        +   '<span class="lesson-notes-status" id="lessonNotesStatus">Auto-saves as you type</span>'
+        +   '<div class="lesson-notes-actions">'
+        +     '<button type="button" class="btn-outline-mini" id="lessonNotesCopy">Copy</button>'
+        +     '<button type="button" class="btn-outline-mini" id="lessonNotesClear">Clear</button>'
+        +   '</div>'
+        + '</div>';
+      document.body.appendChild(drawer);
+
+      // Backdrop
+      var backdrop = document.createElement('div');
+      backdrop.className = 'lesson-notes-backdrop';
+      backdrop.id = 'lessonNotesBackdrop';
+      document.body.appendChild(backdrop);
+
+      var ta = drawer.querySelector('#lessonNotesText');
+      var status = drawer.querySelector('#lessonNotesStatus');
+      var dot = fab.querySelector('#lessonNotesDot');
+
+      function refreshDot() {
+        var body = (NOTES.get(weekId) || '').trim();
+        dot.style.display = body ? 'inline-block' : 'none';
+      }
+
+      function openDrawer() {
+        ta.value = NOTES.get(weekId) || '';
+        drawer.classList.add('open');
+        backdrop.classList.add('open');
+        setTimeout(function () { ta.focus(); }, 100);
+        refreshDot();
+      }
+      function closeDrawer() {
+        drawer.classList.remove('open');
+        backdrop.classList.remove('open');
+      }
+
+      fab.addEventListener('click', openDrawer);
+      drawer.querySelector('.lesson-notes-close').addEventListener('click', closeDrawer);
+      backdrop.addEventListener('click', closeDrawer);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer();
+      });
+
+      // Auto-save
+      var saveT;
+      ta.addEventListener('input', function () {
+        status.textContent = 'Saving…';
+        clearTimeout(saveT);
+        saveT = setTimeout(function () {
+          NOTES.set(weekId, ta.value);
+          status.textContent = 'Saved · ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          refreshDot();
+        }, 300);
+      });
+
+      // Copy
+      drawer.querySelector('#lessonNotesCopy').addEventListener('click', function () {
+        var v = ta.value || '';
+        if (!v.trim()) { if (window.toast) toast('Nothing to copy', 'info'); return; }
+        try {
+          navigator.clipboard.writeText(v).then(function () {
+            if (window.toast) toast('Notes copied to clipboard', 'success');
+          });
+        } catch (_) {
+          ta.select();
+          document.execCommand('copy');
+        }
+      });
+
+      // Clear with confirm
+      drawer.querySelector('#lessonNotesClear').addEventListener('click', function () {
+        if (!ta.value.trim()) return;
+        if (!confirm('Clear your notes for this lesson?')) return;
+        ta.value = '';
+        NOTES.set(weekId, '');
+        status.textContent = 'Cleared';
+        refreshDot();
+      });
+
+      // Initial state
+      refreshDot();
+
+      // Pull latest from Firestore (in case the student typed on
+      // another device — newer wins)
+      try { NOTES.fetchRemote().then(refreshDot); } catch (_) {}
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+// ============================================================
+// RESOURCES — curated template/swipe/tool library, managed in
+// the dashboard #tab=resources panel. Admins can add resources;
+// students browse and click through. Stored as a plain array
+// in localStorage (sphere_resources) + Firestore doc
+// sphere_settings/resources so all students see the same set.
+// ============================================================
+window.RESOURCES = {
+  STORAGE_KEY: 'sphere_resources',
+  COLLECTION_DOC: { col: 'sphere_settings', doc: 'resources' },
+
+  _defaults: [
+    {
+      id: 'r_default_1',
+      title: 'Meta Ad Library',
+      description: 'Search every active ad currently running on Facebook and Instagram. Use it for inspiration before you create.',
+      url: 'https://www.facebook.com/ads/library/',
+      category: 'tool',
+      kind: 'Web',
+      addedBy: 'Sphere',
+      addedAt: 0
+    },
+    {
+      id: 'r_default_2',
+      title: 'Canva — Marketing templates',
+      description: 'Hundreds of free editable templates for social posts, ads, banners, and stories. The fastest way to ship a decent creative.',
+      url: 'https://www.canva.com/templates/?query=marketing',
+      category: 'template',
+      kind: 'Canva',
+      addedBy: 'Sphere',
+      addedAt: 0
+    },
+    {
+      id: 'r_default_3',
+      title: 'CapCut',
+      description: 'Free mobile + desktop video editor. Captions, transitions, and beat sync — perfect for short-form ads.',
+      url: 'https://www.capcut.com/',
+      category: 'tool',
+      kind: 'App',
+      addedBy: 'Sphere',
+      addedAt: 0
+    },
+    {
+      id: 'r_default_4',
+      title: 'Hook frameworks for short-form video',
+      description: '15 proven hook patterns that scroll-stop viewers in the first 2 seconds.',
+      url: 'https://blog.hootsuite.com/social-media-hooks/',
+      category: 'reading',
+      kind: 'Article',
+      addedBy: 'Sphere',
+      addedAt: 0
+    }
+  ],
+
+  _load: function () {
+    try { return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || 'null') || null; }
+    catch (_) { return null; }
+  },
+  _save: function (list) {
+    try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(list || [])); } catch (_) {}
+  },
+
+  getAll: function () {
+    var stored = this._load();
+    if (!stored) {
+      this._save(this._defaults.slice());
+      return this._defaults.slice();
+    }
+    return stored.slice().sort(function (a, b) { return (b.addedAt || 0) - (a.addedAt || 0); });
+  },
+
+  add: function (data) {
+    data = data || {};
+    if (!data.title || !data.url) return null;
+    var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : 'Sphere';
+    var entry = {
+      id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      title: String(data.title).slice(0, 120),
+      description: String(data.description || '').slice(0, 400),
+      url: String(data.url).slice(0, 500),
+      category: data.category || 'template',
+      kind: String(data.kind || '').slice(0, 40),
+      addedBy: u,
+      addedAt: Date.now()
+    };
+    var list = this.getAll();
+    list.unshift(entry);
+    this._save(list);
+    this._syncToFirestore(list);
+    return entry;
+  },
+
+  remove: function (id) {
+    var list = this.getAll().filter(function (r) { return r.id !== id; });
+    this._save(list);
+    this._syncToFirestore(list);
+  },
+
+  _syncToFirestore: function (list) {
+    try {
+      if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+      DATA_SYNC.db.collection(this.COLLECTION_DOC.col)
+        .doc(this.COLLECTION_DOC.doc)
+        .set({ items: list, updatedAt: Date.now() }, { merge: true })
+        .catch(function (e) { console.warn('[RESOURCES] sync:', e.message); });
+    } catch (e) {}
+  },
+
+  fetchRemote: async function () {
+    try {
+      if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
+      var snap = await DATA_SYNC.db.collection(this.COLLECTION_DOC.col)
+        .doc(this.COLLECTION_DOC.doc).get();
+      if (!snap || !snap.exists) return this.getAll();
+      var data = snap.data() || {};
+      if (Array.isArray(data.items)) {
+        this._save(data.items);
+      }
+      return this.getAll();
+    } catch (e) {
+      console.warn('[RESOURCES] fetchRemote:', e.message);
+      return this.getAll();
+    }
+  },
+
+  _activeCategory: 'all',
+  render: function () {
+    var grid = document.getElementById('resourcesGrid');
+    var empty = document.getElementById('resourcesEmpty');
+    if (!grid) return;
+
+    var items = this.getAll();
+    if (this._activeCategory !== 'all') {
+      items = items.filter(function (r) { return r.category === RESOURCES._activeCategory; });
+    }
+
+    if (items.length === 0) {
+      grid.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    var isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+    var ICON_BY_CAT = {
+      template: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>',
+      swipe:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 2 14 8 20 8"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>',
+      tool:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+      reading:  '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+      video:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>'
+    };
+    var CAT_LABEL = {
+      template: 'Template',
+      swipe: 'Swipe file',
+      tool: 'Tool',
+      reading: 'Reading',
+      video: 'Video'
+    };
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+    function tryHost(u) {
+      try { return new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return ''; }
+    }
+
+    grid.innerHTML = items.map(function (r) {
+      var icon = ICON_BY_CAT[r.category] || ICON_BY_CAT.template;
+      var host = tryHost(r.url);
+      var delBtn = isAdmin
+        ? '<button type="button" class="resource-del" data-id="' + r.id + '" aria-label="Remove resource" title="Remove">✕</button>'
+        : '';
+      return '<a class="resource-card" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer" data-cat="' + esc(r.category) + '">'
+        +   '<div class="resource-card-icon resource-card-icon-' + esc(r.category) + '">' + icon + '</div>'
+        +   '<div class="resource-card-body">'
+        +     '<div class="resource-card-head">'
+        +       '<span class="resource-card-badge">' + esc(CAT_LABEL[r.category] || 'Resource') + (r.kind ? ' · ' + esc(r.kind) : '') + '</span>'
+        +     '</div>'
+        +     '<h4 class="resource-card-title">' + esc(r.title) + '</h4>'
+        +     (r.description ? '<p class="resource-card-desc">' + esc(r.description) + '</p>' : '')
+        +     '<div class="resource-card-foot">'
+        +       (host ? '<span class="resource-card-host">' + esc(host) + ' ↗</span>' : '<span class="resource-card-host">Open ↗</span>')
+        +     '</div>'
+        +   '</div>'
+        +   delBtn
+        + '</a>';
+    }).join('');
+
+    if (isAdmin) {
+      grid.querySelectorAll('.resource-del').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!confirm('Remove this resource?')) return;
+          RESOURCES.remove(btn.dataset.id);
+          RESOURCES.render();
+          if (window.toast) toast('Resource removed', 'success');
+        });
+      });
+    }
+  },
+
+  bindUI: function () {
+    var self = this;
+
+    document.querySelectorAll('.resources-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        document.querySelectorAll('.resources-chip').forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        self._activeCategory = chip.dataset.cat || 'all';
+        self.render();
+      });
+    });
+
+    var isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+    var newBtn = document.getElementById('newResourceBtn');
+    var composer = document.getElementById('resourceComposer');
+    var titleI = document.getElementById('resTitle');
+    var descI = document.getElementById('resDesc');
+    var urlI = document.getElementById('resUrl');
+    var catI = document.getElementById('resCat');
+    var kindI = document.getElementById('resKind');
+    var submitBtn = document.getElementById('resSubmitBtn');
+    var cancelBtn = document.getElementById('resCancelBtn');
+
+    if (isAdmin && newBtn) {
+      newBtn.style.display = '';
+      newBtn.addEventListener('click', function () {
+        if (composer) composer.style.display = 'block';
+        if (titleI) titleI.focus();
+      });
+    }
+    if (cancelBtn) cancelBtn.addEventListener('click', function () {
+      if (composer) composer.style.display = 'none';
+      [titleI, descI, urlI, kindI].forEach(function (i) { if (i) i.value = ''; });
+      if (submitBtn) submitBtn.disabled = true;
+    });
+
+    function checkValid() {
+      if (!submitBtn) return;
+      var t = titleI && titleI.value.trim();
+      var u = urlI && urlI.value.trim();
+      submitBtn.disabled = !(t && u && /^https?:\/\//i.test(u));
+    }
+    [titleI, urlI].forEach(function (el) { if (el) el.addEventListener('input', checkValid); });
+
+    if (submitBtn) submitBtn.addEventListener('click', function () {
+      var entry = self.add({
+        title: titleI.value,
+        description: descI ? descI.value : '',
+        url: urlI.value,
+        category: catI ? catI.value : 'template',
+        kind: kindI ? kindI.value : ''
+      });
+      if (!entry) return;
+      [titleI, descI, urlI, kindI].forEach(function (i) { if (i) i.value = ''; });
+      if (composer) composer.style.display = 'none';
+      if (submitBtn) submitBtn.disabled = true;
+      self.render();
+      if (window.toast) toast('Resource added', 'success');
+    });
+  }
+};
+
+(function () {
+  function bind() {
+    if (document.getElementById('resourcesGrid')) {
+      try { RESOURCES.bindUI(); } catch (_) {}
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
+  }
+})();
+
+// ============================================================
+// SAVED SECTION on profile.html — shows everything the user
+// has bookmarked: posts, wins, lessons. Plus a "My notes" tab
+// that lists every lesson the user has notes on.
+// ============================================================
+window._savedTab = 'posts';
+window.renderSavedSection = function () {
+  var list = document.getElementById('savedList');
+  if (!list) return;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function timeAgo(ts) {
+    if (!ts) return '';
+    var s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
+    if (s < 60) return s + 's ago';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+    return Math.floor(s / 86400) + 'd ago';
+  }
+
+  var bookmarks = (typeof BOOKMARKS !== 'undefined' && BOOKMARKS.list) ? BOOKMARKS.list() : [];
+
+  if (window._savedTab === 'posts') {
+    // Match bookmarks to posts (and wins, since wins live in POSTS too)
+    var posts = (typeof POSTS !== 'undefined' && POSTS.getAll) ? POSTS.getAll() : [];
+    var wins = (typeof WINS !== 'undefined' && WINS.getAll) ? WINS.getAll() : [];
+    var byId = {};
+    posts.forEach(function (p) { byId[p.id] = { type: 'post', item: p }; });
+    wins.forEach(function (w) { byId[w.id] = { type: 'win', item: w }; });
+
+    var matched = bookmarks
+      .filter(function (b) { return (b.type === 'post' || b.type === 'win') && byId[b.id]; })
+      .map(function (b) { return { saved: b, type: byId[b.id].type, item: byId[b.id].item }; });
+
+    if (matched.length === 0) {
+      list.innerHTML = '<div class="dash-empty saved-empty"><p>No saved posts yet. Tap the bookmark icon on any post to start collecting.</p></div>';
+      return;
+    }
+
+    list.innerHTML = matched.map(function (m) {
+      var p = m.item;
+      var txt = (p.text || '').slice(0, 180) + ((p.text || '').length > 180 ? '…' : '');
+      var typeBadge = m.type === 'win'
+        ? '<span class="saved-type-badge saved-type-win">Win</span>'
+        : '<span class="saved-type-badge saved-type-post">Post</span>';
+      return '<a class="saved-item" href="dashboard.html#post=' + esc(p.id) + '">'
+        + '<div class="saved-item-head">'
+        +   typeBadge
+        +   '<span class="saved-item-author">' + esc(p.displayName || p.username || 'Member') + '</span>'
+        +   '<span class="saved-item-time">' + esc(timeAgo(p.createdAt)) + ' · saved ' + esc(timeAgo(m.saved.savedAt)) + '</span>'
+        + '</div>'
+        + (txt ? '<div class="saved-item-text">' + esc(txt) + '</div>' : '<div class="saved-item-text saved-item-media">(media post)</div>')
+        + '</a>';
+    }).join('');
+    return;
+  }
+
+  if (window._savedTab === 'lessons') {
+    var lessonBookmarks = bookmarks.filter(function (b) { return b.type === 'lesson'; });
+    if (lessonBookmarks.length === 0) {
+      // Backwards-compat: show "no lessons bookmarked yet"
+      list.innerHTML = '<div class="dash-empty saved-empty"><p>No saved lessons yet. Tap the bookmark icon on a lesson card to save it for later.</p></div>';
+      return;
+    }
+    var lessons = (typeof LESSONS !== 'undefined' && LESSONS.getAll) ? LESSONS.getAll() : [];
+    var byWid = {};
+    lessons.forEach(function (l) { byWid[l.id] = l; });
+
+    list.innerHTML = lessonBookmarks.map(function (b) {
+      var l = byWid[b.id];
+      if (!l) return '';
+      return '<a class="saved-item" href="lesson.html?week=' + esc(l.id) + '">'
+        + '<div class="saved-item-head">'
+        +   '<span class="saved-type-badge saved-type-lesson">Lesson</span>'
+        +   '<span class="saved-item-author">W' + l.week + ' · ' + esc(l.category) + '</span>'
+        +   '<span class="saved-item-time">saved ' + esc(timeAgo(b.savedAt)) + '</span>'
+        + '</div>'
+        + '<div class="saved-item-text">' + esc(l.title) + '</div>'
+        + '</a>';
+    }).filter(Boolean).join('') || '<div class="dash-empty saved-empty"><p>No saved lessons yet.</p></div>';
+    return;
+  }
+
+  if (window._savedTab === 'notes') {
+    var noteMap = (typeof NOTES !== 'undefined' && NOTES.all) ? NOTES.all() : {};
+    var keys = Object.keys(noteMap).filter(function (k) { return (noteMap[k] && (noteMap[k].body || '').trim()); });
+    if (keys.length === 0) {
+      list.innerHTML = '<div class="dash-empty saved-empty"><p>No lesson notes yet. Open any lesson, hit the Notes button, and start jotting.</p></div>';
+      return;
+    }
+    var lessons2 = (typeof LESSONS !== 'undefined' && LESSONS.getAll) ? LESSONS.getAll() : [];
+    var byWid2 = {};
+    lessons2.forEach(function (l) { byWid2[l.id] = l; });
+
+    // Newest-first by updatedAt
+    keys.sort(function (a, b) { return (noteMap[b].updatedAt || 0) - (noteMap[a].updatedAt || 0); });
+
+    list.innerHTML = keys.map(function (k) {
+      var n = noteMap[k];
+      var l = byWid2[k];
+      var preview = (n.body || '').slice(0, 160) + ((n.body || '').length > 160 ? '…' : '');
+      var lessonLabel = l ? ('W' + l.week + ' — ' + l.title) : k;
+      return '<a class="saved-item" href="lesson.html?week=' + esc(k) + '">'
+        + '<div class="saved-item-head">'
+        +   '<span class="saved-type-badge saved-type-note">Note</span>'
+        +   '<span class="saved-item-author">' + esc(lessonLabel) + '</span>'
+        +   '<span class="saved-item-time">' + esc(timeAgo(n.updatedAt)) + '</span>'
+        + '</div>'
+        + '<div class="saved-item-text">' + esc(preview) + '</div>'
+        + '</a>';
+    }).join('');
+    return;
+  }
+};
+
+// Wire saved-tab clicks + on-load fetchRemote for notes
+(function () {
+  function bind() {
+    var tabs = document.querySelectorAll('.saved-tab');
+    if (!tabs.length) return;
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tabs.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        window._savedTab = t.dataset.savedTab || 'posts';
+        renderSavedSection();
+      });
+    });
+    // Pre-fetch notes so the Notes tab shows correct data
+    try {
+      if (typeof NOTES !== 'undefined' && NOTES.fetchRemote) {
+        NOTES.fetchRemote();
+      }
+    } catch (_) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
+  }
+})();

@@ -9,12 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>My Profile - Sphere Academy</title>
   <meta name="description" content="Manage your Sphere Academy profile, track progress, and update account settings.">
-  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-20-postfix">
-  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-20-postfix">
+  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-21-batchB">
+  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-21-batchB">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-20-pinmotion">
+  <link rel="stylesheet" href="styles.css?v=2025-05-21-batchB">
 </head>
 <body class="page-loaded">
 
@@ -24,7 +24,7 @@
       <div class="nav-left">
         <button class="back-btn" id="backBtn" aria-label="Go back" title="Go back">&#8592;</button>
         <a href="index.html" class="logo">
-          <div class="logo-icon"><img src="logo.png?v=2025-05-20-postfix" alt="Sphere Academy"></div>
+          <div class="logo-icon"><img src="logo.png?v=2025-05-21-batchB" alt="Sphere Academy"></div>
           Sphere Academy
         </a>
       </div>
@@ -91,6 +91,9 @@
             </a>
             <a class="profile-nav-item" data-section="achievements">
               <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span> Achievements
+            </a>
+            <a class="profile-nav-item" data-section="saved">
+              <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span> Saved
             </a>
             <a class="profile-nav-item" data-section="certificate">
               <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span> Certificate
@@ -339,6 +342,24 @@
             </div>
           </div>
 
+          <!-- Saved Section — bookmarked posts/wins/lessons -->
+          <div class="profile-section" id="section-saved">
+            <div class="profile-section-header">
+              <h2>Saved</h2>
+              <p>Posts, wins, and lessons you've bookmarked for later.</p>
+            </div>
+            <div class="saved-tabs" role="tablist">
+              <button type="button" class="saved-tab active" data-saved-tab="posts">Posts &amp; wins</button>
+              <button type="button" class="saved-tab" data-saved-tab="lessons">Lessons</button>
+              <button type="button" class="saved-tab" data-saved-tab="notes">My notes</button>
+            </div>
+            <div class="saved-list" id="savedList">
+              <div class="dash-empty saved-empty">
+                <p>Nothing saved yet. Tap the bookmark icon on any post to start collecting.</p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -350,7 +371,7 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <div class="logo">
-            <div class="logo-icon"><img src="logo.png?v=2025-05-20-postfix" alt="Sphere Academy"></div>
+            <div class="logo-icon"><img src="logo.png?v=2025-05-21-batchB" alt="Sphere Academy"></div>
             Sphere Academy
           </div>
           <p>A structured training program to turn marketing interns into confident, full-stack digital marketers.</p>
@@ -390,7 +411,7 @@
     <div class="search-box">
       <div class="search-input-wrap">
         <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-        <input type="text" id="searchInput" placeholder="Search lessons..." autofocus>
+        <input type="text" id="searchInput" placeholder="Search lessons, posts, people, courses…" autofocus>
         <button class="search-close" id="searchClose">&#10005;</button>
       </div>
       <div class="search-results" id="searchResults">
@@ -409,7 +430,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-20-pinmotion"></script>
+  <script src="script.js?v=2025-05-21-batchB"></script>
 
   <!-- Cover photo upload + My Activity feed + cross-user viewing.
        If ?user=USERNAME is in the URL and it's a different user

@@ -9,12 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Home - Sphere Academy</title>
   <meta name="description" content="Your home — progress, community feed, big wins, and the next lesson.">
-  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-20-postfix">
-  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-20-postfix">
+  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-21-batchB">
+  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-21-batchB">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-20-pinmotion">
+  <link rel="stylesheet" href="styles.css?v=2025-05-21-batchB">
 </head>
 <body class="page-loaded">
 
@@ -23,7 +23,7 @@
     <div class="container">
       <div class="nav-left">
         <a href="index.html" class="logo">
-          <div class="logo-icon"><img src="logo.png?v=2025-05-20-postfix" alt="Sphere Academy"></div>
+          <div class="logo-icon"><img src="logo.png?v=2025-05-21-batchB" alt="Sphere Academy"></div>
           Sphere Academy
         </a>
       </div>
@@ -79,6 +79,10 @@
           <a href="dashboard.html#tab=leaderboard" class="dash-sidebar-link" data-tab="leaderboard" data-tooltip="Leaderboard">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 14 12 14 19 20 19 20 12"/><polyline points="10 5 4 5 4 19 10 19 10 5"/><polyline points="20 5 14 5 14 9 20 9 20 5"/></svg>
             <span>Leaderboard</span>
+          </a>
+          <a href="dashboard.html#tab=resources" class="dash-sidebar-link" data-tab="resources" data-tooltip="Resources">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <span>Resources</span>
           </a>
           <a href="dashboard.html#tab=members" class="dash-sidebar-link" data-tab="members" data-tooltip="Members">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -415,6 +419,59 @@
         </div>
       </div>
 
+      <!-- ========== RESOURCES PANEL ========== -->
+      <div class="dash-panel" data-panel="resources">
+        <div class="dash-panel-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+          <div>
+            <h1>Resource Library</h1>
+            <p>Templates, swipe files, and useful links — curated to help you ship faster.</p>
+          </div>
+          <button type="button" class="btn btn-primary" id="newResourceBtn" style="display:none;padding:9px 16px;font-size:0.86rem;">+ Add resource</button>
+        </div>
+
+        <!-- Filter chips -->
+        <div class="resources-filters" id="resourcesFilters">
+          <button type="button" class="resources-chip active" data-cat="all">All</button>
+          <button type="button" class="resources-chip" data-cat="template">Templates</button>
+          <button type="button" class="resources-chip" data-cat="swipe">Swipe files</button>
+          <button type="button" class="resources-chip" data-cat="tool">Tools</button>
+          <button type="button" class="resources-chip" data-cat="reading">Reading</button>
+          <button type="button" class="resources-chip" data-cat="video">Videos</button>
+        </div>
+
+        <!-- Resource grid -->
+        <div class="resources-grid" id="resourcesGrid"></div>
+        <div class="dash-empty" id="resourcesEmpty" style="display:none;">
+          <p>No resources match this filter yet.</p>
+        </div>
+
+        <!-- Composer (admin only) -->
+        <div class="resource-composer" id="resourceComposer" style="display:none;">
+          <h3 style="margin:0 0 12px;">Add a resource</h3>
+          <div class="resource-form-row">
+            <input type="text" id="resTitle" maxlength="120" placeholder="Title (e.g. Canva ad template pack)">
+          </div>
+          <div class="resource-form-row">
+            <textarea id="resDesc" maxlength="400" rows="2" placeholder="Short description (1–2 sentences)"></textarea>
+          </div>
+          <div class="resource-form-row resource-form-grid">
+            <input type="url" id="resUrl" placeholder="Link (https://…)">
+            <select id="resCat">
+              <option value="template">Template</option>
+              <option value="swipe">Swipe file</option>
+              <option value="tool">Tool</option>
+              <option value="reading">Reading</option>
+              <option value="video">Video</option>
+            </select>
+            <input type="text" id="resKind" maxlength="40" placeholder="Kind (e.g. PDF, Figma, Notion)">
+          </div>
+          <div class="resource-form-actions">
+            <button class="btn btn-outline btn-sm" id="resCancelBtn">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="resSubmitBtn" disabled>Add resource</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ========== MEMBERS PANEL ========== -->
       <div class="dash-panel" data-panel="members">
         <div class="dash-panel-header">
@@ -582,12 +639,10 @@
     <div class="search-box">
       <div class="search-input-wrap">
         <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-        <input type="text" id="searchInput" placeholder="Search lessons..." autofocus>
+        <input type="text" id="searchInput" placeholder="Search lessons, posts, people, courses…" autofocus>
         <button class="search-close" id="searchClose">&#10005;</button>
       </div>
-      <div class="search-results" id="searchResults">
-        <div class="search-empty">Type to search across all 16 lessons</div>
-      </div>
+      <div class="search-results" id="searchResults"></div>
     </div>
   </div>
 
@@ -597,7 +652,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-20-pinmotion"></script>
+  <script src="script.js?v=2025-05-21-batchB"></script>
 
   <!-- Sidebar action wiring — search, theme, logout buttons in the
        new icon rail delegate to their existing handlers in the
