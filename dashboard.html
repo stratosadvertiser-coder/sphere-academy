@@ -9,8 +9,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Home - Sphere Academy</title>
   <meta name="description" content="Your home — progress, community feed, big wins, and the next lesson.">
-  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-20-cardcenter">
-  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-20-cardcenter">
+  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-20-cardcover">
+  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-20-cardcover">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
     <div class="container">
       <div class="nav-left">
         <a href="index.html" class="logo">
-          <div class="logo-icon"><img src="logo.png?v=2025-05-20-cardcenter" alt="Sphere Academy"></div>
+          <div class="logo-icon"><img src="logo.png?v=2025-05-20-cardcover" alt="Sphere Academy"></div>
           Sphere Academy
         </a>
       </div>
@@ -443,7 +443,7 @@
            so it stays visible while the feed scrolls. Hidden on
            narrower viewports (where the feed itself stretches). -->
       <aside class="dash-profile-card" id="dashProfileCard">
-        <div class="dash-profile-cover" aria-hidden="true"></div>
+        <div class="dash-profile-cover" id="dashProfileCover" aria-hidden="true"></div>
         <div class="dash-profile-avatar" id="dashProfileAvatar">
           <span id="dashProfileInitials">U</span>
         </div>
@@ -594,6 +594,40 @@
             var initEl = $('dashProfileInitials');
             if (initEl) initEl.textContent = initials;
           }
+        }
+
+        // Cover photo — load from localStorage (auth_cover_<username>),
+        // fall back to Firestore (sphere_users/<username>.coverPhoto).
+        // If the user uploaded one on profile.html, it shows up here.
+        // If none uploaded, the gradient fallback from CSS stays visible.
+        var coverEl = $('dashProfileCover');
+        if (coverEl && username) {
+          var coverKey = 'auth_cover_' + username.toLowerCase();
+          var localCover = '';
+          try { localCover = localStorage.getItem(coverKey) || ''; } catch (_) {}
+          function applyCoverImage(url) {
+            if (!coverEl || !url) return;
+            // Use background-image so it covers the whole banner area
+            // without breaking the rounded corners of the card.
+            coverEl.style.backgroundImage = 'url("' + url.replace(/"/g, '&quot;') + '")';
+            coverEl.style.backgroundSize = 'cover';
+            coverEl.style.backgroundPosition = 'center';
+          }
+          if (localCover) applyCoverImage(localCover);
+          // Also check Firestore for cross-device sync
+          try {
+            if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+              DATA_SYNC.db.collection('sphere_users').doc(username.toLowerCase()).get()
+                .then(function (snap) {
+                  if (!snap.exists) return;
+                  var remoteCover = (snap.data() || {}).coverPhoto;
+                  if (remoteCover && remoteCover !== localCover) {
+                    try { localStorage.setItem(coverKey, remoteCover); } catch (_) {}
+                    applyCoverImage(remoteCover);
+                  }
+                }).catch(function () {});
+            }
+          } catch (_) {}
         }
 
         // Progress — lessons completed out of 16
