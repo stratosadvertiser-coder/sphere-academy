@@ -14313,14 +14313,17 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     display: block !important;
     position: fixed !important;
     top: 92px !important;
-    /* PINNED to the right edge of the viewport — does NOT move
-       when the sidebar toggles. Previously we used
-       `left: calc(50% + 470px)` which anchored to viewport
-       center, so the card stayed put but the feed shifted
-       around it. Worse, expanding the sidebar shifted the feed
-       INTO the card. Now the card is anchored to the right
-       edge, so it never moves regardless of sidebar state. */
-    right: 24px !important;
+    /* Position the card in the MIDDLE of the right-side empty
+       space (between the feed's right edge and the viewport
+       right edge) — not jammed against the edge. The feed is
+       max 860px centered on the viewport, so its right edge
+       sits at 50% + 430px. The empty space to the right of
+       the feed is then (50% - 430px) wide. We center the 300px
+       card inside that gap by anchoring at right: calc(...).
+       Result: equal breathing room on both sides of the card,
+       reads as a deliberate "sidebar" rather than something
+       glued to the screen edge. */
+    right: calc((50% - 430px - 300px) / 2) !important;
     left: auto !important;
     width: 300px !important;
     max-height: calc(100vh - 110px);
