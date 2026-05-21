@@ -12128,6 +12128,84 @@ document.addEventListener('mouseover', (e) => {
       const accountLabel = makeLabel('Account');
       divider.parentNode.insertBefore(accountLabel, divider.nextSibling);
     }
+
+    // ----- Mobile bottom nav -----
+    // Native-app style bottom tab bar for phones. Shown via CSS
+    // media query (<768px) only — desktop never sees it. Five
+    // most-used tabs: Feed, Course, Search, Notifications,
+    // Profile. Tapping any one opens the matching page.
+    if (!document.querySelector('.dash-mobile-nav')) {
+      const mnav = document.createElement('nav');
+      mnav.className = 'dash-mobile-nav';
+      mnav.setAttribute('aria-label', 'Mobile navigation');
+      mnav.innerHTML =
+        '<a href="dashboard.html" aria-label="Home">' +
+        '  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>' +
+        '  <span>Home</span>' +
+        '</a>' +
+        '<a href="course.html" aria-label="Course">' +
+        '  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' +
+        '  <span>Course</span>' +
+        '</a>' +
+        '<button type="button" id="mobileNavSearch" aria-label="Search">' +
+        '  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+        '  <span>Search</span>' +
+        '</button>' +
+        '<button type="button" id="mobileNavNotif" aria-label="Notifications">' +
+        '  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
+        '  <span>Notifs</span>' +
+        '  <span class="mobile-nav-badge" id="mobileNavBadge" style="display:none;">0</span>' +
+        '</button>' +
+        '<a href="profile.html" aria-label="Profile">' +
+        '  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+        '  <span>Profile</span>' +
+        '</a>';
+      document.body.appendChild(mnav);
+
+      // Wire up the mobile-nav buttons to the navbar's existing
+      // search + notification triggers (so the same overlay/dropdown
+      // opens). Falls back gracefully if the triggers don't exist.
+      const mSearch = document.getElementById('mobileNavSearch');
+      const mNotif = document.getElementById('mobileNavNotif');
+      if (mSearch) mSearch.addEventListener('click', function () {
+        const tgt = document.getElementById('searchBtn');
+        if (tgt) tgt.click();
+      });
+      if (mNotif) mNotif.addEventListener('click', function () {
+        const tgt = document.getElementById('notifBtn');
+        if (tgt) tgt.click();
+      });
+
+      // Mirror the navbar's #notifBadge value into the mobile
+      // bottom nav's badge so unread counts show on mobile too.
+      const srcB = document.getElementById('notifBadge');
+      const dstB = document.getElementById('mobileNavBadge');
+      if (srcB && dstB) {
+        const syncMB = function () {
+          dstB.textContent = srcB.textContent || '0';
+          dstB.style.display = srcB.style.display || '';
+        };
+        syncMB();
+        new MutationObserver(syncMB).observe(srcB, {
+          attributes: true, characterData: true, childList: true, subtree: true
+        });
+      }
+
+      // Highlight the active tab based on the current page name.
+      const page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+      const activeMap = {
+        'dashboard.html': 0,
+        'course.html': 1,
+        'lesson.html': 1,
+        'bonus-course.html': 1,
+        'profile.html': 4
+      };
+      const idx = activeMap[page];
+      if (idx != null) {
+        const items = mnav.querySelectorAll('a, button');
+        if (items[idx]) items[idx].classList.add('active');
+      }
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -12143,3 +12221,119 @@ document.addEventListener('mouseover', (e) => {
 // brand to see my profile" affordance now lives on the SIDEBAR
 // brand header instead, which is built as an <a> tag pointing
 // to profile.html in the sidebar init code above.)
+
+// ============================================================
+// TOAST NOTIFICATIONS — non-blocking inline alerts that slide
+// in from the bottom-right and auto-dismiss. Replaces browser
+// alert() in many places throughout the app.
+//
+// Usage: toast('Saved!', 'success')
+//        toast('Failed to load', 'error', 5000)
+//        toast('New message from Maria', 'info')
+// ============================================================
+window.toast = function (message, type, duration) {
+  type = type || 'info';
+  duration = duration || 3200;
+  var container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  // Add an icon for visual quick-scan
+  var icon = type === 'success' ? '✓'
+    : type === 'error'   ? '✕'
+    : type === 'warn'    ? '⚠'
+    : '•';
+  t.innerHTML = '<span class="toast-icon">' + icon + '</span>'
+    + '<span class="toast-text">' + String(message || '').replace(/</g, '&lt;') + '</span>';
+  container.appendChild(t);
+  setTimeout(function () {
+    t.classList.add('toast-leaving');
+    setTimeout(function () { t.remove(); }, 250);
+  }, duration);
+  return t;
+};
+
+// ============================================================
+// DAILY STREAK COUNTER — tracks consecutive days of activity
+// and exposes both the count and the "did I check in today?"
+// flag to the rest of the app. Auto-increments on first
+// activity of each day.
+//
+// Storage:
+//   sphere_streak_last  → 'YYYY-MM-DD' of last active day
+//   sphere_streak_count → integer
+//
+// Public:
+//   STREAK.get()    → { count, lastDate, checkedInToday }
+//   STREAK.poke()   → call on any meaningful activity; updates
+//                     count if it's a new day
+// ============================================================
+window.STREAK = {
+  KEY_LAST: 'sphere_streak_last',
+  KEY_COUNT: 'sphere_streak_count',
+  _today: function () {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  },
+  _yesterday: function () {
+    var d = new Date();
+    d.setDate(d.getDate() - 1);
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  },
+  get: function () {
+    var last = '';
+    var count = 0;
+    try {
+      last = localStorage.getItem(this.KEY_LAST) || '';
+      count = parseInt(localStorage.getItem(this.KEY_COUNT) || '0', 10) || 0;
+    } catch (_) {}
+    return {
+      count: count,
+      lastDate: last,
+      checkedInToday: last === this._today()
+    };
+  },
+  poke: function () {
+    var today = this._today();
+    var yesterday = this._yesterday();
+    var last = '';
+    var count = 0;
+    try {
+      last = localStorage.getItem(this.KEY_LAST) || '';
+      count = parseInt(localStorage.getItem(this.KEY_COUNT) || '0', 10) || 0;
+    } catch (_) {}
+    if (last === today) return { count: count, changed: false };
+    if (last === yesterday) {
+      count++;
+    } else {
+      count = 1; // new streak (broken or first time)
+    }
+    try {
+      localStorage.setItem(this.KEY_LAST, today);
+      localStorage.setItem(this.KEY_COUNT, String(count));
+    } catch (_) {}
+    return { count: count, changed: true };
+  }
+};
+
+// Poke the streak on every page load so logging in / browsing
+// counts as activity. Wrapped in setTimeout so it doesn't block
+// the initial paint.
+setTimeout(function () {
+  try {
+    if (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn()) {
+      var result = STREAK.poke();
+      if (result.changed && result.count > 1 && typeof window.toast === 'function') {
+        window.toast('🔥 ' + result.count + '-day streak! Keep it up.', 'success', 4000);
+      }
+    }
+  } catch (e) { /* non-fatal */ }
+}, 800);

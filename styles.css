@@ -15072,6 +15072,175 @@ img.avatar-inner {
 }
 
 /* ============================================================
+   TOAST NOTIFICATIONS — slide in from bottom-right, auto-
+   dismiss. Replaces browser alert() for non-blocking feedback.
+   Stacks vertically; respects safe areas on mobile.
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: calc(100vw - 48px);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px 12px 14px;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.25), 0 4px 12px rgba(15, 23, 42, 0.10);
+  font-size: 0.9rem;
+  font-weight: 500;
+  max-width: 380px;
+  min-width: 240px;
+  pointer-events: auto;
+  animation: toastIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 3px solid var(--primary);
+}
+[data-theme="dark"] .toast {
+  background: #27272a;
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.50), 0 4px 12px rgba(0, 0, 0, 0.30);
+}
+.toast.toast-success { border-left-color: #10b981; }
+.toast.toast-error   { border-left-color: #dc2626; }
+.toast.toast-warn    { border-left-color: #f59e0b; }
+.toast.toast-info    { border-left-color: var(--primary); }
+.toast-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #fff;
+  background: var(--primary);
+}
+.toast-success .toast-icon { background: #10b981; }
+.toast-error   .toast-icon { background: #dc2626; }
+.toast-warn    .toast-icon { background: #f59e0b; }
+.toast-text { flex: 1; min-width: 0; line-height: 1.4; }
+.toast.toast-leaving {
+  animation: toastOut 0.22s ease forwards;
+}
+@keyframes toastIn {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes toastOut {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
+}
+@media (max-width: 540px) {
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0));
+  }
+  .toast { min-width: 0; width: 100%; max-width: none; }
+}
+
+/* ============================================================
+   MOBILE BOTTOM NAV — Instagram/TikTok-style native app feel.
+   On phones (<768px) the icon rail collapses into a horizontal
+   bar pinned to the bottom of the viewport with the most-used
+   tabs: Feed, Course, Notifications, Profile.
+   ============================================================ */
+@media (max-width: 767px) {
+  body.with-rail .dash-mobile-nav,
+  body:has(.dash-sidebar-rail) .dash-mobile-nav {
+    display: flex !important;
+  }
+}
+.dash-mobile-nav {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
+  height: calc(64px + env(safe-area-inset-bottom, 0));
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  justify-content: space-around;
+  align-items: stretch;
+  box-shadow: 0 -4px 16px -8px rgba(15, 23, 42, 0.12);
+}
+[data-theme="dark"] .dash-mobile-nav {
+  background: #18181B;
+  border-top-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -4px 16px -8px rgba(0, 0, 0, 0.50);
+}
+.dash-mobile-nav a,
+.dash-mobile-nav button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 8px 4px;
+  position: relative;
+  transition: color 0.15s ease;
+}
+.dash-mobile-nav a:hover,
+.dash-mobile-nav button:hover,
+.dash-mobile-nav a.active,
+.dash-mobile-nav button.active {
+  color: var(--primary);
+}
+.dash-mobile-nav svg {
+  width: 22px;
+  height: 22px;
+}
+.dash-mobile-nav .mobile-nav-badge {
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 18px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  background: #dc2626;
+  color: #fff;
+  border-radius: 99px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+/* When mobile bottom nav is showing, hide the side rail on
+   mobile + add bottom padding to body so content doesn't sit
+   under the nav. */
+@media (max-width: 767px) {
+  .dash-sidebar.dash-sidebar-rail {
+    display: none !important;
+  }
+  body:has(.dash-mobile-nav) {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0));
+  }
+}
+
+/* ============================================================
    FREEZE THE FEED — user complained the main content shifts
    sideways every time the sidebar collapses / expands. Cause:
    .dash-layout was a CSS grid with `64px 1fr` collapsed and
