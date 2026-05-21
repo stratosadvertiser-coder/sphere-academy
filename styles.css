@@ -15040,3 +15040,39 @@ img.avatar-inner {
 .bonus-lesson-content p:last-child {
   margin-bottom: 0;
 }
+
+/* ============================================================
+   FREEZE THE FEED — user complained the main content shifts
+   sideways every time the sidebar collapses / expands. Cause:
+   .dash-layout was a CSS grid with `64px 1fr` collapsed and
+   `240px 1fr` expanded — column-2 (the feed) shifted ~88px
+   right when the sidebar grew.
+
+   Fix: convert .dash-layout to block layout on desktop. The
+   sidebar and profile card are both position:fixed already,
+   so they don't need grid columns. The feed (.dash-main) is
+   the only flow content; centering it on the viewport
+   (margin: 0 auto + max-width) keeps it visually anchored
+   regardless of sidebar state.
+   ============================================================ */
+@media (min-width: 901px) {
+  .dash-layout {
+    display: block !important;
+    grid-template-columns: none !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  body:has(.dash-sidebar-rail.is-expanded) .dash-layout {
+    grid-template-columns: none !important;
+  }
+  .dash-main {
+    max-width: 860px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    padding: 0 24px !important;
+    grid-column: auto !important;
+    /* Drop the margin-left transition — there's no longer a
+       column shift to animate. The feed never moves. */
+    transition: none !important;
+  }
+}
