@@ -16707,10 +16707,11 @@ img.avatar-inner {
   border-color: rgba(139, 124, 255, 0.45) !important;
 }
 
-/* ---- Hover actions: float beside the bubble, hidden at rest.
-   Absolute-positioned so they never take up layout space — the
-   bubble stays put, actions slide in only on hover. Sits clearly
-   away from the bubble with an 8px gap. ---- */
+/* ---- Hover actions: unified Messenger-style toolbar pill that
+   floats beside the bubble. One rounded container holds all the
+   icon buttons; the container itself has the bg/border/shadow,
+   individual buttons are transparent until hover. Sits 14px
+   away from the bubble so there's clear breathing room. ---- */
 .chat-bubble-row {
   position: relative !important;
   align-items: center !important;
@@ -16719,20 +16720,27 @@ img.avatar-inner {
 .chat-msg-actions {
   position: absolute !important;
   top: 50% !important;
-  left: calc(100% + 8px) !important;
-  transform: translateY(-50%) translateX(-6px);
-  gap: 4px !important;
+  left: calc(100% + 14px) !important;
+  transform: translateY(-50%) translateX(-4px);
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  padding: 3px !important;
+  background: var(--bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.10), 0 1px 3px rgba(15, 23, 42, 0.06);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.18s ease, transform 0.18s ease;
   white-space: nowrap;
   margin: 0 !important;
+  z-index: 5;
 }
 .chat-message.mine .chat-msg-actions {
   left: auto !important;
-  right: calc(100% + 8px) !important;
-  transform: translateY(-50%) translateX(6px);
-  flex-direction: row-reverse;
+  right: calc(100% + 14px) !important;
+  transform: translateY(-50%) translateX(4px);
 }
 .chat-bubble-row:hover .chat-msg-actions,
 .chat-bubble-row:focus-within .chat-msg-actions {
@@ -16740,44 +16748,54 @@ img.avatar-inner {
   transform: translateY(-50%) translateX(0);
   pointer-events: auto;
 }
+[data-theme="dark"] .chat-msg-actions {
+  background: #2a2a2e !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.30);
+}
+
+/* Individual icon buttons inside the toolbar pill —
+   transparent at rest, soft fill on hover. */
 .chat-action-btn {
-  width: 30px !important;
-  height: 30px !important;
+  width: 28px !important;
+  height: 28px !important;
   border-radius: 999px !important;
-  background: var(--bg) !important;
-  border: 1px solid var(--border) !important;
+  background: transparent !important;
+  border: none !important;
   color: var(--text-light) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: none !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 0 !important;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  margin: 0 !important;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
+.chat-action-btn + .chat-action-btn { margin-left: 2px !important; }
 .chat-action-btn svg {
   width: 14px;
   height: 14px;
   display: block;
 }
 .chat-action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
-  border-color: var(--primary) !important;
+  background: rgba(99, 91, 255, 0.12) !important;
   color: var(--primary) !important;
+  transform: scale(1.05);
 }
 .chat-action-btn.chat-delete-btn:hover {
-  border-color: rgba(239, 68, 68, 0.55) !important;
+  background: rgba(239, 68, 68, 0.12) !important;
   color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.08) !important;
 }
 [data-theme="dark"] .chat-action-btn {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
 }
 [data-theme="dark"] .chat-action-btn:hover {
-  background: rgba(139, 124, 255, 0.18) !important;
-  border-color: rgba(139, 124, 255, 0.50) !important;
+  background: rgba(139, 124, 255, 0.22) !important;
   color: #c4b5fd !important;
+}
+[data-theme="dark"] .chat-action-btn.chat-delete-btn:hover {
+  background: rgba(248, 113, 113, 0.20) !important;
+  color: #fca5a5 !important;
 }
 
 /* ---- Smoother composer ---- */
