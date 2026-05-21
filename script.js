@@ -8912,10 +8912,18 @@ function renderPosts() {
       +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
       +       '<span>' + commentToggleLabel + '</span>'
       +     '</button>'
-      +     '<button type="button" class="post-bookmark-btn' + (BOOKMARKS.has('post', p.id) ? ' is-saved' : '') + '" data-id="' + p.id + '" data-bookmark-type="post" aria-label="Save post" title="Save for later">'
-      +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="' + (BOOKMARKS.has('post', p.id) ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
-      +       '<span>' + (BOOKMARKS.has('post', p.id) ? 'Saved' : 'Save') + '</span>'
-      +     '</button>'
+      +     (function () {
+              // BOOKMARKS module is defined at the bottom of script.js,
+              // so guard against it being undefined when renderPosts
+              // runs during early page init. Without this guard,
+              // the whole post render would throw and the feed would
+              // appear empty even when posts exist.
+              var saved = (typeof BOOKMARKS !== 'undefined' && BOOKMARKS.has) ? BOOKMARKS.has('post', p.id) : false;
+              return '<button type="button" class="post-bookmark-btn' + (saved ? ' is-saved' : '') + '" data-id="' + p.id + '" data-bookmark-type="post" aria-label="Save post" title="Save for later">'
+                + '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="' + (saved ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
+                + '<span>' + (saved ? 'Saved' : 'Save') + '</span>'
+                + '</button>';
+            })()
       +   '</div>'
       +   '<div class="post-comments" id="post-comments-' + p.id + '" hidden>'
       +     '<div class="comments-list">'
@@ -8976,6 +8984,7 @@ function renderPosts() {
   // Wire bookmark/save button
   listEl.querySelectorAll('.post-bookmark-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (typeof BOOKMARKS === 'undefined' || !BOOKMARKS.toggle) return;
       const id = btn.dataset.id;
       const type = btn.dataset.bookmarkType || 'post';
       const nowSaved = BOOKMARKS.toggle(type, id);
