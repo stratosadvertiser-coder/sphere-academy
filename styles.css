@@ -14283,9 +14283,10 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
 
 /* Explicit override: chat messages should NEVER get the card
    styling — they're inline bubbles in a flowing conversation,
-   not standalone cards. Earlier the visibility boost was
-   wrapping each one in a bordered box which broke the chat
-   flow ("hati-hati na window" per user feedback). */
+   not standalone cards. A previous version of this rule had a
+   stray duplicate box-shadow line that re-introduced a shadow
+   band on every row ("cuts" the user reported); that line is
+   removed so the chat now scrolls as one continuous surface. */
 .chat-message,
 [data-theme="light"] .chat-message,
 [data-theme="dark"] .chat-message,
@@ -14295,8 +14296,7 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  padding: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), 0 8px 24px -10px rgba(0, 0, 0, 0.50) !important;
+  padding: 0 !important;
 }
 [data-theme="dark"] .fb-composer-card:hover,
 [data-theme="dark"] .fb-post-list .post-item:hover,
@@ -16528,12 +16528,23 @@ img.avatar-inner {
    the existing chat CSS by overriding the rougher edges.
    ============================================================ */
 
-/* Tighter base list spacing — the row margin handles visual
-   separation between clusters now. */
+/* The chat-messages region IS the conversation surface — one
+   continuous rounded card. Messages sit on top of it without
+   any per-row backgrounds or shadow bands (those were creating
+   the "may mga cut" effect the user reported). */
 .chat-messages {
   gap: 0 !important;
   padding: 16px 18px 8px !important;
   scroll-behavior: smooth;
+  background: var(--bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 16px -10px rgba(15, 23, 42, 0.06);
+}
+[data-theme="dark"] .chat-messages {
+  background: #1f1f23 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), 0 8px 24px -10px rgba(0, 0, 0, 0.40) !important;
 }
 .chat-messages::-webkit-scrollbar { width: 6px; }
 .chat-messages::-webkit-scrollbar-thumb {
