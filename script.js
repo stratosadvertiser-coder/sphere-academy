@@ -9287,63 +9287,22 @@ function renderPosts() {
       +   '</div>'
       + '</div>'
       + (canDelete
-          ? '<div class="post-menu" data-id="' + p.id + '">'
-            +   '<button type="button" class="post-menu-trigger" data-id="' + p.id + '" aria-label="Edit post" aria-haspopup="true" aria-expanded="false" title="Edit">'
+          ? '<div class="post-actions-corner" data-id="' + p.id + '">'
+            +   '<button type="button" class="post-corner-btn post-edit-btn" data-id="' + p.id + '" aria-label="Edit post" title="Edit">'
             +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
             +   '</button>'
-            +   '<div class="post-menu-popover" data-id="' + p.id + '" hidden role="menu">'
-            +     '<button type="button" class="post-menu-item post-edit-btn" data-id="' + p.id + '" role="menuitem">'
-            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
-            +       '<span>Edit post</span>'
-            +     '</button>'
-            +     '<button type="button" class="post-menu-item post-menu-item-danger post-delete-btn" data-id="' + p.id + '" role="menuitem">'
-            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>'
-            +       '<span>Delete</span>'
-            +     '</button>'
-            +   '</div>'
+            +   '<button type="button" class="post-corner-btn post-corner-btn-danger post-delete-btn" data-id="' + p.id + '" aria-label="Delete post" title="Delete">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>'
+            +   '</button>'
             + '</div>'
           : '')
       + '</article>';
   }).join('');
   bindReactions(listEl, renderPosts);
 
-  // ----- Kebab menu (• • •) — open / close, click-outside, esc -----
-  function closeAllPostMenus() {
-    listEl.querySelectorAll('.post-menu-popover').forEach(p => {
-      p.setAttribute('hidden', '');
-    });
-    listEl.querySelectorAll('.post-menu-trigger').forEach(t => {
-      t.setAttribute('aria-expanded', 'false');
-    });
-  }
-  listEl.querySelectorAll('.post-menu-trigger').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = btn.dataset.id;
-      const pop = listEl.querySelector('.post-menu-popover[data-id="' + id + '"]');
-      const willOpen = pop.hasAttribute('hidden');
-      closeAllPostMenus();
-      if (willOpen) {
-        pop.removeAttribute('hidden');
-        btn.setAttribute('aria-expanded', 'true');
-      }
-    });
-  });
-  // Click outside / escape closes the menu
-  if (!listEl._postMenuOutsideBound) {
-    listEl._postMenuOutsideBound = true;
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.post-menu')) closeAllPostMenus();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeAllPostMenus();
-    });
-  }
-
   // ----- Inline edit — turn the .post-text into a textarea -----
   listEl.querySelectorAll('.post-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      closeAllPostMenus();
       const id = btn.dataset.id;
       const article = listEl.querySelector('.post-item[data-id="' + id + '"]');
       const textEl = article && article.querySelector('.post-text');
@@ -9411,10 +9370,9 @@ function renderPosts() {
     });
   });
 
-  // Wire delete buttons (inside the kebab menu)
+  // Wire standalone delete (X) button
   listEl.querySelectorAll('.post-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      closeAllPostMenus();
       if (!confirm('Delete this post?')) return;
       POSTS.remove(btn.dataset.id);
       renderPosts();
@@ -9524,51 +9482,21 @@ function renderWins() {
       +   renderReactionsRow(w, 'wins')
       + '</div>'
       + (canDelete
-          ? '<div class="post-menu" data-id="' + w.id + '">'
-            +   '<button type="button" class="post-menu-trigger" data-id="' + w.id + '" aria-label="Edit win" aria-haspopup="true" aria-expanded="false" title="Edit">'
+          ? '<div class="post-actions-corner" data-id="' + w.id + '">'
+            +   '<button type="button" class="post-corner-btn win-edit-btn" data-id="' + w.id + '" aria-label="Edit win" title="Edit">'
             +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
             +   '</button>'
-            +   '<div class="post-menu-popover" data-id="' + w.id + '" hidden role="menu">'
-            +     '<button type="button" class="post-menu-item win-edit-btn" data-id="' + w.id + '" role="menuitem">'
-            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
-            +       '<span>Edit win</span>'
-            +     '</button>'
-            +     '<button type="button" class="post-menu-item post-menu-item-danger win-delete-btn" data-id="' + w.id + '" role="menuitem">'
-            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>'
-            +       '<span>Delete</span>'
-            +     '</button>'
-            +   '</div>'
+            +   '<button type="button" class="post-corner-btn post-corner-btn-danger win-delete-btn" data-id="' + w.id + '" aria-label="Delete win" title="Delete">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>'
+            +   '</button>'
             + '</div>'
           : '')
       + '</article>';
   }).join('');
   bindReactions(listEl, renderWins);
 
-  function closeAllWinMenus() {
-    listEl.querySelectorAll('.post-menu-popover').forEach(p => p.setAttribute('hidden', ''));
-    listEl.querySelectorAll('.post-menu-trigger').forEach(t => t.setAttribute('aria-expanded', 'false'));
-  }
-  listEl.querySelectorAll('.post-menu-trigger').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = btn.dataset.id;
-      const pop = listEl.querySelector('.post-menu-popover[data-id="' + id + '"]');
-      const willOpen = pop.hasAttribute('hidden');
-      closeAllWinMenus();
-      if (willOpen) { pop.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); }
-    });
-  });
-  if (!listEl._winMenuOutsideBound) {
-    listEl._winMenuOutsideBound = true;
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.post-menu')) closeAllWinMenus();
-    });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllWinMenus(); });
-  }
-
   listEl.querySelectorAll('.win-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      closeAllWinMenus();
       const id = btn.dataset.id;
       const article = listEl.querySelector('.win-item[data-id="' + id + '"]');
       const titleEl = article && article.querySelector('.win-title');
@@ -9623,7 +9551,6 @@ function renderWins() {
 
   listEl.querySelectorAll('.win-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      closeAllWinMenus();
       if (!confirm('Delete this win?')) return;
       WINS.remove(btn.dataset.id);
       renderWins();
@@ -9976,20 +9903,13 @@ function renderAnnouncements() {
       + renderReactionsRow(a, 'announcements')
       + '<div class="ann-actions">' + readBtn + '</div>'
       + (isAdmin
-          ? '<div class="post-menu" data-id="' + a.id + '">'
-            +   '<button type="button" class="post-menu-trigger" data-id="' + a.id + '" aria-label="Edit announcement" aria-haspopup="true" aria-expanded="false" title="Edit">'
+          ? '<div class="post-actions-corner" data-id="' + a.id + '">'
+            +   '<button type="button" class="post-corner-btn ann-edit-btn" data-id="' + a.id + '" aria-label="Edit announcement" title="Edit">'
             +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
             +   '</button>'
-            +   '<div class="post-menu-popover" data-id="' + a.id + '" hidden role="menu">'
-            +     '<button type="button" class="post-menu-item ann-edit-btn" data-id="' + a.id + '" role="menuitem">'
-            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
-            +       '<span>Edit announcement</span>'
-            +     '</button>'
-            +     '<button type="button" class="post-menu-item post-menu-item-danger ann-delete-btn" data-id="' + a.id + '" role="menuitem">'
-            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>'
-            +       '<span>Delete</span>'
-            +     '</button>'
-            +   '</div>'
+            +   '<button type="button" class="post-corner-btn post-corner-btn-danger ann-delete-btn" data-id="' + a.id + '" aria-label="Delete announcement" title="Delete">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>'
+            +   '</button>'
             + '</div>'
           : '')
       + '</article>';
@@ -10005,31 +9925,8 @@ function renderAnnouncements() {
     });
   });
   if (isAdmin) {
-    function closeAllAnnMenus() {
-      listEl.querySelectorAll('.post-menu-popover').forEach(p => p.setAttribute('hidden', ''));
-      listEl.querySelectorAll('.post-menu-trigger').forEach(t => t.setAttribute('aria-expanded', 'false'));
-    }
-    listEl.querySelectorAll('.post-menu-trigger').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        const pop = listEl.querySelector('.post-menu-popover[data-id="' + id + '"]');
-        const willOpen = pop.hasAttribute('hidden');
-        closeAllAnnMenus();
-        if (willOpen) { pop.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); }
-      });
-    });
-    if (!listEl._annMenuOutsideBound) {
-      listEl._annMenuOutsideBound = true;
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('.post-menu')) closeAllAnnMenus();
-      });
-      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllAnnMenus(); });
-    }
-
     listEl.querySelectorAll('.ann-edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        closeAllAnnMenus();
         const id = btn.dataset.id;
         const article = listEl.querySelector('.ann-item[data-id="' + id + '"]');
         const titleEl = article && article.querySelector('.ann-title');
@@ -10084,7 +9981,6 @@ function renderAnnouncements() {
 
     listEl.querySelectorAll('.ann-delete-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        closeAllAnnMenus();
         if (!confirm('Delete this announcement?')) return;
         ANNOUNCEMENTS.remove(btn.dataset.id);
         renderAnnouncements();

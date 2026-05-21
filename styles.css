@@ -16295,46 +16295,66 @@ img.avatar-inner {
   border-color: #a8a4ff;
 }
 
-/* ===== POST / WIN / ANN — kebab menu + inline editor =====
-   Replaces the old standalone ✕ delete button with a 3-dot
-   menu that opens Edit + Delete options. Same UI shape across
-   feed posts, wins, and announcements. */
-.post-menu {
+/* ===== POST / WIN / ANN — corner action buttons + inline editor =====
+   Two standalone buttons live in the corner of every post / win /
+   announcement card the user owns (or admin sees on any card): a
+   pencil for Edit, and a trash for Delete. They sit side by side,
+   stay subtle at rest, and brighten on row hover so they don't
+   shout from the corner while reading. */
+.post-actions-corner {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px;
+  right: 10px;
   z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
-.post-menu-trigger {
+.post-corner-btn {
+  /* Reset legacy .post-delete-btn / .win-delete-btn / .ann-delete-btn
+     standalone styles (position:absolute + opacity:0 + width:24px +
+     border-radius:50%) so they don't fight the new corner layout
+     when our buttons also carry those legacy classes. */
+  position: static !important;
   appearance: none;
   background: transparent;
   border: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 8px !important;
   color: var(--text-light);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   opacity: 0.45;
-  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  font-size: inherit !important;
+  line-height: 1 !important;
+  top: auto !important;
+  right: auto !important;
+  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
-/* The pencil stays subtle by default and fades up when the card
-   is hovered so it doesn't shout from the corner while reading. */
-.post-item:hover .post-menu-trigger,
-.win-item:hover .post-menu-trigger,
-.ann-item:hover .post-menu-trigger { opacity: 0.85; }
-.post-menu-trigger:hover,
-.post-menu-trigger[aria-expanded="true"] {
+.post-item:hover .post-corner-btn,
+.win-item:hover .post-corner-btn,
+.ann-item:hover .post-corner-btn { opacity: 0.85; }
+.post-corner-btn:hover {
   background: rgba(99, 91, 255, 0.10);
   color: var(--primary);
   opacity: 1;
 }
-[data-theme="dark"] .post-menu-trigger:hover,
-[data-theme="dark"] .post-menu-trigger[aria-expanded="true"] {
+[data-theme="dark"] .post-corner-btn:hover {
   background: rgba(139, 124, 255, 0.16);
   color: #c4b5fd;
+}
+/* Trash variant — warm-red hover so destructive intent reads
+   instantly without competing with the pencil for attention. */
+.post-corner-btn-danger:hover {
+  background: rgba(220, 38, 38, 0.10) !important;
+  color: #dc2626 !important;
+}
+[data-theme="dark"] .post-corner-btn-danger:hover {
+  background: rgba(248, 113, 113, 0.16) !important;
+  color: #fca5a5 !important;
 }
 
 .post-menu-popover {
