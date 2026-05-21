@@ -8896,6 +8896,10 @@ function renderPosts() {
       +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
       +       '<span>' + commentToggleLabel + '</span>'
       +     '</button>'
+      +     '<button type="button" class="post-bookmark-btn' + (BOOKMARKS.has('post', p.id) ? ' is-saved' : '') + '" data-id="' + p.id + '" data-bookmark-type="post" aria-label="Save post" title="Save for later">'
+      +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="' + (BOOKMARKS.has('post', p.id) ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
+      +       '<span>' + (BOOKMARKS.has('post', p.id) ? 'Saved' : 'Save') + '</span>'
+      +     '</button>'
       +   '</div>'
       +   '<div class="post-comments" id="post-comments-' + p.id + '" hidden>'
       +     '<div class="comments-list">'
@@ -8950,6 +8954,22 @@ function renderPosts() {
         if (input) setTimeout(() => input.focus(), 50);
       } else {
         panel.setAttribute('hidden', '');
+      }
+    });
+  });
+  // Wire bookmark/save button
+  listEl.querySelectorAll('.post-bookmark-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const type = btn.dataset.bookmarkType || 'post';
+      const nowSaved = BOOKMARKS.toggle(type, id);
+      btn.classList.toggle('is-saved', nowSaved);
+      const svg = btn.querySelector('svg');
+      const label = btn.querySelector('span');
+      if (svg) svg.setAttribute('fill', nowSaved ? 'currentColor' : 'none');
+      if (label) label.textContent = nowSaved ? 'Saved' : 'Save';
+      if (typeof window.toast === 'function') {
+        window.toast(nowSaved ? 'Saved to your bookmarks' : 'Removed from bookmarks', 'success', 2200);
       }
     });
   });
@@ -12337,3 +12357,177 @@ setTimeout(function () {
     }
   } catch (e) { /* non-fatal */ }
 }, 800);
+
+// ============================================================
+// LEADERBOARD — aggregates community activity per user and
+// ranks the top 10 by posts, wins, or overall (posts+wins*2).
+// Renders into #leaderboardList when the Leaderboard tab is
+// activated on the dashboard.
+// ============================================================
+window.LEADERBOARD = {
+  current: 'overall',
+  compute: function (metric) {
+    metric = metric || 'overall';
+    var scores = {};
+    function bucket(item, key) {
+      var u = (item.username || '').toLowerCase().trim();
+      if (!u) return;
+      if (!scores[u]) {
+        scores[u] = {
+          username: u,
+          displayName: item.displayName || u,
+          avatar: item.avatar || null,
+          initials: item.initials || u.charAt(0).toUpperCase(),
+          role: item.role || 'student',
+          posts: 0, wins: 0
+        };
+      }
+      scores[u][key]++;
+      // Keep the freshest displayName / avatar we encounter
+      if (item.displayName) scores[u].displayName = item.displayName;
+      if (item.avatar) scores[u].avatar = item.avatar;
+      if (item.role) scores[u].role = item.role;
+    }
+    try { (window.POSTS && POSTS.getAll() || []).forEach(function (p) { bucket(p, 'posts'); }); } catch (_) {}
+    try { (window.WINS && WINS.getAll() || []).forEach(function (w) { bucket(w, 'wins'); }); } catch (_) {}
+    var arr = Object.keys(scores).map(function (k) { return scores[k]; });
+    if (metric === 'posts') arr.sort(function (a, b) { return b.posts - a.posts; });
+    else if (metric === 'wins') arr.sort(function (a, b) { return b.wins - a.wins; });
+    else arr.sort(function (a, b) {
+      // Overall: posts + wins*2 (wins are higher-effort, weight more)
+      return (b.posts + b.wins * 2) - (a.posts + a.wins * 2);
+    });
+    return arr.slice(0, 10);
+  },
+  render: function () {
+    var listEl = document.getElementById('leaderboardList');
+    var emptyEl = document.getElementById('leaderboardEmpty');
+    if (!listEl) return;
+    var rows = this.compute(this.current);
+    if (!rows.length) {
+      if (emptyEl) emptyEl.style.display = 'block';
+      // Clear any existing items but keep empty state
+      Array.prototype.slice.call(listEl.querySelectorAll('.leaderboard-row')).forEach(function (n) { n.remove(); });
+      return;
+    }
+    if (emptyEl) emptyEl.style.display = 'none';
+    var me = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser().toLowerCase() : '';
+    var html = '';
+    rows.forEach(function (r, i) {
+      var rank = i + 1;
+      var medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '#' + rank;
+      var primary = LEADERBOARD.current === 'posts' ? r.posts
+        : LEADERBOARD.current === 'wins' ? r.wins
+        : (r.posts + r.wins * 2);
+      var primaryLabel = LEADERBOARD.current === 'posts' ? 'posts'
+        : LEADERBOARD.current === 'wins' ? 'wins'
+        : 'points';
+      var mine = (r.username === me) ? ' leaderboard-row-mine' : '';
+      var avatarHtml = (typeof _avatarHTML === 'function')
+        ? _avatarHTML(r)
+        : (r.avatar ? '<img src="' + r.avatar + '" alt="">' : '<span>' + r.initials + '</span>');
+      html += '<a href="profile.html?user=' + encodeURIComponent(r.username) + '" class="leaderboard-row' + mine + '">'
+        +   '<span class="leaderboard-rank">' + medal + '</span>'
+        +   '<div class="leaderboard-avatar">' + avatarHtml + '</div>'
+        +   '<div class="leaderboard-meta">'
+        +     '<strong>' + (r.displayName || '@' + r.username).replace(/</g, '&lt;') + '</strong>'
+        +     '<span class="leaderboard-sub">' + r.posts + ' posts · ' + r.wins + ' wins</span>'
+        +   '</div>'
+        +   '<div class="leaderboard-score">'
+        +     '<strong>' + primary + '</strong>'
+        +     '<span>' + primaryLabel + '</span>'
+        +   '</div>'
+        + '</a>';
+    });
+    // Clear and inject
+    Array.prototype.slice.call(listEl.querySelectorAll('.leaderboard-row')).forEach(function (n) { n.remove(); });
+    listEl.insertAdjacentHTML('beforeend', html);
+  }
+};
+
+// Wire the leaderboard tab buttons
+(function () {
+  function init() {
+    document.querySelectorAll('.leaderboard-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.leaderboard-tab').forEach(function (b) {
+          b.classList.toggle('active', b === btn);
+        });
+        LEADERBOARD.current = btn.dataset.metric || 'overall';
+        LEADERBOARD.render();
+      });
+    });
+    // Render when the Leaderboard tab becomes active (the existing
+    // tab-switching code calls panel-specific renders in some
+    // places; we wire a click handler here just for the leaderboard
+    // nav link so render fires whether or not the activate switch
+    // covers it).
+    var leaderboardNav = document.querySelector('.dash-sidebar-link[data-tab="leaderboard"]');
+    if (leaderboardNav) {
+      leaderboardNav.addEventListener('click', function () {
+        setTimeout(function () { LEADERBOARD.render(); }, 50);
+      });
+    }
+    // Also render once on load in case the user lands directly on
+    // the leaderboard tab via URL hash.
+    if (location.hash.indexOf('tab=leaderboard') !== -1) {
+      setTimeout(function () { LEADERBOARD.render(); }, 200);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+// ============================================================
+// BOOKMARKS — let users save posts/wins for later. Stored as
+// a Set of "type:id" strings in localStorage keyed by username
+// so each device shows the right bookmarks for whoever's
+// logged in. Public API:
+//
+//   BOOKMARKS.has(type, id)    → boolean
+//   BOOKMARKS.toggle(type, id) → true if now saved, false if removed
+//   BOOKMARKS.list()           → array of {type, id, savedAt}
+//
+// Used by the post/win render code via a small save button,
+// and by profile.html which shows a "Saved" section listing all
+// bookmarked items.
+// ============================================================
+window.BOOKMARKS = {
+  _key: function () {
+    var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser().toLowerCase() : '';
+    return 'sphere_bookmarks_' + (u || 'anon');
+  },
+  _load: function () {
+    try { return JSON.parse(localStorage.getItem(this._key()) || '[]'); }
+    catch (_) { return []; }
+  },
+  _save: function (list) {
+    try { localStorage.setItem(this._key(), JSON.stringify(list)); } catch (_) {}
+  },
+  has: function (type, id) {
+    var list = this._load();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].type === type && list[i].id === id) return true;
+    }
+    return false;
+  },
+  toggle: function (type, id) {
+    var list = this._load();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].type === type && list[i].id === id) {
+        list.splice(i, 1);
+        this._save(list);
+        return false;
+      }
+    }
+    list.unshift({ type: type, id: id, savedAt: Date.now() });
+    this._save(list);
+    return true;
+  },
+  list: function () {
+    return this._load();
+  }
+};

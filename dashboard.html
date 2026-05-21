@@ -9,8 +9,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Home - Sphere Academy</title>
   <meta name="description" content="Your home — progress, community feed, big wins, and the next lesson.">
-  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-20-batch2">
-  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-20-batch2">
+  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-20-leaderboard">
+  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-20-leaderboard">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
     <div class="container">
       <div class="nav-left">
         <a href="index.html" class="logo">
-          <div class="logo-icon"><img src="logo.png?v=2025-05-20-batch2" alt="Sphere Academy"></div>
+          <div class="logo-icon"><img src="logo.png?v=2025-05-20-leaderboard" alt="Sphere Academy"></div>
           Sphere Academy
         </a>
       </div>
@@ -75,6 +75,10 @@
           <a href="dashboard.html#tab=chat" class="dash-sidebar-link" data-tab="chat" data-tooltip="Everyone Chat">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
             <span>Everyone Chat</span>
+          </a>
+          <a href="dashboard.html#tab=leaderboard" class="dash-sidebar-link" data-tab="leaderboard" data-tooltip="Leaderboard">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 14 12 14 19 20 19 20 12"/><polyline points="10 5 4 5 4 19 10 19 10 5"/><polyline points="20 5 14 5 14 9 20 9 20 5"/></svg>
+            <span>Leaderboard</span>
           </a>
           <a href="dashboard.html#tab=members" class="dash-sidebar-link" data-tab="members" data-tooltip="Members">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -390,6 +394,24 @@
               </div>
             </div>
           </section>
+        </div>
+      </div>
+
+      <!-- ========== LEADERBOARD PANEL ========== -->
+      <div class="dash-panel" data-panel="leaderboard">
+        <div class="dash-panel-header">
+          <h1>Leaderboard</h1>
+          <p>Top contributors in the community — friendly competition keeps the energy up.</p>
+        </div>
+        <div class="leaderboard-tabs" role="tablist">
+          <button type="button" class="leaderboard-tab active" data-metric="overall">Overall</button>
+          <button type="button" class="leaderboard-tab" data-metric="posts">Most Posts</button>
+          <button type="button" class="leaderboard-tab" data-metric="wins">Most Wins</button>
+        </div>
+        <div class="leaderboard-list" id="leaderboardList">
+          <div class="leaderboard-empty" id="leaderboardEmpty">
+            <p>Walang activity pa. Mag-post ka muna sa feed o mag-share ng win!</p>
+          </div>
         </div>
       </div>
 
