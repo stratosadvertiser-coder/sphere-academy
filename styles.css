@@ -14102,7 +14102,6 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
 [data-theme="light"] .ann-card,
 [data-theme="light"] .faq-card,
 [data-theme="light"] .win-card,
-[data-theme="light"] .chat-message,
 [data-theme="light"] .member-card,
 [data-theme="light"] .dm-conversation-card,
 [data-theme="light"] .event-card,
@@ -14145,13 +14144,29 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
 [data-theme="dark"] .ann-card,
 [data-theme="dark"] .faq-card,
 [data-theme="dark"] .win-card,
-[data-theme="dark"] .chat-message,
 [data-theme="dark"] .member-card,
 [data-theme="dark"] .dm-conversation-card,
 [data-theme="dark"] .event-card,
 [data-theme="dark"] .course-card {
   background: #27272a !important;
   border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Explicit override: chat messages should NEVER get the card
+   styling — they're inline bubbles in a flowing conversation,
+   not standalone cards. Earlier the visibility boost was
+   wrapping each one in a bordered box which broke the chat
+   flow ("hati-hati na window" per user feedback). */
+.chat-message,
+[data-theme="light"] .chat-message,
+[data-theme="dark"] .chat-message,
+.chat-group,
+[data-theme="light"] .chat-group,
+[data-theme="dark"] .chat-group {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), 0 8px 24px -10px rgba(0, 0, 0, 0.50) !important;
 }
 [data-theme="dark"] .fb-composer-card:hover,
