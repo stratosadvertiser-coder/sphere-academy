@@ -12110,11 +12110,16 @@ document.addEventListener('mouseover', (e) => {
     }
     const communityLabel = makeLabel('Community');
 
-    // Insert brand FIRST, then toggle button, then the community
-    // section label, all before the existing nav items.
+    // Wrap brand + toggle in a single header row so they sit
+    // side-by-side when expanded (brand on the left, chevron on
+    // the right — like Notion / Linear). When collapsed, only
+    // the toggle shows (brand has display:none).
+    const header = document.createElement('div');
+    header.className = 'dash-sidebar-header';
+    header.appendChild(brand);
+    header.appendChild(btn);
     nav.insertBefore(communityLabel, nav.firstChild);
-    nav.insertBefore(btn, nav.firstChild);
-    nav.insertBefore(brand, nav.firstChild);
+    nav.insertBefore(header, nav.firstChild);
 
     // The existing divider in the HTML separates community from
     // account actions. Insert an "Account" label right after it.
