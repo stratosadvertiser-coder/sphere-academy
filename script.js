@@ -12124,3 +12124,34 @@ document.addEventListener('mouseover', (e) => {
     init();
   }
 })();
+
+// ============================================================
+// NAVBAR LOGO → PROFILE FOR STUDENTS
+// Facebook-style: when a student clicks the Sphere Academy
+// logo / wordmark in the navbar, it takes them to their own
+// profile (profile.html). Admins keep the default behavior
+// (logo → index.html / landing page) so they can navigate to
+// the marketing site easily. Anonymous (logged-out) users
+// also keep the default since they don't have a profile yet.
+// ============================================================
+(function () {
+  function initLogoLink() {
+    try {
+      if (typeof AUTH === 'undefined') return;
+      if (!AUTH.isLoggedIn || !AUTH.isLoggedIn()) return;
+      // Admins keep logo → index.html (so they can hop to the
+      // marketing site to review/edit). Students get the FB-style
+      // "click profile to see your timeline" behavior.
+      if (AUTH.isAdmin && AUTH.isAdmin()) return;
+      document.querySelectorAll('a.logo').forEach(function (a) {
+        a.setAttribute('href', 'profile.html');
+        a.setAttribute('title', 'Go to your profile');
+      });
+    } catch (e) { /* non-fatal */ }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLogoLink);
+  } else {
+    initLogoLink();
+  }
+})();
