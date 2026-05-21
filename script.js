@@ -1730,15 +1730,31 @@ const CHAT = {
 
   getAll() {
     const all = safeGetJSON(this.STORAGE_KEY, []);
-    return all.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    // Filter by current group ID (set by the Groups UI). Backward
+    // compat: messages without a groupId default to 'general' so
+    // old chat history stays accessible in the General group.
+    const currentGroup = (typeof GROUPS !== 'undefined' && GROUPS.currentId) ? GROUPS.currentId : 'general';
+    return all
+      .filter(m => (m.groupId || 'general') === currentGroup)
+      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  },
+
+  // Returns ALL messages regardless of group — used by sync code
+  // that needs to operate on the full cache.
+  getAllUnfiltered() {
+    return safeGetJSON(this.STORAGE_KEY, []);
   },
 
   add(text, replyTo) {
     text = (text || '').trim().slice(0, this.MAX_LENGTH);
     if (!text) return null;
     const meta = _commonAuthorMeta();
+    // Tag the message with the current group ID so it shows up in
+    // the right group's chat (and stays out of other groups).
+    const currentGroup = (typeof GROUPS !== 'undefined' && GROUPS.currentId) ? GROUPS.currentId : 'general';
     const msg = {
       id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      groupId: currentGroup,
       username: meta.username,
       displayName: meta.displayName,
       avatar: meta.avatar,
