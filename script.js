@@ -9288,8 +9288,8 @@ function renderPosts() {
       + '</div>'
       + (canDelete
           ? '<div class="post-menu" data-id="' + p.id + '">'
-            +   '<button type="button" class="post-menu-trigger" data-id="' + p.id + '" aria-label="Post options" aria-haspopup="true" aria-expanded="false" title="More">'
-            +     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>'
+            +   '<button type="button" class="post-menu-trigger" data-id="' + p.id + '" aria-label="Edit post" aria-haspopup="true" aria-expanded="false" title="Edit">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
             +   '</button>'
             +   '<div class="post-menu-popover" data-id="' + p.id + '" hidden role="menu">'
             +     '<button type="button" class="post-menu-item post-edit-btn" data-id="' + p.id + '" role="menuitem">'
@@ -9525,8 +9525,8 @@ function renderWins() {
       + '</div>'
       + (canDelete
           ? '<div class="post-menu" data-id="' + w.id + '">'
-            +   '<button type="button" class="post-menu-trigger" data-id="' + w.id + '" aria-label="Win options" aria-haspopup="true" aria-expanded="false" title="More">'
-            +     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>'
+            +   '<button type="button" class="post-menu-trigger" data-id="' + w.id + '" aria-label="Edit win" aria-haspopup="true" aria-expanded="false" title="Edit">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
             +   '</button>'
             +   '<div class="post-menu-popover" data-id="' + w.id + '" hidden role="menu">'
             +     '<button type="button" class="post-menu-item win-edit-btn" data-id="' + w.id + '" role="menuitem">'
@@ -9977,8 +9977,8 @@ function renderAnnouncements() {
       + '<div class="ann-actions">' + readBtn + '</div>'
       + (isAdmin
           ? '<div class="post-menu" data-id="' + a.id + '">'
-            +   '<button type="button" class="post-menu-trigger" data-id="' + a.id + '" aria-label="Announcement options" aria-haspopup="true" aria-expanded="false" title="More">'
-            +     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>'
+            +   '<button type="button" class="post-menu-trigger" data-id="' + a.id + '" aria-label="Edit announcement" aria-haspopup="true" aria-expanded="false" title="Edit">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
             +   '</button>'
             +   '<div class="post-menu-popover" data-id="' + a.id + '" hidden role="menu">'
             +     '<button type="button" class="post-menu-item ann-edit-btn" data-id="' + a.id + '" role="menuitem">'
