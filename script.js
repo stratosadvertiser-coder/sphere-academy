@@ -13470,3 +13470,134 @@ window.renderSavedSection = function () {
     bind();
   }
 })();
+
+// ============================================================
+// SPHERE LOGO → ACCOUNT AVATAR
+// Helper that makes the Sphere Academy logo the current
+// account's profile picture. Auto-runs once per device per user
+// on first load (marked via localStorage flag) so subsequent
+// uploads/removals stick. Also exposed as window.useSphereLogoAvatar()
+// + wired to a "Use Sphere logo" button on profile.html so the
+// user can re-apply it any time.
+//
+// Draws the logo centered on a deep-violet gradient disc that
+// reads well at every size — feed avatars, navbar avatar,
+// members list, comments, post headers.
+// ============================================================
+(function () {
+  function applyLogoAvatar(opts) {
+    opts = opts || {};
+    var force = !!opts.force;
+    try {
+      if (typeof AUTH === 'undefined' || !AUTH.isLoggedIn || !AUTH.isLoggedIn()) return;
+      var user = AUTH.getUser && AUTH.getUser();
+      if (!user) return;
+      var flagKey = 'sphere_logo_avatar_set_' + user.toLowerCase();
+      if (!force && localStorage.getItem(flagKey) === '1') return;
+
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () {
+        try {
+          var size = 256;
+          var canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          var ctx = canvas.getContext('2d');
+
+          // Deep-violet radial gradient backdrop — matches the
+          // app's identity and makes the logo pop on any theme.
+          // Lighter center → darker edge for the "premium sphere"
+          // feel.
+          var grad = ctx.createRadialGradient(size / 2, size / 2 - 12, 18, size / 2, size / 2, size / 1.4);
+          grad.addColorStop(0,    '#3b2a8f');
+          grad.addColorStop(0.55, '#1f1547');
+          grad.addColorStop(1,    '#0d0822');
+          // Clip to circle so avatar UIs that don't mask to a
+          // circle still render as a clean disc.
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, size, size);
+
+          // Draw the logo centered, scaled to ~72% of the disc
+          // with padding around it.
+          var pad = size * 0.14;
+          var avail = size - pad * 2;
+          var ratio = img.width / img.height;
+          var dw, dh;
+          if (ratio > 1) { dw = avail; dh = avail / ratio; }
+          else           { dh = avail; dw = avail * ratio; }
+          var dx = (size - dw) / 2;
+          var dy = (size - dh) / 2;
+          ctx.drawImage(img, dx, dy, dw, dh);
+          ctx.restore();
+
+          var dataUrl = canvas.toDataURL('image/png');
+
+          // Persist both the active-session key and the
+          // per-username key (matches the manual upload path).
+          try { localStorage.setItem('auth_avatar', dataUrl); } catch (_) {}
+          try { localStorage.setItem('avatar_' + user, dataUrl); } catch (_) {}
+
+          // Sync to Firestore so the avatar follows the user
+          // across devices.
+          try {
+            if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+              DATA_SYNC.db.collection('sphere_users').doc(user).set(
+                { avatar: dataUrl }, { merge: true }
+              ).catch(function (e) { console.warn('[LOGO AVATAR] sync:', e.message); });
+            }
+          } catch (_) {}
+
+          // Update any avatar elements currently on the page so
+          // the change is visible without a refresh.
+          var navAvatars = document.querySelectorAll('.nav-avatar-img, .nav-avatar img, #avatarImg');
+          navAvatars.forEach(function (el) {
+            el.src = dataUrl;
+            el.style.display = 'block';
+          });
+          // Hide initials fallback if present
+          var initials = document.querySelectorAll('.nav-avatar-initials, #avatarInitials');
+          initials.forEach(function (el) { el.style.display = 'none'; });
+
+          try { localStorage.setItem(flagKey, '1'); } catch (_) {}
+
+          if (window.toast) toast('Profile picture set to Sphere logo', 'success');
+        } catch (e) {
+          console.warn('[LOGO AVATAR]', e.message);
+        }
+      };
+      img.onerror = function () { console.warn('[LOGO AVATAR] failed to load logo.png'); };
+      // Bust any stale cache so we always read the latest logo
+      img.src = 'logo.png?v=avatar-' + Date.now();
+    } catch (e) { /* never throw — non-fatal */ }
+  }
+
+  // Expose so the "Use Sphere logo" button on profile.html can
+  // re-apply it any time, even after a user uploaded their own
+  // photo or removed it.
+  window.useSphereLogoAvatar = function () { applyLogoAvatar({ force: true }); };
+
+  function init() {
+    // Auto-apply once on first load for the currently logged-in user
+    applyLogoAvatar();
+    // Wire the manual "Use Sphere logo" button on profile.html
+    var btn = document.getElementById('avatarUseLogo');
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener('click', function () {
+        window.useSphereLogoAvatar();
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

@@ -16258,3 +16258,39 @@ img.avatar-inner {
 [data-theme="dark"] .saved-type-win    { background: rgba(251,191,36,.20); color: #fcd34d; }
 [data-theme="dark"] .saved-type-lesson { background: rgba(52,211,153,.18); color: #6ee7b7; }
 [data-theme="dark"] .saved-type-note   { background: rgba(244,114,182,.18); color: #f9a8d4; }
+
+/* "Use Sphere logo" button on profile.html — sits between
+   Change Photo + Remove Photo. Subtle violet styling so it
+   reads as the official brand option. */
+.profile-avatar-use-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: rgba(99, 91, 255, 0.10);
+  color: var(--primary);
+  border: 1px solid rgba(99, 91, 255, 0.25);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+.profile-avatar-use-logo:hover {
+  background: rgba(99, 91, 255, 0.18);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .profile-avatar-use-logo {
+  background: rgba(139, 124, 255, 0.14);
+  color: #c4b5fd;
+  border-color: rgba(139, 124, 255, 0.28);
+}
+[data-theme="dark"] .profile-avatar-use-logo:hover {
+  background: rgba(139, 124, 255, 0.22);
+  border-color: #a8a4ff;
+}
