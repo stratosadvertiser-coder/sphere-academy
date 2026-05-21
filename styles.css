@@ -13742,14 +13742,36 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     padding: 14px 8px !important;
     background: var(--bg) !important;
     z-index: 90 !important;
-    /* overflow: visible — critical so the hover tooltips
-       (positioned 14px to the right of each icon via ::after)
-       can extend OUTSIDE the 64px rail. With overflow:hidden
-       or overflow-y:auto, the tooltips get clipped by the rail
-       edge and never appear. The 11 icons + dividers fit well
-       within any normal-height viewport (~660px tall total) so
-       we don't need scrolling. */
+    /* The rail itself stays overflow:visible so tooltips (which
+       render via ::after positioned 14px to the right of each
+       icon) can escape the 64px column. Vertical scrolling is
+       delegated to the inner .dash-sidebar-nav so the rail can
+       still let tooltips peek out the side while items inside
+       scroll independently on short laptop viewports. */
     overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  /* Inner nav handles vertical scroll when total item height
+     exceeds the rail height. Tooltips on each link are positioned
+     using `position: fixed` (see override below) so they escape
+     even though this container has overflow-y. The custom
+     scrollbar is hidden to keep the rail clean. */
+  .dash-sidebar.dash-sidebar-rail .dash-sidebar-nav {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: visible !important;
+    /* Hide scrollbar everywhere — content scrolls fine without
+       a visible bar since the user can drag-scroll on touch and
+       hover-wheel-scroll on desktop. Keeps the rail pristine. */
+    scrollbar-width: none !important;            /* Firefox */
+    -ms-overflow-style: none !important;         /* IE/Edge */
+  }
+  .dash-sidebar.dash-sidebar-rail .dash-sidebar-nav::-webkit-scrollbar {
+    display: none !important;                    /* Chromium/Safari */
+    width: 0 !important;
+    height: 0 !important;
   }
   /* The grid still allocates 64px on the left for the sidebar,
      so the main content's flow position is correct. The fixed
