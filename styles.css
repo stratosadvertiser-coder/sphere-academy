@@ -14517,6 +14517,46 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
   font-weight: 600;
 }
 
+/* Earned badges row — shows unlocked achievement icons. */
+.dash-profile-badges {
+  padding: 12px 18px 14px;
+  border-top: 1px solid var(--border);
+}
+.dash-profile-badges-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.dash-profile-badge {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(99, 91, 255, 0.12), rgba(192, 132, 252, 0.12));
+  border: 1px solid rgba(99, 91, 255, 0.20);
+  font-size: 1.05rem;
+  cursor: help;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.dash-profile-badge:hover {
+  transform: translateY(-1px) scale(1.05);
+  border-color: rgba(99, 91, 255, 0.45);
+}
+.dash-profile-badge-more {
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  border-style: dashed;
+}
+[data-theme="dark"] .dash-profile-badge {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(192, 132, 252, 0.10));
+  border-color: rgba(139, 92, 246, 0.30);
+}
+
 /* Action buttons */
 .dash-profile-actions {
   padding: 14px 20px 20px;

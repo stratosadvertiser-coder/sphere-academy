@@ -9,8 +9,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Home - Sphere Academy</title>
   <meta name="description" content="Your home — progress, community feed, big wins, and the next lesson.">
-  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-20-batch1">
-  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-20-batch1">
+  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-20-batch2">
+  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-20-batch2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
     <div class="container">
       <div class="nav-left">
         <a href="index.html" class="logo">
-          <div class="logo-icon"><img src="logo.png?v=2025-05-20-batch1" alt="Sphere Academy"></div>
+          <div class="logo-icon"><img src="logo.png?v=2025-05-20-batch2" alt="Sphere Academy"></div>
           Sphere Academy
         </a>
       </div>
@@ -481,6 +481,16 @@
           </div>
         </div>
 
+        <!-- Earned badges row — shows up to 5 most recent achievements
+             as icons. Empty when nothing's been unlocked yet. -->
+        <div class="dash-profile-badges" id="dashProfileBadges" style="display:none;">
+          <div class="dash-profile-section-label">
+            <span>Achievements</span>
+            <a href="profile.html#section-achievements" id="dashBadgesViewAll" style="text-decoration:none;">View all</a>
+          </div>
+          <div class="dash-profile-badges-row" id="dashProfileBadgesRow"></div>
+        </div>
+
         <!-- Actions -->
         <div class="dash-profile-actions">
           <a href="course.html" class="btn btn-primary dash-profile-cta">
@@ -670,6 +680,29 @@
           var streakEl = $('dashProfileStatStreak');
           if (streakEl && typeof STREAK !== 'undefined') {
             streakEl.textContent = (STREAK.get().count || 0);
+          }
+        } catch (_) {}
+
+        // Earned badges — show up to 5 unlocked achievements as
+        // icons. Tap "View all" to jump to the full grid on the
+        // profile page. Hidden entirely if no badges unlocked.
+        try {
+          if (typeof BADGES !== 'undefined' && BADGES.catalogWithStatus) {
+            var allBadges = BADGES.catalogWithStatus() || [];
+            var earned = allBadges.filter(function (b) { return b.earned; });
+            var badgeRow = $('dashProfileBadgesRow');
+            var badgeContainer = $('dashProfileBadges');
+            if (earned.length && badgeRow && badgeContainer) {
+              badgeContainer.style.display = 'block';
+              var html = '';
+              earned.slice(0, 5).forEach(function (b) {
+                html += '<span class="dash-profile-badge" title="' + (b.name || '').replace(/"/g, '&quot;') + ' — ' + (b.desc || '').replace(/"/g, '&quot;') + '">' + (b.icon || '🏅') + '</span>';
+              });
+              if (earned.length > 5) {
+                html += '<span class="dash-profile-badge dash-profile-badge-more">+' + (earned.length - 5) + '</span>';
+              }
+              badgeRow.innerHTML = html;
+            }
           }
         } catch (_) {}
       } catch (e) {
