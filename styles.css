@@ -13954,9 +13954,22 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 4px 12px 14px;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 12px;
+    /* Clickable now (built as an <a> tag) — kill default
+       anchor styling and add hover affordance. */
+    text-decoration: none !important;
+    color: inherit;
+    cursor: pointer;
+    border-radius: 10px 10px 0 0;
+    transition: background 0.15s ease;
+  }
+  .dash-sidebar-rail.is-expanded .dash-sidebar-brand:hover {
+    background: rgba(99, 91, 255, 0.08);
+  }
+  [data-theme="dark"] .dash-sidebar-rail.is-expanded .dash-sidebar-brand:hover {
+    background: rgba(139, 92, 246, 0.12);
   }
   .dash-sidebar-brand-logo {
     width: 30px;

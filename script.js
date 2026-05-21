@@ -12075,10 +12075,17 @@ document.addEventListener('mouseover', (e) => {
     if (expanded) rail.classList.add('is-expanded');
 
     // ----- Brand header (visible only when expanded) -----
-    const brand = document.createElement('div');
+    // Built as an <a> so clicking it takes the user to their
+    // profile (Facebook-style). For logged-out users it falls
+    // back to index.html.
+    const isLoggedIn = (typeof AUTH !== 'undefined' && AUTH.isLoggedIn && AUTH.isLoggedIn());
+    const brandHref = isLoggedIn ? 'profile.html' : 'index.html';
+    const brand = document.createElement('a');
+    brand.href = brandHref;
     brand.className = 'dash-sidebar-brand';
+    brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-05-sorbit" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-20-cardcover" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -12125,31 +12132,9 @@ document.addEventListener('mouseover', (e) => {
   }
 })();
 
-// ============================================================
-// NAVBAR LOGO → PROFILE (Facebook-style)
-// Any logged-in user — student OR admin — gets a "click your
-// logo to see your profile" interaction, just like Facebook.
-// Logged-out users keep the default (logo → index.html landing).
-// ============================================================
-(function () {
-  function initLogoLink() {
-    try {
-      if (typeof AUTH === 'undefined') return;
-      if (!AUTH.isLoggedIn || !AUTH.isLoggedIn()) return;
-      document.querySelectorAll('a.logo').forEach(function (a) {
-        a.setAttribute('href', 'profile.html');
-        a.setAttribute('title', 'Go to your profile');
-      });
-      console.log('[LOGO] Navbar logo now links to profile.html');
-    } catch (e) { /* non-fatal */ }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLogoLink);
-  } else {
-    initLogoLink();
-  }
-  // Re-run after a short delay too, in case AUTH wasn't ready
-  // at DOMContentLoaded (defer'd scripts, slow init, etc).
-  setTimeout(initLogoLink, 400);
-  setTimeout(initLogoLink, 1500);
-})();
+// (Removed: previous navbar-logo → profile redirect. The user
+// prefers the top navbar "Sphere Academy" logo to keep its
+// default behavior — link to index.html / home. The "click my
+// brand to see my profile" affordance now lives on the SIDEBAR
+// brand header instead, which is built as an <a> tag pointing
+// to profile.html in the sidebar init code above.)
