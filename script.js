@@ -749,9 +749,13 @@ const DATA_SYNC_READY = (async () => {
   try {
     const before = _snapshotSyncedKeys();
     await DATA_SYNC.loadAll();
-    // If localStorage changed and we haven't already refreshed this session, reload
+    // If localStorage changed and we haven't already refreshed this session, reload.
+    // Guard: never reload while the user is mid-upload — otherwise an
+    // in-flight Firebase Storage stream gets aborted and the submission
+    // is lost. We just skip this one reload; the new data is already
+    // in localStorage so the next natural navigation will pick it up.
     const alreadyRefreshed = sessionStorage.getItem('sync_refreshed_' + window.location.pathname);
-    if (_hasDataChanged(before) && !alreadyRefreshed) {
+    if (_hasDataChanged(before) && !alreadyRefreshed && !window._asgnUploading) {
       sessionStorage.setItem('sync_refreshed_' + window.location.pathname, '1');
       window.location.reload();
     }
@@ -802,6 +806,66 @@ async function uploadAssignmentFile(file, username, weekId, onProgress) {
   } catch (e) {
     console.warn('[ASSIGNMENT] upload exception:', e.message || e);
     return null;
+  }
+}
+
+// ============================================================
+// compressImageIfNeeded — downscales + re-encodes large images
+// before upload so they go through the wire in ~10× less time.
+// JPEGs/PNGs > 1.5MB get resized to max 1920px on the long edge
+// and re-encoded at quality 0.86 (visually lossless). Original
+// file returned unchanged for non-images, small images, videos,
+// or PDFs (which we never want to mutate).
+// ============================================================
+async function compressImageIfNeeded(file) {
+  try {
+    if (!file || !file.type || !file.type.startsWith('image/')) return file;
+    // Don't touch GIFs — re-encoding would lose animation.
+    if (file.type === 'image/gif') return file;
+    // Tiny files don't benefit from re-encoding (would actually grow).
+    if (file.size < 1.5 * 1024 * 1024) return file;
+
+    const MAX_EDGE = 1920;
+    const QUALITY = 0.86;
+
+    const bitmap = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+
+    let { width, height } = bitmap;
+    const longEdge = Math.max(width, height);
+    if (longEdge > MAX_EDGE) {
+      const scale = MAX_EDGE / longEdge;
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0, width, height);
+
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob(resolve, 'image/jpeg', QUALITY);
+    });
+    URL.revokeObjectURL(bitmap.src);
+    if (!blob) return file;
+
+    // If compression somehow made the file bigger (rare edge case
+    // with already-optimized JPEGs), keep the original.
+    if (blob.size >= file.size) return file;
+
+    // Re-wrap as a File so downstream code that reads file.name /
+    // file.type keeps working transparently.
+    const safeName = file.name.replace(/\.(png|webp|bmp|tiff?)$/i, '.jpg');
+    return new File([blob], safeName, { type: 'image/jpeg', lastModified: Date.now() });
+  } catch (e) {
+    console.warn('[COMPRESS] failed for', file && file.name, e && e.message);
+    return file;
   }
 }
 
@@ -4873,33 +4937,78 @@ if (currentPage === 'lesson.html') {
 
             const username = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
 
-            // Upload each file to Firebase Storage so the admin can
-            // actually open it later. If Storage is unavailable or a
-            // single upload fails, we still save metadata + whatever
-            // links were pasted — submission never silently disappears.
-            const fileData = [];
-            for (let i = 0; i < pendingFiles.length; i++) {
-              const file = pendingFiles[i];
+            // ── Tab-leave guard ─────────────────────────────────────
+            // Without this, switching tabs / closing the window mid-
+            // upload would silently abort the Firebase Storage stream
+            // AND fire the post-submit reload from a stale state, so
+            // when the user came back the page looked "refreshed and
+            // empty". Warn before unload while an upload is active.
+            window._asgnUploading = true;
+            function _asgnBeforeUnload(e) {
+              if (!window._asgnUploading) return;
+              e.preventDefault();
+              e.returnValue = 'Your assignment is still uploading. Leave anyway?';
+              return e.returnValue;
+            }
+            window.addEventListener('beforeunload', _asgnBeforeUnload);
+
+            // ── Aggregate progress tracker ──────────────────────────
+            // Each file's progress is stored in this array and the
+            // overall percentage is the mean — that way the button
+            // shows a single smooth 0→100% bar across parallel uploads
+            // instead of jumping per-file.
+            const fileProgress = new Array(pendingFiles.length).fill(0);
+            function updateBtnLabel() {
+              if (pendingFiles.length === 0) {
+                submitBtn.textContent = 'Saving…';
+                return;
+              }
+              const sum = fileProgress.reduce((a, b) => a + b, 0);
+              const pct = Math.round((sum / pendingFiles.length) * 100);
+              submitBtn.textContent = 'Uploading ' + pendingFiles.length + ' file' + (pendingFiles.length === 1 ? '' : 's') + '… ' + pct + '%';
+            }
+            updateBtnLabel();
+
+            // ── Parallel upload + image compression ──────────────────
+            // Promise.all kicks off every upload concurrently; large
+            // images are downscaled on the fly so they go through in
+            // a fraction of the time. Each promise resolves to the
+            // file's metadata regardless of success/failure — we
+            // never want to lose the submission because one file hit
+            // a snag.
+            const uploadPromises = pendingFiles.map(async (originalFile, idx) => {
+              const file = await compressImageIfNeeded(originalFile);
               const sizeStr = file.size < 1024 * 1024
                 ? (file.size / 1024).toFixed(1) + ' KB'
                 : (file.size / (1024 * 1024)).toFixed(1) + ' MB';
-              submitBtn.textContent = 'Uploading ' + (i + 1) + ' of ' + pendingFiles.length + '… 0%';
               let downloadURL = null;
               try {
                 downloadURL = await uploadAssignmentFile(file, username, weekId, (frac) => {
-                  const pct = Math.round(frac * 100);
-                  submitBtn.textContent = 'Uploading ' + (i + 1) + ' of ' + pendingFiles.length + '… ' + pct + '%';
+                  fileProgress[idx] = frac;
+                  updateBtnLabel();
                 });
+                fileProgress[idx] = 1;
+                updateBtnLabel();
               } catch (err) {
-                console.warn('[ASSIGNMENT] file failed, falling back to metadata-only:', file.name);
+                console.warn('[ASSIGNMENT] file failed, falling back to metadata-only:', originalFile.name, err);
               }
-              fileData.push({
-                name: file.name,
+              return {
+                name: originalFile.name,
                 size: sizeStr,
-                type: file.type,
+                type: originalFile.type,
                 date: new Date().toISOString(),
                 downloadURL: downloadURL || null
-              });
+              };
+            });
+
+            let fileData = [];
+            try {
+              fileData = await Promise.all(uploadPromises);
+            } catch (e) {
+              // Promise.all rejects if ANY upload throws — but our
+              // map function catches per-file errors, so this branch
+              // should be unreachable. Defensive fallback just in case.
+              console.warn('[ASSIGNMENT] unexpected upload bundle error:', e);
             }
 
             const linkData = pendingLinks.map(url => ({
@@ -4911,16 +5020,128 @@ if (currentPage === 'lesson.html') {
             ASSIGNMENTS.submit(weekId, fileData, linkData);
             if (typeof checkBadges === 'function') checkBadges();
             try { if (typeof USER_SYNC !== 'undefined') USER_SYNC.save(true); } catch (e) {}
-            window.location.reload();
+
+            // ── Release the unload guard ────────────────────────────
+            window._asgnUploading = false;
+            window.removeEventListener('beforeunload', _asgnBeforeUnload);
+
+            // ── In-place re-render — NO MORE PAGE RELOAD ────────────
+            // The old behavior fired window.location.reload(), which
+            // is what made the page seem to "rebuild itself" when the
+            // user switched tabs mid-flow. Now we swap the upload form
+            // for the submitted state in the DOM, surface a toast, and
+            // re-run progress sync. Same outcome, zero flicker, zero
+            // scroll loss.
+            try {
+              const sec = document.getElementById('assignmentSection');
+              if (sec) {
+                const date = new Date();
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const total = fileData.length + linkData.length;
+
+                let html = '<div class="assignment-section">'
+                  + '<div class="assignment-header">'
+                  +   '<h2><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> ' + (asgn.title || 'Weekly Assignment') + '</h2>'
+                  +   (asgn.description ? '<p style="white-space:pre-line;">' + String(asgn.description).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>' : '')
+                  + '</div>'
+                  + '<div class="assignment-submitted">'
+                  +   '<div class="assignment-submitted-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><polyline points="20 6 9 17 4 12"/></svg></div>'
+                  +   '<div class="assignment-submitted-text">'
+                  +     '<strong>Assignment Submitted</strong>'
+                  +     '<span>Submitted on ' + dateStr + ' &bull; ' + total + ' submission' + (total === 1 ? '' : 's') + '</span>'
+                  +   '</div>'
+                  +   '<button class="assignment-resubmit" id="asgnResubmit">Re-submit</button>'
+                  + '</div>'
+                  + '<div class="assignment-files-submitted">';
+
+                fileData.forEach(f => {
+                  const fname = String(f.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                  const cls = (f.type || '').startsWith('image') ? 'image' : (f.type || '').startsWith('video') ? 'video' : 'pdf';
+                  const icon = cls === 'image'
+                    ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+                    : cls === 'video'
+                    ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>'
+                    : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                  html += '<div class="assignment-file">'
+                    + '<div class="assignment-file-icon ' + cls + '">' + icon + '</div>'
+                    + '<div class="assignment-file-info">'
+                    +   (f.downloadURL
+                          ? '<div class="assignment-file-name"><a href="' + String(f.downloadURL).replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer">' + fname + '</a></div>'
+                          : '<div class="assignment-file-name">' + fname + '</div>')
+                    +   '<div class="assignment-file-size">' + f.size + '</div>'
+                    + '</div>'
+                    + '</div>';
+                });
+                linkData.forEach(linkObj => {
+                  const url = (typeof linkObj === 'string') ? linkObj : (linkObj && linkObj.url) || '';
+                  if (!url) return;
+                  const safeUrl = url.replace(/"/g, '&quot;');
+                  const display = url.length > 60 ? url.substring(0, 60) + '…' : url;
+                  html += '<div class="assignment-file">'
+                    + '<div class="assignment-file-icon link"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>'
+                    + '<div class="assignment-file-info">'
+                    +   '<div class="assignment-file-name"><a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + display + '</a></div>'
+                    +   '<div class="assignment-file-size">External link</div>'
+                    + '</div>'
+                    + '</div>';
+                });
+
+                html += '</div></div>';
+                sec.innerHTML = html;
+
+                // Wire the new Re-submit button — confirm + clear +
+                // soft reload so the user can upload again.
+                const resub = document.getElementById('asgnResubmit');
+                if (resub) {
+                  resub.addEventListener('click', () => {
+                    if (!confirm('Clear your current submission and upload again?')) return;
+                    ASSIGNMENTS.clearSubmission(weekId);
+                    window.location.reload();
+                  });
+                }
+              }
+            } catch (e) { /* non-fatal; submission already saved */ }
+
+            if (typeof window.toast === 'function') {
+              window.toast('Assignment submitted!', 'success');
+            }
+
+            // Mark the lesson complete + nudge the sidebar progress
+            try {
+              const completeBtn = document.getElementById('completeBtn');
+              if (completeBtn && !completeBtn.classList.contains('completed')) {
+                completeBtn.click();
+              }
+            } catch (e) {}
+
+            // Scroll the user to the success card so they see the
+            // confirmation even if the page is long.
+            setTimeout(() => {
+              const sec = document.getElementById('assignmentSection');
+              if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 50);
           });
         }
       } else {
-        // Re-upload handler
+        // Re-upload handler — swap submitted state for upload form
+        // in place, no reload.
         const resubmitBtn = document.getElementById('asgnResubmit');
         if (resubmitBtn) {
           resubmitBtn.addEventListener('click', () => {
+            if (!confirm('Clear your current submission and upload again?')) return;
             ASSIGNMENTS.clearSubmission(weekId);
-            window.location.reload();
+            // Re-render in place. If we have access to the parent
+            // re-render function, use it; otherwise fall back to
+            // reload for safety.
+            try {
+              if (typeof renderAssignmentSection === 'function') {
+                renderAssignmentSection(weekId);
+              } else {
+                window.location.reload();
+              }
+            } catch (e) {
+              window.location.reload();
+            }
           });
         }
       }
@@ -12681,7 +12902,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-brand" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-upload" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
