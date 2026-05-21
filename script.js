@@ -1275,6 +1275,32 @@ const POSTS = {
     } catch (e) {}
   },
 
+  // Edit an existing post's text. Only the original author or an
+  // admin should call this — UI enforces that. The post is marked
+  // with editedAt so the feed can show an "(edited)" indicator.
+  update(id, newText) {
+    newText = (newText || '').trim().slice(0, this.MAX_LENGTH);
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    const idx = all.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    // Allow empty text only if the post still has media — otherwise
+    // there'd be nothing left to show. Bail and let the caller
+    // decide what to do (e.g. delete instead).
+    const hasMedia = Array.isArray(all[idx].media) && all[idx].media.length > 0;
+    if (!newText && !hasMedia) return null;
+    all[idx].text = newText;
+    all[idx].editedAt = Date.now();
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).set(
+          { text: newText, editedAt: all[idx].editedAt }, { merge: true }
+        ).catch(e => _handleSyncError('POSTS', e));
+      }
+    } catch (e) {}
+    return all[idx];
+  },
+
   // Comment helpers — comments live as an array on the post doc
   // itself, so they sync via the same Firestore listener as posts.
   addComment(postId, text) {
@@ -1433,6 +1459,32 @@ const WINS = {
         });
       }
     } catch (e) {}
+  },
+
+  // Edit a win's title and/or description in place. The win is
+  // marked with editedAt so the UI can render "(edited)".
+  update(id, fields) {
+    fields = fields || {};
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    const idx = all.findIndex(w => w.id === id);
+    if (idx === -1) return null;
+    const newTitle = (fields.title || '').trim().slice(0, 120);
+    if (newTitle) all[idx].title = newTitle;
+    if (typeof fields.description === 'string') {
+      all[idx].description = fields.description.trim().slice(0, 400);
+    }
+    all[idx].editedAt = Date.now();
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).set({
+          title: all[idx].title,
+          description: all[idx].description,
+          editedAt: all[idx].editedAt
+        }, { merge: true }).catch(e => _handleSyncError('WINS', e));
+      }
+    } catch (e) {}
+    return all[idx];
   },
 
   async fetchRemote() {
@@ -1594,6 +1646,28 @@ const ANNOUNCEMENTS = {
         DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(() => {});
       }
     } catch (e) {}
+  },
+
+  // Edit an announcement's title/body in place.
+  update(id, fields) {
+    fields = fields || {};
+    const all = safeGetJSON(this.STORAGE_KEY, []);
+    const idx = all.findIndex(a => a.id === id);
+    if (idx === -1) return null;
+    if (typeof fields.title === 'string') all[idx].title = fields.title.trim().slice(0, 200);
+    if (typeof fields.body === 'string')  all[idx].body  = fields.body.trim().slice(0, 2000);
+    all[idx].editedAt = Date.now();
+    safeSetItem(this.STORAGE_KEY, JSON.stringify(all));
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).set({
+          title: all[idx].title,
+          body: all[idx].body,
+          editedAt: all[idx].editedAt
+        }, { merge: true }).catch(e => _handleSyncError('ANNOUNCEMENTS', e));
+      }
+    } catch (e) {}
+    return all[idx];
   },
 
   async fetchRemote() {
@@ -9156,11 +9230,14 @@ function renderPosts() {
     const commentToggleLabel = comments.length === 0
       ? 'Comment'
       : 'View ' + comments.length + ' comment' + (comments.length === 1 ? '' : 's');
+    const editedLabel = p.editedAt
+      ? ' <span class="post-edited" title="Last edited ' + new Date(p.editedAt).toLocaleString() + '">(edited)</span>'
+      : '';
     return '<article class="post-item" data-id="' + p.id + '">'
       + '<div class="post-avatar">' + _avatarHTML(p) + '</div>'
       + '<div class="post-body">'
-      +   '<div class="post-meta"><strong>' + _esc(p.displayName) + '</strong><time>' + timeAgo(p.createdAt) + '</time></div>'
-      +   (p.text ? '<p class="post-text">' + _linkify(_esc(p.text)).replace(/\n/g, '<br>') + '</p>' : '')
+      +   '<div class="post-meta"><strong>' + _esc(p.displayName) + '</strong><time>' + timeAgo(p.createdAt) + '</time>' + editedLabel + '</div>'
+      +   (p.text ? '<p class="post-text" data-post-id="' + p.id + '">' + _linkify(_esc(p.text)).replace(/\n/g, '<br>') + '</p>' : '<p class="post-text post-text-empty" data-post-id="' + p.id + '" style="display:none;"></p>')
       +   mediaHTML
       +   renderReactionsRow(p, 'posts')
       +   '<div class="post-actions-row">'
@@ -9209,13 +9286,135 @@ function renderPosts() {
       +     '</form>'
       +   '</div>'
       + '</div>'
-      + (canDelete ? '<button class="post-delete-btn" data-id="' + p.id + '" aria-label="Delete post" title="Delete">&times;</button>' : '')
+      + (canDelete
+          ? '<div class="post-menu" data-id="' + p.id + '">'
+            +   '<button type="button" class="post-menu-trigger" data-id="' + p.id + '" aria-label="Post options" aria-haspopup="true" aria-expanded="false" title="More">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>'
+            +   '</button>'
+            +   '<div class="post-menu-popover" data-id="' + p.id + '" hidden role="menu">'
+            +     '<button type="button" class="post-menu-item post-edit-btn" data-id="' + p.id + '" role="menuitem">'
+            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
+            +       '<span>Edit post</span>'
+            +     '</button>'
+            +     '<button type="button" class="post-menu-item post-menu-item-danger post-delete-btn" data-id="' + p.id + '" role="menuitem">'
+            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>'
+            +       '<span>Delete</span>'
+            +     '</button>'
+            +   '</div>'
+            + '</div>'
+          : '')
       + '</article>';
   }).join('');
   bindReactions(listEl, renderPosts);
-  // Wire delete buttons
+
+  // ----- Kebab menu (• • •) — open / close, click-outside, esc -----
+  function closeAllPostMenus() {
+    listEl.querySelectorAll('.post-menu-popover').forEach(p => {
+      p.setAttribute('hidden', '');
+    });
+    listEl.querySelectorAll('.post-menu-trigger').forEach(t => {
+      t.setAttribute('aria-expanded', 'false');
+    });
+  }
+  listEl.querySelectorAll('.post-menu-trigger').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const pop = listEl.querySelector('.post-menu-popover[data-id="' + id + '"]');
+      const willOpen = pop.hasAttribute('hidden');
+      closeAllPostMenus();
+      if (willOpen) {
+        pop.removeAttribute('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+  // Click outside / escape closes the menu
+  if (!listEl._postMenuOutsideBound) {
+    listEl._postMenuOutsideBound = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.post-menu')) closeAllPostMenus();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeAllPostMenus();
+    });
+  }
+
+  // ----- Inline edit — turn the .post-text into a textarea -----
+  listEl.querySelectorAll('.post-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeAllPostMenus();
+      const id = btn.dataset.id;
+      const article = listEl.querySelector('.post-item[data-id="' + id + '"]');
+      const textEl = article && article.querySelector('.post-text');
+      if (!article || !textEl) return;
+
+      // Pull the raw text from the stored post (not the rendered
+      // HTML, which has linkified anchors and <br> tags inside).
+      const post = (POSTS.getAll() || []).find(x => x.id === id);
+      const rawText = post ? (post.text || '') : '';
+
+      // Replace the <p> with an editor container.
+      const editor = document.createElement('div');
+      editor.className = 'post-editor';
+      editor.dataset.id = id;
+      editor.innerHTML =
+          '<textarea class="post-editor-textarea" maxlength="500" rows="3" placeholder="Edit your post…">' + _esc(rawText) + '</textarea>'
+        + '<div class="post-editor-actions">'
+        +   '<span class="post-editor-count"><span class="post-editor-count-num">' + rawText.length + '</span> / 500</span>'
+        +   '<button type="button" class="btn-outline-mini post-editor-cancel">Cancel</button>'
+        +   '<button type="button" class="btn-primary-mini post-editor-save">Save</button>'
+        + '</div>';
+      textEl.style.display = 'none';
+      textEl.insertAdjacentElement('afterend', editor);
+
+      const ta = editor.querySelector('.post-editor-textarea');
+      const countEl = editor.querySelector('.post-editor-count-num');
+      const saveBtn = editor.querySelector('.post-editor-save');
+      const cancelBtn = editor.querySelector('.post-editor-cancel');
+
+      // Auto-resize textarea to content height
+      function autosize() {
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 480) + 'px';
+      }
+      autosize();
+      setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 30);
+      ta.addEventListener('input', () => {
+        autosize();
+        if (countEl) countEl.textContent = ta.value.length;
+      });
+
+      function cleanup() {
+        editor.remove();
+        textEl.style.display = '';
+      }
+      cancelBtn.addEventListener('click', cleanup);
+
+      saveBtn.addEventListener('click', () => {
+        const newText = ta.value.trim();
+        if (newText === rawText) { cleanup(); return; }
+        const updated = POSTS.update(id, newText);
+        if (!updated) {
+          if (window.toast) toast('Post cannot be empty', 'warn');
+          return;
+        }
+        if (window.toast) toast('Post updated', 'success');
+        renderPosts();
+      });
+
+      // Cmd/Ctrl+Enter saves
+      ta.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+        if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
+      });
+    });
+  });
+
+  // Wire delete buttons (inside the kebab menu)
   listEl.querySelectorAll('.post-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      closeAllPostMenus();
       if (!confirm('Delete this post?')) return;
       POSTS.remove(btn.dataset.id);
       renderPosts();
@@ -9312,21 +9511,119 @@ function renderWins() {
     if (video) {
       mediaHTML += '<div class="post-media video"><video src="' + video.dataUrl + '" controls preload="metadata" playsinline></video></div>';
     }
+    const editedLabel = w.editedAt
+      ? ' <span class="post-edited" title="Last edited ' + new Date(w.editedAt).toLocaleString() + '">(edited)</span>'
+      : '';
     return '<article class="win-item" data-id="' + w.id + '">'
       + '<div class="win-trophy">&#127942;</div>'
       + '<div class="win-body">'
-      +   '<h4>' + _esc(w.title) + '</h4>'
-      +   (w.description ? '<p>' + _linkify(_esc(w.description)).replace(/\n/g, '<br>') + '</p>' : '')
+      +   '<h4 class="win-title" data-win-id="' + w.id + '">' + _esc(w.title) + '</h4>'
+      +   '<p class="win-desc" data-win-id="' + w.id + '"' + (w.description ? '' : ' style="display:none;"') + '>' + (w.description ? _linkify(_esc(w.description)).replace(/\n/g, '<br>') : '') + '</p>'
       +   mediaHTML
-      +   '<div class="win-meta"><span class="win-author">' + _esc(w.displayName) + '</span><time>' + timeAgo(w.createdAt) + '</time></div>'
+      +   '<div class="win-meta"><span class="win-author">' + _esc(w.displayName) + '</span><time>' + timeAgo(w.createdAt) + '</time>' + editedLabel + '</div>'
       +   renderReactionsRow(w, 'wins')
       + '</div>'
-      + (canDelete ? '<button class="win-delete-btn" data-id="' + w.id + '" aria-label="Delete win" title="Delete">&times;</button>' : '')
+      + (canDelete
+          ? '<div class="post-menu" data-id="' + w.id + '">'
+            +   '<button type="button" class="post-menu-trigger" data-id="' + w.id + '" aria-label="Win options" aria-haspopup="true" aria-expanded="false" title="More">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>'
+            +   '</button>'
+            +   '<div class="post-menu-popover" data-id="' + w.id + '" hidden role="menu">'
+            +     '<button type="button" class="post-menu-item win-edit-btn" data-id="' + w.id + '" role="menuitem">'
+            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
+            +       '<span>Edit win</span>'
+            +     '</button>'
+            +     '<button type="button" class="post-menu-item post-menu-item-danger win-delete-btn" data-id="' + w.id + '" role="menuitem">'
+            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>'
+            +       '<span>Delete</span>'
+            +     '</button>'
+            +   '</div>'
+            + '</div>'
+          : '')
       + '</article>';
   }).join('');
   bindReactions(listEl, renderWins);
+
+  function closeAllWinMenus() {
+    listEl.querySelectorAll('.post-menu-popover').forEach(p => p.setAttribute('hidden', ''));
+    listEl.querySelectorAll('.post-menu-trigger').forEach(t => t.setAttribute('aria-expanded', 'false'));
+  }
+  listEl.querySelectorAll('.post-menu-trigger').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const pop = listEl.querySelector('.post-menu-popover[data-id="' + id + '"]');
+      const willOpen = pop.hasAttribute('hidden');
+      closeAllWinMenus();
+      if (willOpen) { pop.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); }
+    });
+  });
+  if (!listEl._winMenuOutsideBound) {
+    listEl._winMenuOutsideBound = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.post-menu')) closeAllWinMenus();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllWinMenus(); });
+  }
+
+  listEl.querySelectorAll('.win-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeAllWinMenus();
+      const id = btn.dataset.id;
+      const article = listEl.querySelector('.win-item[data-id="' + id + '"]');
+      const titleEl = article && article.querySelector('.win-title');
+      const descEl = article && article.querySelector('.win-desc');
+      if (!article || !titleEl) return;
+      const win = (WINS.getAll() || []).find(x => x.id === id);
+      const rawTitle = win ? (win.title || '') : '';
+      const rawDesc = win ? (win.description || '') : '';
+
+      const editor = document.createElement('div');
+      editor.className = 'post-editor';
+      editor.dataset.id = id;
+      editor.innerHTML =
+          '<input type="text" class="post-editor-input" maxlength="120" placeholder="Title" value="' + _esc(rawTitle).replace(/"/g, '&quot;') + '">'
+        + '<textarea class="post-editor-textarea" maxlength="400" rows="3" placeholder="Description…">' + _esc(rawDesc) + '</textarea>'
+        + '<div class="post-editor-actions">'
+        +   '<button type="button" class="btn-outline-mini post-editor-cancel">Cancel</button>'
+        +   '<button type="button" class="btn-primary-mini post-editor-save">Save</button>'
+        + '</div>';
+      titleEl.style.display = 'none';
+      if (descEl) descEl.style.display = 'none';
+      titleEl.insertAdjacentElement('afterend', editor);
+
+      const titleI = editor.querySelector('.post-editor-input');
+      const ta = editor.querySelector('.post-editor-textarea');
+      function autosize() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 480) + 'px'; }
+      autosize();
+      setTimeout(() => titleI.focus(), 30);
+      ta.addEventListener('input', autosize);
+
+      function cleanup() {
+        editor.remove();
+        titleEl.style.display = '';
+        if (descEl && rawDesc) descEl.style.display = '';
+      }
+      editor.querySelector('.post-editor-cancel').addEventListener('click', cleanup);
+      editor.querySelector('.post-editor-save').addEventListener('click', () => {
+        const newTitle = titleI.value.trim();
+        const newDesc = ta.value;
+        if (!newTitle) { if (window.toast) toast('Title cannot be empty', 'warn'); return; }
+        if (newTitle === rawTitle && newDesc.trim() === rawDesc) { cleanup(); return; }
+        WINS.update(id, { title: newTitle, description: newDesc });
+        if (window.toast) toast('Win updated', 'success');
+        renderWins();
+      });
+      ta.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { editor.querySelector('.post-editor-save').click(); }
+        if (e.key === 'Escape') cleanup();
+      });
+    });
+  });
+
   listEl.querySelectorAll('.win-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      closeAllWinMenus();
       if (!confirm('Delete this win?')) return;
       WINS.remove(btn.dataset.id);
       renderWins();
@@ -9668,14 +9965,33 @@ function renderAnnouncements() {
     const readBtn = isRead
       ? '<button type="button" class="ann-read-btn read" data-id="' + a.id + '" data-state="read"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Read</button>'
       : '<button type="button" class="ann-read-btn" data-id="' + a.id + '" data-state="unread">Mark as read</button>';
+    const editedLabel = a.editedAt
+      ? ' <span class="post-edited" title="Last edited ' + new Date(a.editedAt).toLocaleString() + '">(edited)</span>'
+      : '';
     return '<article class="ann-item' + stateClass + '" data-id="' + a.id + '">'
       + (a.pinned ? '<span class="ann-pin-badge">&#128204; Pinned</span>' : '')
-      + '<h3>' + _esc(a.title) + '</h3>'
-      + (a.body ? '<p>' + _linkify(_esc(a.body)).replace(/\n/g, '<br>') + '</p>' : '')
-      + '<div class="ann-meta"><span>' + _esc(a.authorName || 'Admin') + '</span><time>' + timeAgo(a.createdAt) + '</time></div>'
+      + '<h3 class="ann-title" data-ann-id="' + a.id + '">' + _esc(a.title) + '</h3>'
+      + '<p class="ann-body" data-ann-id="' + a.id + '"' + (a.body ? '' : ' style="display:none;"') + '>' + (a.body ? _linkify(_esc(a.body)).replace(/\n/g, '<br>') : '') + '</p>'
+      + '<div class="ann-meta"><span>' + _esc(a.authorName || 'Admin') + '</span><time>' + timeAgo(a.createdAt) + '</time>' + editedLabel + '</div>'
       + renderReactionsRow(a, 'announcements')
       + '<div class="ann-actions">' + readBtn + '</div>'
-      + (isAdmin ? '<button class="ann-delete-btn" data-id="' + a.id + '" title="Delete">&times;</button>' : '')
+      + (isAdmin
+          ? '<div class="post-menu" data-id="' + a.id + '">'
+            +   '<button type="button" class="post-menu-trigger" data-id="' + a.id + '" aria-label="Announcement options" aria-haspopup="true" aria-expanded="false" title="More">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>'
+            +   '</button>'
+            +   '<div class="post-menu-popover" data-id="' + a.id + '" hidden role="menu">'
+            +     '<button type="button" class="post-menu-item ann-edit-btn" data-id="' + a.id + '" role="menuitem">'
+            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
+            +       '<span>Edit announcement</span>'
+            +     '</button>'
+            +     '<button type="button" class="post-menu-item post-menu-item-danger ann-delete-btn" data-id="' + a.id + '" role="menuitem">'
+            +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>'
+            +       '<span>Delete</span>'
+            +     '</button>'
+            +   '</div>'
+            + '</div>'
+          : '')
       + '</article>';
   }).join('');
   bindReactions(listEl, renderAnnouncements);
@@ -9689,8 +10005,86 @@ function renderAnnouncements() {
     });
   });
   if (isAdmin) {
+    function closeAllAnnMenus() {
+      listEl.querySelectorAll('.post-menu-popover').forEach(p => p.setAttribute('hidden', ''));
+      listEl.querySelectorAll('.post-menu-trigger').forEach(t => t.setAttribute('aria-expanded', 'false'));
+    }
+    listEl.querySelectorAll('.post-menu-trigger').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const pop = listEl.querySelector('.post-menu-popover[data-id="' + id + '"]');
+        const willOpen = pop.hasAttribute('hidden');
+        closeAllAnnMenus();
+        if (willOpen) { pop.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); }
+      });
+    });
+    if (!listEl._annMenuOutsideBound) {
+      listEl._annMenuOutsideBound = true;
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.post-menu')) closeAllAnnMenus();
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllAnnMenus(); });
+    }
+
+    listEl.querySelectorAll('.ann-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        closeAllAnnMenus();
+        const id = btn.dataset.id;
+        const article = listEl.querySelector('.ann-item[data-id="' + id + '"]');
+        const titleEl = article && article.querySelector('.ann-title');
+        const bodyEl = article && article.querySelector('.ann-body');
+        if (!article || !titleEl) return;
+        const ann = (ANNOUNCEMENTS.getAll() || []).find(x => x.id === id);
+        const rawTitle = ann ? (ann.title || '') : '';
+        const rawBody = ann ? (ann.body || '') : '';
+
+        const editor = document.createElement('div');
+        editor.className = 'post-editor';
+        editor.dataset.id = id;
+        editor.innerHTML =
+            '<input type="text" class="post-editor-input" maxlength="200" placeholder="Title" value="' + _esc(rawTitle).replace(/"/g, '&quot;') + '">'
+          + '<textarea class="post-editor-textarea" maxlength="2000" rows="4" placeholder="Body…">' + _esc(rawBody) + '</textarea>'
+          + '<div class="post-editor-actions">'
+          +   '<button type="button" class="btn-outline-mini post-editor-cancel">Cancel</button>'
+          +   '<button type="button" class="btn-primary-mini post-editor-save">Save</button>'
+          + '</div>';
+        titleEl.style.display = 'none';
+        if (bodyEl) bodyEl.style.display = 'none';
+        titleEl.insertAdjacentElement('afterend', editor);
+
+        const titleI = editor.querySelector('.post-editor-input');
+        const ta = editor.querySelector('.post-editor-textarea');
+        function autosize() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 480) + 'px'; }
+        autosize();
+        setTimeout(() => titleI.focus(), 30);
+        ta.addEventListener('input', autosize);
+
+        function cleanup() {
+          editor.remove();
+          titleEl.style.display = '';
+          if (bodyEl && rawBody) bodyEl.style.display = '';
+        }
+        editor.querySelector('.post-editor-cancel').addEventListener('click', cleanup);
+        editor.querySelector('.post-editor-save').addEventListener('click', () => {
+          const newTitle = titleI.value.trim();
+          const newBody = ta.value;
+          if (!newTitle) { if (window.toast) toast('Title cannot be empty', 'warn'); return; }
+          if (newTitle === rawTitle && newBody.trim() === rawBody) { cleanup(); return; }
+          ANNOUNCEMENTS.update(id, { title: newTitle, body: newBody });
+          if (window.toast) toast('Announcement updated', 'success');
+          renderAnnouncements();
+        });
+        ta.addEventListener('keydown', (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { editor.querySelector('.post-editor-save').click(); }
+          if (e.key === 'Escape') cleanup();
+        });
+      });
+    });
+
     listEl.querySelectorAll('.ann-delete-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        closeAllAnnMenus();
         if (!confirm('Delete this announcement?')) return;
         ANNOUNCEMENTS.remove(btn.dataset.id);
         renderAnnouncements();
