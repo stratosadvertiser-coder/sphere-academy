@@ -16663,18 +16663,20 @@ img.avatar-inner {
   animation: chat-msg-in 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
-/* ---- Reaction pill — nestled into the bottom corner of the bubble
-   instead of orphaned below. Pulse-in animation. ---- */
+/* ---- Reaction pills — sit cleanly BELOW the bubble with a small
+   gap so they don't overlap the message or look orphaned. Slight
+   indent matches the bubble edge for a tidy alignment. ---- */
 .chat-reactions {
   position: relative;
-  margin-top: -8px !important;
-  margin-left: 12px !important;
+  margin-top: 4px !important;
+  margin-left: 8px !important;
   z-index: 2;
   animation: chat-react-in 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 .chat-message.mine .chat-reactions {
-  margin-right: 12px !important;
+  margin-right: 8px !important;
   margin-left: auto !important;
+  justify-content: flex-end;
 }
 @keyframes chat-react-in {
   from { opacity: 0; transform: translateY(-4px) scale(0.92); }
@@ -16705,22 +16707,77 @@ img.avatar-inner {
   border-color: rgba(139, 124, 255, 0.45) !important;
 }
 
-/* ---- Hover actions: closer to the bubble, gentler reveal ---- */
+/* ---- Hover actions: float beside the bubble, hidden at rest.
+   Absolute-positioned so they never take up layout space — the
+   bubble stays put, actions slide in only on hover. Sits clearly
+   away from the bubble with an 8px gap. ---- */
+.chat-bubble-row {
+  position: relative !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
 .chat-msg-actions {
-  margin: 0 4px !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: calc(100% + 8px) !important;
+  transform: translateY(-50%) translateX(-6px);
   gap: 4px !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  white-space: nowrap;
+  margin: 0 !important;
+}
+.chat-message.mine .chat-msg-actions {
+  left: auto !important;
+  right: calc(100% + 8px) !important;
+  transform: translateY(-50%) translateX(6px);
+  flex-direction: row-reverse;
+}
+.chat-bubble-row:hover .chat-msg-actions,
+.chat-bubble-row:focus-within .chat-msg-actions {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
 }
 .chat-action-btn {
-  width: 28px !important;
-  height: 28px !important;
+  width: 30px !important;
+  height: 30px !important;
   border-radius: 999px !important;
   background: var(--bg) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  border: 1px solid var(--border) !important;
+  color: var(--text-light) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.chat-action-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
 }
 .chat-action-btn:hover {
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+.chat-action-btn.chat-delete-btn:hover {
+  border-color: rgba(239, 68, 68, 0.55) !important;
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+[data-theme="dark"] .chat-action-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+[data-theme="dark"] .chat-action-btn:hover {
+  background: rgba(139, 124, 255, 0.18) !important;
+  border-color: rgba(139, 124, 255, 0.50) !important;
+  color: #c4b5fd !important;
 }
 
 /* ---- Smoother composer ---- */
