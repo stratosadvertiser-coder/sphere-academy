@@ -16296,29 +16296,31 @@ img.avatar-inner {
 }
 
 /* ===== POST / WIN / ANN — corner action buttons + inline editor =====
-   Two standalone buttons live in the corner of every post / win /
-   announcement card the user owns (or admin sees on any card): a
-   pencil for Edit, and a trash for Delete. They sit side by side,
-   stay subtle at rest, and brighten on row hover so they don't
-   shout from the corner while reading. */
+   Pencil (Edit) sits in the top-right corner. Trash (Delete) sits
+   in the BOTTOM-right corner. Keeping them on opposite ends avoids
+   overlapping the timestamp at the top, and also separates the
+   destructive action from the safe one so they can't be confused.
+   Both are completely hidden at rest and fade in only when the
+   user hovers the card — so reading stays clean. */
 .post-actions-corner {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  inset: 8px 8px 8px auto;          /* top:8 right:8 bottom:8, left:auto */
+  right: 8px;
   z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;             /* let timestamp clicks pass through */
 }
+.post-actions-corner .post-corner-btn { pointer-events: auto; }
 .post-corner-btn {
-  /* Reset legacy .post-delete-btn / .win-delete-btn / .ann-delete-btn
-     standalone styles (position:absolute + opacity:0 + width:24px +
-     border-radius:50%) so they don't fight the new corner layout
-     when our buttons also carry those legacy classes. */
+  /* Reset any legacy positioning from .post-delete-btn / .win-delete-btn
+     / .ann-delete-btn so the new corner layout owns positioning. */
   position: static !important;
   appearance: none;
-  background: transparent;
-  border: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
   width: 30px !important;
   height: 30px !important;
   border-radius: 8px !important;
@@ -16327,33 +16329,49 @@ img.avatar-inner {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.45;
+  opacity: 0;                       /* fully hidden at rest */
   font-size: inherit !important;
   line-height: 1 !important;
   top: auto !important;
   right: auto !important;
-  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  transition: opacity 0.18s ease, transform 0.18s ease,
+              background 0.18s ease, color 0.18s ease,
+              border-color 0.18s ease;
 }
+/* On card hover the buttons settle into place and become visible */
 .post-item:hover .post-corner-btn,
 .win-item:hover .post-corner-btn,
-.ann-item:hover .post-corner-btn { opacity: 0.85; }
+.ann-item:hover .post-corner-btn {
+  opacity: 0.92;
+  transform: translateY(0);
+}
 .post-corner-btn:hover {
   background: rgba(99, 91, 255, 0.10);
+  border-color: var(--primary);
   color: var(--primary);
   opacity: 1;
 }
+[data-theme="dark"] .post-corner-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.10);
+}
 [data-theme="dark"] .post-corner-btn:hover {
   background: rgba(139, 124, 255, 0.16);
+  border-color: rgba(139, 124, 255, 0.45);
   color: #c4b5fd;
 }
-/* Trash variant — warm-red hover so destructive intent reads
-   instantly without competing with the pencil for attention. */
+/* Trash variant — warm-red hover. The bottom-right position keeps
+   it well clear of the timestamp at top. */
 .post-corner-btn-danger:hover {
   background: rgba(220, 38, 38, 0.10) !important;
+  border-color: rgba(220, 38, 38, 0.40) !important;
   color: #dc2626 !important;
 }
 [data-theme="dark"] .post-corner-btn-danger:hover {
   background: rgba(248, 113, 113, 0.16) !important;
+  border-color: rgba(248, 113, 113, 0.40) !important;
   color: #fca5a5 !important;
 }
 
