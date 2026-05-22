@@ -12950,7 +12950,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-22-coach" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-22-coach2" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -15591,6 +15591,31 @@ window.SPHERE_COACH = (function () {
     try { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(arr.slice(-30))); }
     catch (_) {}
   }
+  // One-time cleanup: prior versions saved verbose
+  // "system-error" rows about the missing Worker URL into chat
+  // history. Strip those out on load so users opening the chat
+  // for the first time after the setup-card update don't see
+  // the ugly old error block.
+  function _purgeStaleSetupErrors() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+      if (!raw) return;
+      var arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return;
+      var cleaned = arr.filter(function (m) {
+        if (m && m.role === 'system-error') {
+          var c = String(m.content || '');
+          if (c.indexOf('not configured') !== -1
+              || c.indexOf('sphere_coach_endpoint') !== -1
+              || c.indexOf('SETUP_AI_COACH') !== -1) return false;
+        }
+        return true;
+      });
+      if (cleaned.length !== arr.length) {
+        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(cleaned));
+      }
+    } catch (_) {}
+  }
   function _clearHistory() {
     try { localStorage.removeItem(STORAGE_KEY_HISTORY); } catch (_) {}
   }
@@ -15685,6 +15710,102 @@ window.SPHERE_COACH = (function () {
     var history = _getHistory();
     if (limitEl) limitEl.textContent = _remaining() + '/' + DAILY_LIMIT + ' today';
 
+    var isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+    var hasEndpoint = !!endpoint();
+
+    // ---- NOT CONFIGURED: show in-chat setup card ----
+    if (!hasEndpoint) {
+      // For admins → setup wizard with paste input
+      // For regular students → friendly "coach is offline" notice
+      if (isAdmin) {
+        box.innerHTML = ''
+          + '<div class="sphere-coach-setup">'
+          +   '<div class="sphere-coach-setup-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>'
+          +   '<h3>One-time setup needed</h3>'
+          +   '<p>The AI Coach needs a backend Worker URL. <a href="SETUP_AI_COACH.md" target="_blank" rel="noopener">Read the 10-minute setup guide →</a></p>'
+          +   '<div class="sphere-coach-setup-steps">'
+          +     '<div class="sphere-coach-setup-step"><span>1</span><div>Get an Anthropic API key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></div></div>'
+          +     '<div class="sphere-coach-setup-step"><span>2</span><div>Deploy <code>cloudflare-worker.js</code> to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">Cloudflare Workers</a> (free, ~5 min)</div></div>'
+          +     '<div class="sphere-coach-setup-step"><span>3</span><div>Paste your Worker URL below</div></div>'
+          +   '</div>'
+          +   '<label class="sphere-coach-setup-label">Worker URL</label>'
+          +   '<div class="sphere-coach-setup-row">'
+          +     '<input type="url" id="sphereCoachEndpointInput" placeholder="https://sphere-coach.YOUR-USERNAME.workers.dev/coach" autocomplete="off" spellcheck="false">'
+          +     '<button type="button" class="sphere-coach-setup-save" id="sphereCoachEndpointSave">Save</button>'
+          +   '</div>'
+          +   '<button type="button" class="sphere-coach-setup-test" id="sphereCoachEndpointTest" disabled>Test connection</button>'
+          +   '<p class="sphere-coach-setup-hint" id="sphereCoachSetupHint">Saved locally on this device. To set it for everyone, edit <code>DEFAULT_ENDPOINT</code> in <code>script.js</code> and push.</p>'
+          + '</div>';
+
+        // Wire setup events
+        var input = document.getElementById('sphereCoachEndpointInput');
+        var saveBtn = document.getElementById('sphereCoachEndpointSave');
+        var testBtn = document.getElementById('sphereCoachEndpointTest');
+        var hint = document.getElementById('sphereCoachSetupHint');
+
+        input.addEventListener('input', function () {
+          var v = input.value.trim();
+          var ok = /^https?:\/\/.+/i.test(v);
+          saveBtn.disabled = !ok;
+          testBtn.disabled = !ok;
+        });
+        saveBtn.disabled = true;
+
+        saveBtn.addEventListener('click', function () {
+          var url = input.value.trim();
+          if (!url) return;
+          try { localStorage.setItem('sphere_coach_endpoint', url); } catch (_) {}
+          hint.innerHTML = '<span style="color:#10b981;">✓ Saved!</span> Refreshing the chat…';
+          setTimeout(function () { _renderMessages(); }, 500);
+        });
+
+        testBtn.addEventListener('click', async function () {
+          var url = input.value.trim();
+          if (!url) return;
+          testBtn.disabled = true;
+          testBtn.textContent = 'Testing…';
+          hint.innerHTML = 'Pinging the Worker…';
+          try {
+            var resp = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                messages: [{ role: 'user', content: 'Ping. Reply with one word: pong.' }],
+                user: 'test'
+              })
+            });
+            var data = await resp.json().catch(function () { return {}; });
+            if (resp.ok && data.reply) {
+              hint.innerHTML = '<span style="color:#10b981;">✓ Worker is alive!</span> Reply received: <em>' + _esc(String(data.reply).slice(0, 60)) + '</em>';
+            } else if (resp.ok) {
+              hint.innerHTML = '<span style="color:#f59e0b;">⚠ Worker responded but no reply field.</span> Check your Worker code.';
+            } else {
+              hint.innerHTML = '<span style="color:#dc2626;">✕ HTTP ' + resp.status + '</span> — ' + _esc((data && data.error) || 'Worker returned an error. Check ANTHROPIC_API_KEY in Cloudflare dashboard.');
+            }
+          } catch (e) {
+            hint.innerHTML = '<span style="color:#dc2626;">✕ Network error</span> — ' + _esc(e.message || 'Worker unreachable. Check the URL and CORS settings.');
+          } finally {
+            testBtn.disabled = false;
+            testBtn.textContent = 'Test connection';
+          }
+        });
+
+        if (suggests) suggests.style.display = 'none';
+        return;
+      } else {
+        // Non-admin → soft notice
+        box.innerHTML = ''
+          + '<div class="sphere-coach-welcome">'
+          +   '<div class="sphere-coach-welcome-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>'
+          +   '<h3>Sphere Coach is warming up 🛠️</h3>'
+          +   '<p>The AI mentor is being set up by your admin. Check back soon — once live, you\'ll be able to ask anything about marketing, ad copy, frameworks, and career.</p>'
+          + '</div>';
+        if (suggests) suggests.style.display = 'none';
+        return;
+      }
+    }
+
+    // ---- CONFIGURED + empty history: regular welcome ----
     if (history.length === 0) {
       box.innerHTML = ''
         + '<div class="sphere-coach-welcome">'
@@ -15770,19 +15891,25 @@ window.SPHERE_COACH = (function () {
       return;
     }
 
-    // Endpoint check
+    // Endpoint check — when not configured, don't pollute the
+    // chat history with an ugly error block. Instead, flash a
+    // small inline toast and re-render so the setup card (for
+    // admins) or the warming-up notice (for students) shows
+    // again. The unsent message stays in the input so the user
+    // doesn't lose it.
     var url = endpoint();
     if (!url) {
-      var history2 = _getHistory();
-      history2.push({ role: 'user', content: text });
-      history2.push({
-        role: 'system-error',
-        content: 'Sphere Coach is not configured yet. Admin: deploy the Cloudflare Worker (see SETUP_AI_COACH.md) then run in DevTools console: localStorage.setItem("sphere_coach_endpoint", "https://your-worker-url.workers.dev/coach")'
-      });
-      _saveHistory(history2);
+      if (typeof window.toast === 'function') {
+        var isAdmin = (typeof AUTH !== 'undefined' && AUTH.isAdmin) ? AUTH.isAdmin() : false;
+        window.toast(
+          isAdmin
+            ? 'Set up the Worker URL first — scroll up in the chat to paste it'
+            : 'Coach is still being set up by your admin',
+          'warn',
+          4000
+        );
+      }
       _renderMessages();
-      input.value = '';
-      input.style.height = 'auto';
       return;
     }
 
@@ -15851,6 +15978,7 @@ window.SPHERE_COACH = (function () {
 
   function init() {
     if (!_shouldMount()) return;
+    _purgeStaleSetupErrors();
     _build();
   }
   if (document.readyState === 'loading') {

@@ -18120,3 +18120,188 @@ body.pwa-installed .pwa-install-banner { display: none !important; }
     height: calc(100dvh - 170px) !important;
   }
 }
+
+/* ============================================================
+   SPHERE COACH — admin setup card (shown when no endpoint yet)
+   ============================================================ */
+.sphere-coach-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 20px 18px 16px;
+  background: linear-gradient(180deg, rgba(99, 91, 255, 0.04) 0%, transparent 100%);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin: 8px 0;
+}
+[data-theme="dark"] .sphere-coach-setup {
+  background: linear-gradient(180deg, rgba(139, 124, 255, 0.08) 0%, transparent 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.sphere-coach-setup-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #635bff, #8b5cf6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  box-shadow: 0 6px 16px -4px rgba(99, 91, 255, 0.45);
+}
+.sphere-coach-setup h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+}
+.sphere-coach-setup > p {
+  margin: 0 0 14px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-light);
+  text-align: center;
+}
+.sphere-coach-setup > p a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.sphere-coach-setup > p a:hover { text-decoration: underline; }
+
+.sphere-coach-setup-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+[data-theme="dark"] .sphere-coach-setup-steps {
+  background: rgba(255, 255, 255, 0.03);
+}
+.sphere-coach-setup-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.sphere-coach-setup-step span {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+.sphere-coach-setup-step div { color: var(--text); padding-top: 2px; }
+.sphere-coach-setup-step a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.sphere-coach-setup-step a:hover { text-decoration: underline; }
+.sphere-coach-setup-step code {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+}
+
+.sphere-coach-setup-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+.sphere-coach-setup-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.sphere-coach-setup-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sphere-coach-setup-row input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.12);
+}
+.sphere-coach-setup-save,
+.sphere-coach-setup-test {
+  appearance: none;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  transition: all 0.15s ease;
+}
+.sphere-coach-setup-save {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.sphere-coach-setup-save:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.sphere-coach-setup-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sphere-coach-setup-test {
+  width: 100%;
+  margin-bottom: 10px;
+}
+.sphere-coach-setup-test:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.sphere-coach-setup-test:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sphere-coach-setup-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-light);
+  text-align: center;
+}
+.sphere-coach-setup-hint code {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+}
+.sphere-coach-setup-hint em { color: var(--text); font-style: italic; }
