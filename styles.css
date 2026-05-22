@@ -17381,3 +17381,96 @@ img.avatar-inner {
   }
   .jitsi-modal-content { width: 100vw; height: 100vh; border-radius: 0; }
 }
+
+/* ============================================================
+   PWA — install prompt banner + standalone-mode polish
+   Shows a subtle "Install Sphere Academy" pill at the bottom of
+   the page when the browser fires beforeinstallprompt. Hidden
+   by default; reveals when body.pwa-installable is set.
+   ============================================================ */
+.pwa-install-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 9500;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+body.pwa-installable .pwa-install-banner {
+  display: inline-flex;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+body.pwa-installed .pwa-install-banner { display: none !important; }
+.pwa-install-banner-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #635bff, #8b5cf6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.pwa-install-banner-icon img { width: 100%; height: 100%; object-fit: contain; }
+.pwa-install-banner-text { line-height: 1.2; }
+.pwa-install-banner-text strong { display: block; font-weight: 600; }
+.pwa-install-banner-text span { font-size: 0.72rem; color: var(--text-light); }
+.pwa-install-banner-cta {
+  appearance: none;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.pwa-install-banner-cta:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.pwa-install-banner-close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  font-size: 1.1rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.pwa-install-banner-close:hover { background: var(--bg-alt); color: var(--text); }
+[data-theme="dark"] .pwa-install-banner {
+  background: #27272a;
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.30);
+}
+
+/* Standalone display tweaks — when the app is launched from the
+   home screen icon, hide the "Log In" CTAs in the navbar so the
+   experience feels app-like. */
+@media (display-mode: standalone) {
+  .nav-mobile-cta { display: none !important; }
+  /* Add a touch more bottom padding so iOS home indicator
+     doesn't overlap the mobile nav. */
+  body:has(.dash-mobile-nav) {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0)) !important;
+  }
+}

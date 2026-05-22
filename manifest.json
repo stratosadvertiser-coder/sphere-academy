@@ -1,0 +1,50 @@
+{
+  "name": "Sphere Academy",
+  "short_name": "Sphere",
+  "description": "Marketing intern training by Stratos — community feed, weekly lessons, and a path to becoming a confident digital marketer.",
+  "start_url": "./dashboard.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#18181B",
+  "theme_color": "#635bff",
+  "lang": "en-PH",
+  "categories": ["education", "social", "productivity"],
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192 256x256 384x384 512x512 any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "192x192 256x256 384x384 512x512 any",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Feed",
+      "short_name": "Feed",
+      "description": "Open the community feed",
+      "url": "./dashboard.html#tab=feed",
+      "icons": [{ "src": "logo.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Course",
+      "short_name": "Course",
+      "description": "Resume the program",
+      "url": "./course.html",
+      "icons": [{ "src": "logo.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Profile",
+      "short_name": "Profile",
+      "description": "View my profile",
+      "url": "./profile.html",
+      "icons": [{ "src": "logo.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

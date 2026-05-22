@@ -12950,7 +12950,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-audit" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-pwa" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -15190,4 +15190,112 @@ window.GROUPS = {
   } else {
     groupsInit();
   }
+})();
+
+// ============================================================
+// PWA — install-to-home-screen + standalone app shell
+// Registers the service worker (required for Chrome's install
+// prompt) and exposes window.installApp() to trigger the native
+// install dialog from any UI button.
+// ============================================================
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+
+  // Inject the install banner once into <body>. It's hidden until
+  // the body picks up the .pwa-installable class.
+  function ensureBanner() {
+    if (document.getElementById('pwaInstallBanner')) return;
+    var dismissed = false;
+    try { dismissed = sessionStorage.getItem('pwa_install_dismissed') === '1'; } catch (_) {}
+    if (dismissed) return;
+    var banner = document.createElement('div');
+    banner.id = 'pwaInstallBanner';
+    banner.className = 'pwa-install-banner';
+    banner.innerHTML = ''
+      + '<div class="pwa-install-banner-icon"><img src="logo.png" alt=""></div>'
+      + '<div class="pwa-install-banner-text"><strong>Install Sphere Academy</strong><span>Add to your home screen for the full app experience</span></div>'
+      + '<button type="button" class="pwa-install-banner-cta" id="pwaInstallCta">Install</button>'
+      + '<button type="button" class="pwa-install-banner-close" id="pwaInstallClose" aria-label="Dismiss">×</button>';
+    document.body.appendChild(banner);
+    document.getElementById('pwaInstallCta').addEventListener('click', function () {
+      if (typeof window.installApp === 'function') window.installApp();
+    });
+    document.getElementById('pwaInstallClose').addEventListener('click', function () {
+      document.body.classList.remove('pwa-installable');
+      try { sessionStorage.setItem('pwa_install_dismissed', '1'); } catch (_) {}
+    });
+  }
+
+  window._pwaInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    window._pwaInstallPrompt = e;
+    document.body.classList.add('pwa-installable');
+    ensureBanner();
+  });
+  window.addEventListener('appinstalled', function () {
+    window._pwaInstallPrompt = null;
+    document.body.classList.remove('pwa-installable');
+    document.body.classList.add('pwa-installed');
+    try { if (window.toast) toast('Sphere Academy installed!', 'success'); } catch (_) {}
+  });
+
+  window.installApp = function () {
+    var prompt = window._pwaInstallPrompt;
+    if (!prompt) {
+      var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+      if (isStandalone) {
+        if (window.toast) toast('Sphere Academy is already installed', 'info');
+      } else if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        if (window.toast) toast('On iPhone: tap Share → Add to Home Screen', 'info', 5000);
+      } else {
+        if (window.toast) toast('Install not available on this browser yet', 'info');
+      }
+      return;
+    }
+    prompt.prompt();
+    prompt.userChoice.then(function (choice) {
+      window._pwaInstallPrompt = null;
+      document.body.classList.remove('pwa-installable');
+      if (choice && choice.outcome === 'accepted' && window.toast) {
+        toast('Installing Sphere Academy…', 'success');
+      }
+    });
+  };
+
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(function (reg) {
+        if (reg && reg.scope) {
+          console.log('[PWA] Service worker registered:', reg.scope);
+        }
+        setInterval(function () { try { reg.update(); } catch (_) {} }, 60 * 60 * 1000);
+      })
+      .catch(function (err) {
+        console.warn('[PWA] Service worker registration failed:', err && err.message);
+      });
+
+    // iOS Safari doesn't fire beforeinstallprompt — for those users,
+    // show the banner with a "tap Share → Add to Home Screen" hint
+    // ONLY if they're not already running in standalone mode.
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    if (isIOS && !isStandalone) {
+      var dismissed = false;
+      try { dismissed = sessionStorage.getItem('pwa_install_dismissed') === '1'; } catch (_) {}
+      if (!dismissed) {
+        // Delay slightly so the banner doesn't pop on initial paint.
+        setTimeout(function () {
+          document.body.classList.add('pwa-installable');
+          ensureBanner();
+          // Replace the install button on iOS with the share-hint
+          // toast instead of triggering the unavailable prompt.
+          var iosCta = document.getElementById('pwaInstallCta');
+          if (iosCta) iosCta.textContent = 'How to install';
+        }, 2500);
+      }
+    }
+  });
 })();
