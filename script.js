@@ -12902,7 +12902,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-upload" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-tooltip" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -13979,6 +13979,138 @@ window.renderSavedSection = function () {
     document.addEventListener('DOMContentLoaded', bind);
   } else {
     bind();
+  }
+})();
+
+// ============================================================
+// SIDEBAR RAIL TOOLTIPS — JS-managed floating tooltips that
+// escape the rail's overflow:auto container. The original CSS
+// ::after pseudo-tooltips got clipped at the rail's right edge
+// once .dash-sidebar-nav had to scroll (overflow-y:auto coerces
+// overflow-x to also clip per CSS spec), so the icon labels
+// stopped showing on hover.
+//
+// This module attaches a single body-level tooltip <div> and
+// positions it at the hovered icon's right side using fixed
+// coordinates from getBoundingClientRect(). Fixed positioning
+// escapes any overflow ancestor.
+// ============================================================
+(function () {
+  function init() {
+    var rail = document.querySelector('.dash-sidebar-rail');
+    if (!rail) return;
+
+    // Build the singleton tooltip element once and re-use it.
+    var tip = document.createElement('div');
+    tip.className = 'rail-tooltip';
+    tip.setAttribute('role', 'tooltip');
+    tip.style.cssText = [
+      'position: fixed',
+      'top: 0',
+      'left: 0',
+      'padding: 7px 12px',
+      'background: #0a0a0a',
+      'color: #fafafa',
+      'border-radius: 8px',
+      'font-size: 0.8rem',
+      'font-weight: 600',
+      'font-family: inherit',
+      'letter-spacing: 0.01em',
+      'white-space: nowrap',
+      'pointer-events: none',
+      'z-index: 100000',
+      'box-shadow: 0 6px 18px rgba(0,0,0,0.30), 0 1px 3px rgba(0,0,0,0.20)',
+      'opacity: 0',
+      'transform: translateX(-4px)',
+      'transition: opacity 0.15s ease 0.05s, transform 0.15s ease 0.05s',
+      'display: none'
+    ].join('; ');
+
+    // Small triangle pointing left toward the icon.
+    var arrow = document.createElement('span');
+    arrow.style.cssText = [
+      'position: absolute',
+      'top: 50%',
+      'left: -5px',
+      'transform: translateY(-50%)',
+      'width: 0',
+      'height: 0',
+      'border-style: solid',
+      'border-width: 5px 6px 5px 0',
+      'border-color: transparent #0a0a0a transparent transparent'
+    ].join('; ');
+    tip.appendChild(arrow);
+
+    var labelNode = document.createTextNode('');
+    tip.insertBefore(labelNode, arrow);
+
+    document.body.appendChild(tip);
+
+    var hideTimer = null;
+
+    function showFor(link) {
+      var label = link.getAttribute('data-tooltip');
+      if (!label) return;
+      // Skip when the rail is EXPANDED — text labels are already
+      // visible next to each icon, so the floating tooltip would
+      // be redundant noise.
+      if (rail.classList.contains('is-expanded')) return;
+
+      labelNode.nodeValue = label;
+      tip.style.display = 'block';
+
+      // Position next to the icon, vertically centered.
+      var rect = link.getBoundingClientRect();
+      var x = rect.right + 14;
+      // Tooltip is rendered but invisible — measure to vertically center.
+      var th = tip.offsetHeight;
+      var y = rect.top + (rect.height / 2) - (th / 2);
+
+      tip.style.left = x + 'px';
+      tip.style.top = y + 'px';
+
+      // Reflow then fade in.
+      requestAnimationFrame(function () {
+        tip.style.opacity = '1';
+        tip.style.transform = 'translateX(0)';
+      });
+    }
+
+    function hide() {
+      tip.style.opacity = '0';
+      tip.style.transform = 'translateX(-4px)';
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(function () {
+        tip.style.display = 'none';
+      }, 180);
+    }
+
+    // Delegated listeners — works for current AND future
+    // sidebar links (e.g. admin link toggled on by JS).
+    rail.addEventListener('mouseover', function (e) {
+      var link = e.target.closest('.dash-sidebar-link[data-tooltip]');
+      if (!link) return;
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+      showFor(link);
+    });
+    rail.addEventListener('mouseout', function (e) {
+      var link = e.target.closest('.dash-sidebar-link[data-tooltip]');
+      if (!link) return;
+      // Only hide if the new hover target isn't another link in the rail.
+      var to = e.relatedTarget;
+      if (to && to.closest && to.closest('.dash-sidebar-link[data-tooltip]')) return;
+      hide();
+    });
+    // Hide on scroll (positions go stale) and on expand toggle.
+    rail.addEventListener('scroll', hide, { passive: true });
+    document.addEventListener('scroll', hide, { passive: true });
+    window.addEventListener('resize', hide);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();
 

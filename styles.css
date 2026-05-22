@@ -13821,12 +13821,21 @@ html body .hero.hero-v2 h1.hero-title .hero-line {
     line-height: 16px !important;
     text-align: center !important;
   }
-  /* Tooltip — dark "macOS-style" with a small arrow pointing
-     at the icon, fades + slides in 4px on hover for that
-     polished product feel. Uses fixed dark colors (not
-     var(--text)/var(--bg)) so contrast is identical in both
-     light and dark themes. */
-  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]::after {
+  /* Tooltip — superseded by the JS-managed .rail-tooltip in
+     script.js, which uses position:fixed to escape the rail's
+     overflow:auto container (the CSS pseudo-tooltips below
+     were getting clipped once the nav started scrolling).
+     Disabled here so the two tooltips don't render together. */
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]::after,
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]::before {
+    display: none !important;
+  }
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]:not(:hover)::after { /* legacy */
+    content: none !important;
+  }
+  /* Original pseudo-tooltip rules kept below for reference but
+     are no-ops because of the display:none rules above. */
+  .dash-sidebar-rail .dash-sidebar-link[data-tooltip]._legacy::after {
     content: attr(data-tooltip);
     position: absolute;
     left: calc(100% + 14px);
