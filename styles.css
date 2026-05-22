@@ -17678,3 +17678,32 @@ body.pwa-installed .pwa-install-banner { display: none !important; }
     letter-spacing: 0.05em !important;
   }
 }
+
+/* ============================================================
+   HERO HEADLINE — make it BIG and dominating on desktop
+   User feedback: too small for the wide hero area, should
+   stand out more. Bumped the cap from 92px → 120px (+30%)
+   and tightened letter-spacing so the longer line still fits
+   on a single row.
+   ============================================================ */
+.hero.hero-v2 .hero-title {
+  font-size: clamp(32px, 7.4vw, 120px) !important;
+  line-height: 1.0 !important;
+  letter-spacing: -0.05em !important;
+  font-weight: 800 !important;
+  max-width: 1850px !important;
+  margin-bottom: 28px !important;
+}
+.hero.hero-v2 .hero-title .hero-line {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+/* Mobile keeps a sane size — bump min so it stays bold on
+   small viewports too, but the desktop cap can run high. */
+@media (max-width: 600px) {
+  .hero.hero-v2 .hero-title {
+    font-size: clamp(32px, 8.4vw, 96px) !important;
+    letter-spacing: -0.045em !important;
+  }
+}
