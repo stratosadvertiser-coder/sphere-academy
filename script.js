@@ -15265,6 +15265,15 @@ window.GROUPS = {
   };
 
   window.addEventListener('load', function () {
+    // Skip service worker registration when running inside the
+    // Capacitor native shell — the custom https://localhost
+    // origin doesn't support SWs reliably, and the native app
+    // already has its own offline cache. Registering here would
+    // log spurious errors and could interfere with WebView
+    // navigation.
+    var isNativeShell = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (isNativeShell) return;
+
     navigator.serviceWorker.register('service-worker.js')
       .then(function (reg) {
         if (reg && reg.scope) {
@@ -15320,6 +15329,37 @@ window.GROUPS = {
   document.body.classList.add('runtime-native');
   document.body.classList.add('runtime-' + (window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'native'));
 
+  // ----- Failsafe: hide splash no matter what happens -----
+  // Without this, ANY uncaught JS error during init would leave
+  // the user stuck on the violet splash screen forever. Fire a
+  // brute-force hide after 3 seconds regardless of the rest of
+  // this block's success.
+  try {
+    setTimeout(function () {
+      try {
+        var SP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen;
+        if (SP) SP.hide({ fadeOutDuration: 240 }).catch(function () {});
+      } catch (_) {}
+    }, 3000);
+  } catch (_) {}
+
+  // ----- Surface JS errors as toasts so user can screenshot them.
+  // Useful for diagnosing crashes on actual phones where you can't
+  // open devtools. Logs to console too. -----
+  window.addEventListener('error', function (e) {
+    try {
+      console.error('[Native crash]', e && (e.message || e.error));
+      if (typeof window.toast === 'function') {
+        window.toast('JS error: ' + (e.message || 'unknown'), 'error', 6000);
+      }
+    } catch (_) {}
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    try {
+      console.error('[Native promise]', e && e.reason);
+    } catch (_) {}
+  });
+
   // ----- Status bar styling -----
   try {
     var StatusBar = window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar;
@@ -15335,7 +15375,6 @@ window.GROUPS = {
   try {
     var SplashScreen = window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen;
     if (SplashScreen) {
-      // Small delay so the first paint settles, then fade out.
       setTimeout(function () { SplashScreen.hide({ fadeOutDuration: 240 }).catch(function () {}); }, 350);
     }
   } catch (_) {}

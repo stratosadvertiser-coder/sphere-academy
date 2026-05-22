@@ -5,12 +5,11 @@
   "server": {
     "androidScheme": "https",
     "iosScheme": "https",
-    "hostname": "app.sphereacademy.local",
-    "cleartext": false
+    "cleartext": true
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 1500,
+      "launchShowDuration": 2000,
       "launchAutoHide": true,
       "backgroundColor": "#18181B",
       "androidSplashResourceName": "splash",
@@ -35,9 +34,9 @@
     }
   },
   "android": {
-    "allowMixedContent": false,
+    "allowMixedContent": true,
     "captureInput": true,
-    "webContentsDebuggingEnabled": false
+    "webContentsDebuggingEnabled": true
   },
   "ios": {
     "contentInset": "automatic",
