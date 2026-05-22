@@ -12335,38 +12335,66 @@ code, pre, .lesson-id, .phase-week {
 }
 
 /* ============================================================
-   HERO BACKGROUND — clean professional look
-   Stripe / Notion / Anthropic aesthetic. No animation, no color
-   blobs, no starfield. Just a subtle luminance gradient and a
-   barely-visible dot grid for depth — reads as premium and
-   trustworthy, not flashy.
+   HERO BACKGROUND — Architectural Grid Lines
+   AWS / engineering / blueprint aesthetic. Thin straight lines
+   in a uniform grid imply precision, structure, and trust.
+   Perfect for an education platform — looks like a textbook
+   grid or a CAD canvas. No animation, no color tint.
    ============================================================ */
 .hero.hero-v2 {
   overflow: hidden !important;
-  /* Layer order (bottom → top):
-     1. Deep neutral base (#0e0e11 → #18181B) with very subtle
-        radial luminance, no color tint
-     2. Tiny dot pattern at ~4% opacity for texture without noise
-     3. Content sits on top */
+  position: relative;
+  /* Base = deep neutral with very subtle vignette so the grid
+     fades slightly at the edges (no harsh borders). */
   background:
-    /* Subtle dot grid — Notion / Linear style, very faint */
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0),
-    /* Base luminance gradient — slightly brighter at center-top
-       so headlines pop, edges fade to darker for depth */
-    radial-gradient(ellipse 90% 70% at 50% 0%, #1c1c20 0%, #141417 70%, #0f0f12 100%);
-  background-size: 28px 28px, auto;
+    radial-gradient(ellipse 90% 75% at 50% 35%, #1d1d22 0%, #141417 70%, #0e0e11 100%);
 }
 
-/* Light mode — clean white with subtle warm tint */
+/* The grid itself sits on a pseudo-element so we can fade it
+   at the corners via a radial mask — keeps the lines feeling
+   premium instead of "graph paper". */
+.hero.hero-v2::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  /* Layered linear gradients = vertical + horizontal lines.
+     Major grid every 96px, minor grid every 24px for hierarchy. */
+  background-image:
+    /* Major vertical lines */
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    /* Major horizontal lines */
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    /* Minor vertical lines */
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    /* Minor horizontal lines */
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size:
+    96px 96px,
+    96px 96px,
+    24px 24px,
+    24px 24px;
+  /* Mask the grid to fade out at edges — radial vignette so
+     the corners feel atmospheric, not boxed-in. */
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 90%);
+          mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 90%);
+}
+
+/* Light mode — same grid pattern with slate-gray lines on warm white */
 [data-theme="light"] .hero.hero-v2 {
   background:
-    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.05) 1px, transparent 0),
-    radial-gradient(ellipse 90% 70% at 50% 0%, #ffffff 0%, #fafafa 70%, #f4f4f5 100%);
-  background-size: 28px 28px, auto;
+    radial-gradient(ellipse 90% 75% at 50% 35%, #ffffff 0%, #fafafa 70%, #f1f5f9 100%);
+}
+[data-theme="light"] .hero.hero-v2::before {
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.08) 1px, transparent 1px),
+    linear-gradient(to right, rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
 }
 
-/* Hide ALL the decorative aurora / mesh / grid markup — clean
-   professional look means no animated atmospheric blobs. */
+/* Hide ALL the legacy decorative aurora / mesh / grid markup */
 .hero.hero-v2 .hero-mesh,
 .hero.hero-v2 .hero-mesh-blob,
 .hero.hero-v2 .hero-mesh-grid,
@@ -12376,7 +12404,7 @@ code, pre, .lesson-id, .phase-week {
   display: none !important;
 }
 
-/* Content above the background */
+/* Content sits above the grid */
 .hero.hero-v2 .container { position: relative; z-index: 2; }
 
 /* ============================================================
