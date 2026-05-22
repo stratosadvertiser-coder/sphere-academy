@@ -12950,7 +12950,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-22-novoice" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-22-coach" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -15489,3 +15489,385 @@ window.GROUPS = {
     }
   } catch (_) {}
 })();
+
+// ============================================================
+// SPHERE COACH — AI Marketing Copilot
+// ============================================================
+// A floating chat bubble that lets students ask a Claude-powered
+// marketing coach anything: ad copy critique, brainstorm hooks,
+// concept Q&A, assignment review, career advice.
+//
+// Architecture:
+//   1. Frontend renders chat bubble + panel + messages
+//   2. POST to a Cloudflare Worker (URL configured below)
+//   3. Worker holds the Anthropic API key + system prompt
+//   4. Worker returns Claude's response, frontend renders it
+//
+// The Worker code is in `cloudflare-worker.js` and the setup
+// guide is `SETUP_AI_COACH.md`. Until that's deployed, the
+// bubble shows a helpful "set up your endpoint" message when
+// the user opens it.
+// ============================================================
+window.SPHERE_COACH = (function () {
+  // ----- CONFIG -----
+  // Set this to your deployed Cloudflare Worker URL after
+  // following SETUP_AI_COACH.md. Until then the chat shows a
+  // graceful "needs setup" message instead of crashing.
+  // You can also set it at runtime via:
+  //   localStorage.setItem('sphere_coach_endpoint', 'https://your-worker.workers.dev/coach');
+  var DEFAULT_ENDPOINT = '';
+  function endpoint() {
+    try { return localStorage.getItem('sphere_coach_endpoint') || DEFAULT_ENDPOINT; }
+    catch (_) { return DEFAULT_ENDPOINT; }
+  }
+
+  var DAILY_LIMIT = 20;      // messages/day per user
+  var MAX_INPUT = 2000;      // chars
+  var STORAGE_KEY_HISTORY = 'sphere_coach_history';
+  var STORAGE_KEY_USAGE = 'sphere_coach_usage';
+
+  // ----- HELPERS -----
+  function _esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+  // Very light markdown → HTML so AI responses render with
+  // bold, lists, code blocks, line breaks. Intentionally minimal
+  // to avoid XSS surprises (everything goes through _esc first).
+  function _renderMarkdown(text) {
+    var safe = _esc(text);
+    // code blocks ```...```
+    safe = safe.replace(/```([\s\S]*?)```/g, function (_, code) {
+      return '<pre><code>' + code + '</code></pre>';
+    });
+    // inline code `...`
+    safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // bold **...**
+    safe = safe.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // italic *...*
+    safe = safe.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+    // simple bullet list lines starting with - or *
+    safe = safe.replace(/(?:^|\n)([-*]\s.+(?:\n[-*]\s.+)*)/g, function (block) {
+      var items = block.trim().split('\n').map(function (l) {
+        return '<li>' + l.replace(/^[-*]\s/, '') + '</li>';
+      }).join('');
+      return '<ul>' + items + '</ul>';
+    });
+    // line breaks
+    safe = safe.replace(/\n/g, '<br>');
+    return safe;
+  }
+
+  function _today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  function _getUsage() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY_USAGE);
+      if (!raw) return { day: _today(), count: 0 };
+      var u = JSON.parse(raw);
+      if (u.day !== _today()) return { day: _today(), count: 0 };
+      return u;
+    } catch (_) { return { day: _today(), count: 0 }; }
+  }
+  function _bumpUsage() {
+    var u = _getUsage();
+    u.count++;
+    try { localStorage.setItem(STORAGE_KEY_USAGE, JSON.stringify(u)); } catch (_) {}
+    return u;
+  }
+  function _remaining() {
+    var u = _getUsage();
+    return Math.max(0, DAILY_LIMIT - u.count);
+  }
+
+  function _getHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY_HISTORY) || '[]'); }
+    catch (_) { return []; }
+  }
+  function _saveHistory(arr) {
+    try { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(arr.slice(-30))); }
+    catch (_) {}
+  }
+  function _clearHistory() {
+    try { localStorage.removeItem(STORAGE_KEY_HISTORY); } catch (_) {}
+  }
+
+  // ----- UI BUILD -----
+  function _build() {
+    if (document.getElementById('sphereCoachRoot')) return;
+
+    var root = document.createElement('div');
+    root.id = 'sphereCoachRoot';
+    root.className = 'sphere-coach';
+    root.innerHTML = ''
+      // Floating launcher bubble
+      + '<button type="button" class="sphere-coach-fab" id="sphereCoachFab" aria-label="Open Sphere Coach" title="Sphere Coach — AI marketing mentor">'
+      +   '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>'
+      +   '<span class="sphere-coach-fab-label">Coach</span>'
+      +   '<span class="sphere-coach-fab-pulse"></span>'
+      + '</button>'
+      // Chat panel
+      + '<div class="sphere-coach-panel" id="sphereCoachPanel" hidden>'
+      +   '<div class="sphere-coach-header">'
+      +     '<div class="sphere-coach-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>'
+      +     '<div class="sphere-coach-titles">'
+      +       '<strong>Sphere Coach</strong>'
+      +       '<span>AI marketing mentor · <span id="sphereCoachLimit">' + _remaining() + '/' + DAILY_LIMIT + ' today</span></span>'
+      +     '</div>'
+      +     '<button type="button" class="sphere-coach-reset" id="sphereCoachReset" title="Clear conversation">'
+      +       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>'
+      +     '</button>'
+      +     '<button type="button" class="sphere-coach-close" id="sphereCoachClose" aria-label="Close">×</button>'
+      +   '</div>'
+      +   '<div class="sphere-coach-messages" id="sphereCoachMessages"></div>'
+      +   '<div class="sphere-coach-suggests" id="sphereCoachSuggests">'
+      +     '<button type="button" data-prompt="Critique this ad copy: ">📝 Critique ad copy</button>'
+      +     '<button type="button" data-prompt="Give me 5 hook ideas for ">🎯 Brainstorm hooks</button>'
+      +     '<button type="button" data-prompt="Explain in plain language: ">📚 Explain a concept</button>'
+      +     '<button type="button" data-prompt="Review my assignment: ">✅ Review assignment</button>'
+      +     '<button type="button" data-prompt="Career advice: ">💼 Career advice</button>'
+      +   '</div>'
+      +   '<form class="sphere-coach-composer" id="sphereCoachForm">'
+      +     '<textarea id="sphereCoachInput" rows="1" maxlength="' + MAX_INPUT + '" placeholder="Ask anything marketing… (Ctrl+Enter to send)"></textarea>'
+      +     '<button type="submit" id="sphereCoachSend" aria-label="Send">'
+      +       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+      +     '</button>'
+      +   '</form>'
+      + '</div>';
+    document.body.appendChild(root);
+
+    // Wire events
+    document.getElementById('sphereCoachFab').addEventListener('click', _toggle);
+    document.getElementById('sphereCoachClose').addEventListener('click', _close);
+    document.getElementById('sphereCoachReset').addEventListener('click', function () {
+      if (!confirm('Clear this conversation? Cannot be undone.')) return;
+      _clearHistory();
+      _renderMessages();
+    });
+    document.getElementById('sphereCoachForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      _send();
+    });
+    var input = document.getElementById('sphereCoachInput');
+    input.addEventListener('keydown', function (e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        _send();
+      }
+    });
+    // Auto-grow textarea
+    input.addEventListener('input', function () {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+    });
+    // Suggested prompts
+    document.querySelectorAll('#sphereCoachSuggests button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        input.value = b.dataset.prompt;
+        input.focus();
+        // Move cursor to end
+        input.setSelectionRange(input.value.length, input.value.length);
+        input.dispatchEvent(new Event('input'));
+      });
+    });
+
+    _renderMessages();
+  }
+
+  function _renderMessages() {
+    var box = document.getElementById('sphereCoachMessages');
+    var suggests = document.getElementById('sphereCoachSuggests');
+    var limitEl = document.getElementById('sphereCoachLimit');
+    if (!box) return;
+    var history = _getHistory();
+    if (limitEl) limitEl.textContent = _remaining() + '/' + DAILY_LIMIT + ' today';
+
+    if (history.length === 0) {
+      box.innerHTML = ''
+        + '<div class="sphere-coach-welcome">'
+        +   '<div class="sphere-coach-welcome-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>'
+        +   '<h3>Kumusta! Ako si Sphere Coach.</h3>'
+        +   '<p>Tanungin mo ako kahit ano about marketing — ad copy, hooks, frameworks, assignment review, career advice. Sagutin kita parang senior marketer na kaibigan mo. 🚀</p>'
+        +   '<p class="sphere-coach-tip">Pick a quick start below, or type your own question.</p>'
+        + '</div>';
+      if (suggests) suggests.style.display = 'flex';
+      return;
+    }
+    if (suggests) suggests.style.display = 'none';
+
+    box.innerHTML = history.map(function (m) {
+      if (m.role === 'user') {
+        return '<div class="sphere-coach-msg sphere-coach-msg-user">'
+          +     '<div class="sphere-coach-bubble">' + _renderMarkdown(m.content) + '</div>'
+          +   '</div>';
+      }
+      if (m.role === 'assistant') {
+        return '<div class="sphere-coach-msg sphere-coach-msg-ai">'
+          +     '<div class="sphere-coach-msg-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/></svg></div>'
+          +     '<div class="sphere-coach-bubble">' + _renderMarkdown(m.content) + '</div>'
+          +   '</div>';
+      }
+      if (m.role === 'system-error') {
+        return '<div class="sphere-coach-msg sphere-coach-msg-error">' + _esc(m.content) + '</div>';
+      }
+      return '';
+    }).join('');
+    // Scroll to bottom
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function _appendTyping() {
+    var box = document.getElementById('sphereCoachMessages');
+    if (!box) return null;
+    var el = document.createElement('div');
+    el.className = 'sphere-coach-msg sphere-coach-msg-ai sphere-coach-typing';
+    el.innerHTML = ''
+      + '<div class="sphere-coach-msg-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/></svg></div>'
+      + '<div class="sphere-coach-bubble"><span class="sphere-coach-dot"></span><span class="sphere-coach-dot"></span><span class="sphere-coach-dot"></span></div>';
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+    return el;
+  }
+
+  function _toggle() {
+    var p = document.getElementById('sphereCoachPanel');
+    if (!p) return;
+    if (p.hidden) _open(); else _close();
+  }
+  function _open() {
+    var p = document.getElementById('sphereCoachPanel');
+    if (!p) return;
+    p.hidden = false;
+    setTimeout(function () {
+      p.classList.add('is-open');
+      var input = document.getElementById('sphereCoachInput');
+      if (input) input.focus();
+    }, 10);
+    _renderMessages();
+  }
+  function _close() {
+    var p = document.getElementById('sphereCoachPanel');
+    if (!p) return;
+    p.classList.remove('is-open');
+    setTimeout(function () { p.hidden = true; }, 220);
+  }
+
+  async function _send() {
+    var input = document.getElementById('sphereCoachInput');
+    if (!input) return;
+    var text = (input.value || '').trim();
+    if (!text) return;
+
+    // Rate limit
+    if (_remaining() <= 0) {
+      var history = _getHistory();
+      history.push({ role: 'system-error', content: 'Daily limit reached (' + DAILY_LIMIT + ' messages). Resets at midnight.' });
+      _saveHistory(history);
+      _renderMessages();
+      return;
+    }
+
+    // Endpoint check
+    var url = endpoint();
+    if (!url) {
+      var history2 = _getHistory();
+      history2.push({ role: 'user', content: text });
+      history2.push({
+        role: 'system-error',
+        content: 'Sphere Coach is not configured yet. Admin: deploy the Cloudflare Worker (see SETUP_AI_COACH.md) then run in DevTools console: localStorage.setItem("sphere_coach_endpoint", "https://your-worker-url.workers.dev/coach")'
+      });
+      _saveHistory(history2);
+      _renderMessages();
+      input.value = '';
+      input.style.height = 'auto';
+      return;
+    }
+
+    // Add user message, render
+    var hist = _getHistory();
+    hist.push({ role: 'user', content: text });
+    _saveHistory(hist);
+    input.value = '';
+    input.style.height = 'auto';
+    _renderMessages();
+
+    // Typing indicator
+    var typing = _appendTyping();
+    var sendBtn = document.getElementById('sphereCoachSend');
+    if (sendBtn) sendBtn.disabled = true;
+
+    try {
+      // Build messages array for Claude. Strip 'system-error' rows
+      // and keep only the last 20 exchanges to control token cost.
+      var convo = hist.filter(function (m) { return m.role === 'user' || m.role === 'assistant'; }).slice(-20);
+
+      var resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: convo,
+          user: (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : 'guest',
+          displayName: (typeof AUTH !== 'undefined' && AUTH.getDisplayName) ? AUTH.getDisplayName() : ''
+        })
+      });
+      if (typing) typing.remove();
+      if (!resp.ok) {
+        var errText = await resp.text().catch(function () { return ''; });
+        throw new Error('HTTP ' + resp.status + (errText ? ' — ' + errText.slice(0, 200) : ''));
+      }
+      var data = await resp.json();
+      var replyText = (data && (data.reply || data.content || data.message)) || '';
+      if (!replyText) throw new Error('Empty response from coach');
+
+      hist.push({ role: 'assistant', content: replyText });
+      _saveHistory(hist);
+      _bumpUsage();
+      _renderMessages();
+    } catch (e) {
+      if (typing) typing.remove();
+      hist.push({ role: 'system-error', content: 'Couldn\'t reach the coach: ' + (e && e.message ? e.message : 'unknown error') });
+      _saveHistory(hist);
+      _renderMessages();
+    } finally {
+      if (sendBtn) sendBtn.disabled = false;
+    }
+  }
+
+  // ----- INIT -----
+  function _shouldMount() {
+    // Skip mounting on landing page (logged-out), login/signup (auth flows).
+    var path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    if (['login.html', 'signup.html', '404.html'].indexOf(path) !== -1) return false;
+    // Require logged-in for in-app pages
+    var loggedIn = (typeof AUTH !== 'undefined' && AUTH.isLoggedIn) ? AUTH.isLoggedIn() : false;
+    if (!loggedIn && path !== 'index.html') return false;
+    // On the landing page, only show if logged in (so visitors don't see it)
+    if (path === 'index.html' && !loggedIn) return false;
+    return true;
+  }
+
+  function init() {
+    if (!_shouldMount()) return;
+    _build();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Public API
+  return {
+    open: _open,
+    close: _close,
+    setEndpoint: function (url) {
+      try { localStorage.setItem('sphere_coach_endpoint', url); } catch (_) {}
+    },
+    getEndpoint: endpoint,
+    clearHistory: function () { _clearHistory(); _renderMessages(); }
+  };
+})();
+

@@ -17707,3 +17707,416 @@ body.pwa-installed .pwa-install-banner { display: none !important; }
     letter-spacing: -0.045em !important;
   }
 }
+
+/* ============================================================
+   SPHERE COACH — AI Marketing Copilot
+   Floating bubble (bottom-right) + slide-up chat panel.
+   ============================================================ */
+.sphere-coach { position: relative; }
+
+/* ---- Floating launcher bubble ---- */
+.sphere-coach-fab {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 8500;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px 12px 14px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #635bff 0%, #8b5cf6 100%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 12px 28px -8px rgba(99, 91, 255, 0.55),
+              0 4px 10px rgba(15, 23, 42, 0.18);
+  transition: transform 0.18s cubic-bezier(0.32, 0.72, 0, 1),
+              box-shadow 0.18s ease;
+}
+.sphere-coach-fab:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 18px 38px -8px rgba(99, 91, 255, 0.62),
+              0 6px 14px rgba(15, 23, 42, 0.22);
+}
+.sphere-coach-fab:active { transform: translateY(-1px) scale(1.0); }
+.sphere-coach-fab svg { flex-shrink: 0; }
+.sphere-coach-fab-label { font-weight: 600; }
+
+/* Subtle pulse ring to draw the eye on first load. Plays a few
+   times then settles down so it doesn't get annoying. */
+.sphere-coach-fab-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(99, 91, 255, 0.55);
+  animation: sphereCoachPulse 2.2s ease-out 0.5s 3;
+}
+@keyframes sphereCoachPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(99, 91, 255, 0.55); }
+  100% { box-shadow: 0 0 0 22px rgba(99, 91, 255, 0); }
+}
+
+/* Hide the label on small screens — keep it as a compact bubble */
+@media (max-width: 600px) {
+  .sphere-coach-fab {
+    padding: 12px !important;
+    right: 14px;
+    bottom: 14px;
+  }
+  .sphere-coach-fab-label { display: none; }
+}
+
+/* ---- Chat panel ---- */
+.sphere-coach-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 88px;
+  width: 380px;
+  max-width: calc(100vw - 24px);
+  height: min(620px, calc(100vh - 120px));
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25),
+              0 4px 10px rgba(15, 23, 42, 0.10);
+  z-index: 8400;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px) scale(0.98);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1),
+              opacity 0.22s ease;
+}
+.sphere-coach-panel[hidden] { display: none; }
+.sphere-coach-panel.is-open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+[data-theme="dark"] .sphere-coach-panel {
+  background: #1f1f23;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5),
+              0 4px 10px rgba(0, 0, 0, 0.30);
+}
+
+/* On mobile, panel becomes full screen */
+@media (max-width: 600px) {
+  .sphere-coach-panel {
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+}
+
+/* ---- Header ---- */
+.sphere-coach-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+.sphere-coach-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #635bff, #8b5cf6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sphere-coach-titles { flex: 1; min-width: 0; line-height: 1.2; }
+.sphere-coach-titles strong { font-size: 0.95rem; font-weight: 700; display: block; }
+.sphere-coach-titles span {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  display: block;
+  margin-top: 2px;
+}
+.sphere-coach-reset,
+.sphere-coach-close {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-light);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+.sphere-coach-reset:hover { background: rgba(220, 38, 38, 0.10); color: #dc2626; border-color: rgba(220, 38, 38, 0.40); }
+.sphere-coach-close:hover { background: var(--bg); color: var(--text); }
+
+/* ---- Messages ---- */
+.sphere-coach-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-behavior: smooth;
+}
+.sphere-coach-messages::-webkit-scrollbar { width: 6px; }
+.sphere-coach-messages::-webkit-scrollbar-thumb {
+  background: rgba(127, 127, 127, 0.20);
+  border-radius: 8px;
+}
+
+.sphere-coach-msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  max-width: 100%;
+  animation: sphereCoachMsgIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes sphereCoachMsgIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sphere-coach-msg-user { justify-content: flex-end; }
+.sphere-coach-msg-user .sphere-coach-bubble {
+  background: linear-gradient(135deg, #635bff, #5b5af0);
+  color: #fff;
+  border-top-right-radius: 6px;
+  max-width: 80%;
+}
+.sphere-coach-msg-ai .sphere-coach-bubble {
+  background: var(--bg-alt);
+  color: var(--text);
+  border-top-left-radius: 6px;
+  max-width: 85%;
+}
+[data-theme="dark"] .sphere-coach-msg-ai .sphere-coach-bubble {
+  background: rgba(255, 255, 255, 0.06);
+}
+.sphere-coach-msg-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #635bff, #8b5cf6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+.sphere-coach-bubble {
+  padding: 9px 13px;
+  border-radius: 16px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.sphere-coach-bubble strong { font-weight: 700; }
+.sphere-coach-bubble em { font-style: italic; }
+.sphere-coach-bubble code {
+  background: rgba(0, 0, 0, 0.10);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+[data-theme="dark"] .sphere-coach-bubble code { background: rgba(255, 255, 255, 0.10); }
+.sphere-coach-bubble pre {
+  background: rgba(0, 0, 0, 0.08);
+  padding: 8px 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 6px 0;
+  font-size: 0.82em;
+}
+[data-theme="dark"] .sphere-coach-bubble pre { background: rgba(0, 0, 0, 0.40); }
+.sphere-coach-bubble pre code { background: transparent; padding: 0; }
+.sphere-coach-bubble ul { margin: 6px 0; padding-left: 18px; }
+.sphere-coach-bubble li { margin: 2px 0; }
+.sphere-coach-msg-user .sphere-coach-bubble code,
+.sphere-coach-msg-user .sphere-coach-bubble pre { background: rgba(255, 255, 255, 0.18); color: #fff; }
+
+.sphere-coach-msg-error {
+  align-self: center;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.30);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  max-width: 90%;
+  text-align: center;
+}
+[data-theme="dark"] .sphere-coach-msg-error {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.40);
+}
+
+/* Typing indicator */
+.sphere-coach-typing .sphere-coach-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+}
+.sphere-coach-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: sphereCoachDot 1.2s ease-in-out infinite;
+}
+.sphere-coach-dot:nth-child(2) { animation-delay: 0.15s; }
+.sphere-coach-dot:nth-child(3) { animation-delay: 0.30s; }
+@keyframes sphereCoachDot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30%           { opacity: 1;   transform: translateY(-3px); }
+}
+
+/* Welcome state */
+.sphere-coach-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 16px 8px;
+}
+.sphere-coach-welcome-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #635bff, #8b5cf6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 20px -6px rgba(99, 91, 255, 0.45);
+}
+.sphere-coach-welcome h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.sphere-coach-welcome p {
+  font-size: 0.83rem;
+  line-height: 1.55;
+  color: var(--text-light);
+  margin: 0 0 8px;
+  max-width: 280px;
+}
+.sphere-coach-tip {
+  font-size: 0.72rem !important;
+  margin-top: 6px !important;
+  opacity: 0.75;
+}
+
+/* ---- Suggestion chips ---- */
+.sphere-coach-suggests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 10px;
+}
+.sphere-coach-suggests button {
+  appearance: none;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sphere-coach-suggests button:hover {
+  background: rgba(99, 91, 255, 0.10);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ---- Composer ---- */
+.sphere-coach-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+.sphere-coach-composer textarea {
+  flex: 1;
+  min-height: 38px;
+  max-height: 140px;
+  resize: none;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sphere-coach-composer textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.12);
+}
+.sphere-coach-composer button {
+  appearance: none;
+  background: linear-gradient(135deg, #635bff, #5b5af0);
+  color: #fff;
+  border: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px -3px rgba(99, 91, 255, 0.45);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.sphere-coach-composer button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+.sphere-coach-composer button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Hide the FAB inside the dashboard mobile bottom-nav so it
+   doesn't overlap the existing navigation */
+@media (max-width: 767px) {
+  body:has(.dash-mobile-nav) .sphere-coach-fab {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0)) !important;
+  }
+  body:has(.dash-mobile-nav) .sphere-coach-panel {
+    bottom: calc(150px + env(safe-area-inset-bottom, 0)) !important;
+    height: calc(100dvh - 170px) !important;
+  }
+}
