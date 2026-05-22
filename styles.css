@@ -17584,3 +17584,44 @@ body.pwa-installed .pwa-install-banner { display: none !important; }
     padding-bottom: calc(86px + env(safe-area-inset-bottom, 0)) !important;
   }
 }
+
+/* ============================================================
+   FINAL OVERRIDES — placed at end of file so they win against
+   any earlier !important rules that have equal specificity.
+   ============================================================ */
+
+/* Hero CTAs on mobile must be small + compact. There's an earlier
+   rule (around line 13499) that forces padding:14px 26px and
+   font-size:15px with !important on .hero.hero-v2 buttons —
+   that was overriding our mobile media query because it came
+   later in source order. These end-of-file rules win because
+   they're the LAST !important rules in cascade order. */
+@media (max-width: 600px) {
+  .hero.hero-v2 .hero-actions .btn,
+  .hero.hero-v2 .hero-cta-primary,
+  .hero.hero-v2 .btn-primary,
+  .hero.hero-v2 .btn-outline,
+  .hero.hero-v2 .hero-actions .btn-outline {
+    padding: 7px 14px !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    width: auto !important;
+    min-height: 0 !important;
+    box-shadow: 0 2px 8px -2px rgba(99, 91, 255, 0.22) !important;
+    gap: 6px !important;
+    border-radius: 999px !important;
+  }
+  .hero.hero-v2 .hero-cta-primary svg,
+  .hero.hero-v2 .hero-actions .btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+  .hero.hero-v2 .hero-actions {
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 28px !important;
+    flex-wrap: nowrap !important;
+  }
+}
