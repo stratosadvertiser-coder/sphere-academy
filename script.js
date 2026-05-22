@@ -1873,12 +1873,14 @@ const CHAT = {
 
   getAll() {
     const all = safeGetJSON(this.STORAGE_KEY, []);
-    // Filter by current group ID (set by the Groups UI). Backward
-    // compat: messages without a groupId default to 'general' so
-    // old chat history stays accessible in the General group.
-    const currentGroup = (typeof GROUPS !== 'undefined' && GROUPS.currentId) ? GROUPS.currentId : 'general';
+    // Filter by current group ID (set by the Groups UI). If no group
+    // is selected (e.g. user is on the groups list view), return no
+    // messages so we don't accidentally surface chat from a random
+    // group. The General default group has been removed.
+    const currentGroup = (typeof GROUPS !== 'undefined' && GROUPS.currentId) ? GROUPS.currentId : null;
+    if (!currentGroup) return [];
     return all
-      .filter(m => (m.groupId || 'general') === currentGroup)
+      .filter(m => m.groupId === currentGroup)
       .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   },
 
@@ -1894,7 +1896,9 @@ const CHAT = {
     const meta = _commonAuthorMeta();
     // Tag the message with the current group ID so it shows up in
     // the right group's chat (and stays out of other groups).
-    const currentGroup = (typeof GROUPS !== 'undefined' && GROUPS.currentId) ? GROUPS.currentId : 'general';
+    // No fallback to 'general' — if there's no current group, don't send.
+    const currentGroup = (typeof GROUPS !== 'undefined' && GROUPS.currentId) ? GROUPS.currentId : null;
+    if (!currentGroup) return null;
     const msg = {
       id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       groupId: currentGroup,
@@ -12940,7 +12944,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-discord2" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-nogen" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -14299,24 +14303,12 @@ window.renderSavedSection = function () {
 window.GROUPS = {
   STORAGE_KEY: 'community_groups',
   COLLECTION: 'sphere_groups',
-  currentId: 'general',
-  currentChannelId: 'general',
+  currentId: null,
+  currentChannelId: null,
 
-  _defaults: [{
-    id: 'general',
-    name: 'General',
-    description: 'Everyone in the academy.',
-    icon: '💬',
-    ownerUsername: null,
-    members: [],
-    channels: [
-      { id: 'general', name: 'general', type: 'text', topic: 'Main hangout', createdAt: 0 },
-      { id: 'announcements', name: 'announcements', type: 'text', topic: 'Important updates only', createdAt: 0 },
-      { id: 'voice-lounge', name: 'Voice Lounge', type: 'voice', topic: 'Drop in to chat', createdAt: 0 }
-    ],
-    events: [],
-    createdAt: 0
-  }],
+  // No defaults — the user removed General. Groups list starts
+  // empty until someone clicks "+ New Group".
+  _defaults: [],
 
   _load: function () {
     try {
@@ -14404,7 +14396,6 @@ window.GROUPS = {
   },
 
   remove: function (id) {
-    if (id === 'general') return false;
     var list = this.getAll().filter(function (g) { return g.id !== id; });
     this._save(list);
     try {
@@ -14559,9 +14550,10 @@ window.GROUPS = {
       if (remote.length > 0) {
         var self = this;
         var normalized = remote.map(function (g) { return self._normalize(g); }).filter(Boolean);
-        if (!normalized.some(function (g) { return g.id === 'general'; })) {
-          normalized.unshift(this._defaults[0]);
-        }
+        // Strip "general" from incoming remote data so deleting it
+        // here also removes it on this device's next sync — otherwise
+        // a stale Firestore copy would resurrect it on every refresh.
+        normalized = normalized.filter(function (g) { return g.id !== 'general'; });
         this._save(normalized);
       }
       return this.getAll();
@@ -14580,9 +14572,7 @@ window.GROUPS = {
         var remote = [];
         snap.forEach(function (d) { remote.push(d.data()); });
         var normalized = remote.map(function (g) { return self._normalize(g); }).filter(Boolean);
-        if (!normalized.some(function (g) { return g.id === 'general'; })) {
-          normalized.unshift(self._defaults[0]);
-        }
+        normalized = normalized.filter(function (g) { return g.id !== 'general'; });
         self._save(normalized);
         if (typeof onUpdate === 'function') onUpdate(self.getAll());
       }, function (e) { console.warn('[GROUPS] live:', e.message); });
@@ -15106,11 +15096,19 @@ window.GROUPS = {
   }
 
   function groupsInit() {
+    // One-time cleanup: drop any leftover "general" group that
+    // was created by previous versions or migrated from legacy
+    // sphere_groups. Also delete the matching Firestore doc so
+    // the next remote sync doesn't resurrect it.
     var all = GROUPS.getAll();
-    if (!all.some(function (g) { return g.id === 'general'; })) {
-      var list = all.slice();
-      list.unshift(GROUPS._defaults[0]);
-      GROUPS._save(list);
+    if (all.some(function (g) { return g.id === 'general'; })) {
+      var cleaned = all.filter(function (g) { return g.id !== 'general'; });
+      GROUPS._save(cleaned);
+      try {
+        if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+          DATA_SYNC.db.collection(GROUPS.COLLECTION).doc('general').delete().catch(function () {});
+        }
+      } catch (_) {}
     }
 
     var newBtn = document.getElementById('newGroupBtn');
