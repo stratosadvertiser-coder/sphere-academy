@@ -12950,7 +12950,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-22-h1big2" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-22-novoice" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -14355,9 +14355,15 @@ window.GROUPS = {
     g.members = Array.isArray(g.members) ? g.members : [];
     if (!Array.isArray(g.channels) || g.channels.length === 0) {
       g.channels = [
-        { id: 'general', name: 'general', type: 'text', topic: '', createdAt: g.createdAt || 0 },
-        { id: 'voice-lounge', name: 'Voice Lounge', type: 'voice', topic: '', createdAt: g.createdAt || 0 }
+        { id: 'general', name: 'general', type: 'text', topic: '', createdAt: g.createdAt || 0 }
       ];
+    }
+    /* Voice channels were removed per user request — strip any
+       lingering voice entries from groups that pre-date the
+       change so they don't keep showing up in the sidebar. */
+    g.channels = g.channels.filter(function (c) { return c.type !== 'voice'; });
+    if (g.channels.length === 0) {
+      g.channels = [{ id: 'general', name: 'general', type: 'text', topic: '', createdAt: g.createdAt || 0 }];
     }
     g.events = Array.isArray(g.events) ? g.events : [];
     g.createdAt = g.createdAt || 0;
@@ -14393,8 +14399,7 @@ window.GROUPS = {
       ownerUsername: u,
       members: u ? [{ username: u, role: 'owner', joinedAt: Date.now() }] : [],
       channels: [
-        { id: 'general', name: 'general', type: 'text', topic: '', createdAt: Date.now() },
-        { id: 'voice-' + slug, name: 'Voice', type: 'voice', topic: '', createdAt: Date.now() }
+        { id: 'general', name: 'general', type: 'text', topic: '', createdAt: Date.now() }
       ],
       events: [],
       createdAt: Date.now()
@@ -14431,6 +14436,7 @@ window.GROUPS = {
   },
 
   addChannel: function (groupId, name, type) {
+    /* Voice channels are no longer supported — always create text. */
     var list = this.getAll();
     var g = list.find(function (x) { return x.id === groupId; });
     if (!g) return null;
@@ -14439,8 +14445,8 @@ window.GROUPS = {
     if (g.channels.some(function (c) { return c.id === clean; })) return null;
     var channel = {
       id: clean,
-      name: type === 'voice' ? String(name).slice(0, 40) : clean,
-      type: type === 'voice' ? 'voice' : 'text',
+      name: clean,
+      type: 'text',
       topic: '',
       createdAt: Date.now()
     };
@@ -14695,16 +14701,7 @@ window.GROUPS = {
       +   '<aside class="group-channels" id="groupChannels"></aside>'
       +   '<main class="group-main" id="groupMain"></main>'
       + '</div>'
-      + '<div class="jitsi-modal" id="jitsiModal" hidden>'
-      +   '<div class="jitsi-modal-backdrop" id="jitsiBackdrop"></div>'
-      +   '<div class="jitsi-modal-content">'
-      +     '<div class="jitsi-modal-header">'
-      +       '<div><h3 id="jitsiTitle">Voice call</h3><p id="jitsiSubtitle">Voice only by default. Turn on camera or share your screen anytime from the toolbar below.</p></div>'
-      +       '<button type="button" class="jitsi-leave-btn" id="jitsiLeaveBtn">Leave voice</button>'
-      +     '</div>'
-      +     '<div class="jitsi-modal-frame-wrap"><iframe id="jitsiFrame" allow="camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>'
-      +   '</div>'
-      + '</div>'
+      /* Jitsi voice modal removed — voice channel feature dropped. */
       + '<div class="group-modal" id="groupModal" hidden>'
       +   '<div class="group-modal-backdrop" data-close-modal></div>'
       +   '<div class="group-modal-content" id="groupModalContent"></div>'
@@ -14712,8 +14709,6 @@ window.GROUPS = {
     panel.appendChild(v);
 
     document.getElementById('groupDetailBack').addEventListener('click', closeGroup);
-    document.getElementById('jitsiLeaveBtn').addEventListener('click', closeJitsi);
-    document.getElementById('jitsiBackdrop').addEventListener('click', closeJitsi);
     document.querySelectorAll('#groupModal [data-close-modal]').forEach(function (el) {
       el.addEventListener('click', closeModal);
     });
@@ -14744,13 +14739,12 @@ window.GROUPS = {
     if (!sidebar) return;
     var me = _meName();
     var canManage = GROUPS.canManage(g.id, me);
+    /* Voice channels were removed per user request — only text
+       channels render in the sidebar now. */
     var textChannels = (g.channels || []).filter(function (c) { return c.type === 'text'; });
-    var voiceChannels = (g.channels || []).filter(function (c) { return c.type === 'voice'; });
 
     function chanItem(c, isActive) {
-      var prefix = c.type === 'voice'
-        ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>'
-        : '<span class="channel-hash">#</span>';
+      var prefix = '<span class="channel-hash">#</span>';
       var delBtn = canManage && c.id !== 'general' ? '<button type="button" class="channel-del" data-channel-id="' + _esc(c.id) + '" title="Delete channel">×</button>' : '';
       return '<div class="group-channel' + (isActive ? ' is-active' : '') + '" data-channel-id="' + _esc(c.id) + '" data-channel-type="' + c.type + '">'
         + prefix + '<span class="channel-name">' + _esc(c.name) + '</span>' + delBtn
@@ -14760,17 +14754,10 @@ window.GROUPS = {
     var html = '';
     html += '<div class="group-channels-section">'
       +   '<div class="group-channels-section-head">'
-      +     '<span class="group-channels-label">Text channels</span>'
-      +     (canManage ? '<button type="button" class="group-channels-add" data-add-channel="text" title="Add text channel">+</button>' : '')
+      +     '<span class="group-channels-label">Channels</span>'
+      +     (canManage ? '<button type="button" class="group-channels-add" data-add-channel="text" title="Add channel">+</button>' : '')
       +   '</div>'
       +   textChannels.map(function (c) { return chanItem(c, c.id === GROUPS.currentChannelId); }).join('')
-      + '</div>';
-    html += '<div class="group-channels-section">'
-      +   '<div class="group-channels-section-head">'
-      +     '<span class="group-channels-label">Voice channels</span>'
-      +     (canManage ? '<button type="button" class="group-channels-add" data-add-channel="voice" title="Add voice channel">+</button>' : '')
-      +   '</div>'
-      +   voiceChannels.map(function (c) { return chanItem(c, false); }).join('')
       + '</div>';
     html += '<div class="group-channels-section group-channels-meta">'
       +   '<div class="group-channel' + (GROUPS.currentChannelId === '__events' ? ' is-active' : '') + '" data-channel-id="__events">'
@@ -14790,8 +14777,6 @@ window.GROUPS = {
       el.addEventListener('click', function (e) {
         if (e.target.closest('.channel-del')) return;
         var cid = el.dataset.channelId;
-        var ctype = el.dataset.channelType;
-        if (ctype === 'voice') { openJitsi(g.id, cid); return; }
         GROUPS.currentChannelId = cid;
         renderGroupDetail();
       });
@@ -14996,11 +14981,12 @@ window.GROUPS = {
     setTimeout(function () { modal.hidden = true; }, 180);
   }
 
-  function openAddChannelModal(groupId, type) {
+  function openAddChannelModal(groupId /*, type */) {
+    /* Voice channels removed — always create a text channel. */
     openModal(''
-      + '<h3>Add ' + (type === 'voice' ? 'voice' : 'text') + ' channel</h3>'
+      + '<h3>Add channel</h3>'
       + '<p class="group-modal-sub">Choose a short name.</p>'
-      + '<input type="text" id="newChannelName" maxlength="32" placeholder="' + (type === 'voice' ? 'e.g. Study Hall' : 'e.g. help') + '">'
+      + '<input type="text" id="newChannelName" maxlength="32" placeholder="e.g. help">'
       + '<div class="group-modal-actions">'
       +   '<button type="button" class="btn btn-outline btn-sm" data-close-modal>Cancel</button>'
       +   '<button type="button" class="btn btn-primary btn-sm" id="newChannelCreate">Create</button>'
@@ -15011,7 +14997,7 @@ window.GROUPS = {
     function submit() {
       var name = (input.value || '').trim();
       if (!name) { input.focus(); return; }
-      GROUPS.addChannel(groupId, name, type);
+      GROUPS.addChannel(groupId, name, 'text');
       closeModal();
       renderGroupDetail();
     }
@@ -15087,47 +15073,10 @@ window.GROUPS = {
     }
   }
 
-  function openJitsi(groupId, channelId) {
-    var g = GROUPS.get(groupId);
-    if (!g) return;
-    var channel = (g.channels || []).find(function (c) { return c.id === channelId; });
-    if (!channel) return;
-    var me = _meName();
-    var displayName = (typeof AUTH !== 'undefined' && AUTH.getDisplayName) ? AUTH.getDisplayName() : (me || 'Guest');
-    var roomName = ('SphereAcademy-' + groupId + '-' + channelId).replace(/[^a-zA-Z0-9_-]/g, '');
-    // Start as a VOICE-ONLY call by default. Mic is open so the
-    // user can talk immediately; camera is muted; screen-share is
-    // off. Users can still flip video and screen-share on later
-    // via the Jitsi toolbar buttons — they're just not auto-
-    // engaged when the call opens.
-    var hash = ''
-      + '#config.prejoinPageEnabled=false'
-      + '&config.startWithAudioMuted=false'
-      + '&config.startWithVideoMuted=true'
-      + '&config.disableDeepLinking=true'
-      + '&userInfo.displayName=' + encodeURIComponent(displayName);
-    var src = 'https://meet.jit.si/' + roomName + hash;
-
-    var frame = document.getElementById('jitsiFrame');
-    var title = document.getElementById('jitsiTitle');
-    if (title) title.textContent = (channel.name || 'Voice') + ' · ' + g.name;
-    if (frame) frame.src = src;
-    var modal = document.getElementById('jitsiModal');
-    if (modal) {
-      modal.hidden = false;
-      setTimeout(function () { modal.classList.add('open'); }, 10);
-    }
-  }
-  function closeJitsi() {
-    var modal = document.getElementById('jitsiModal');
-    var frame = document.getElementById('jitsiFrame');
-    if (!modal) return;
-    modal.classList.remove('open');
-    setTimeout(function () {
-      modal.hidden = true;
-      if (frame) frame.src = 'about:blank';
-    }, 180);
-  }
+  /* openJitsi / closeJitsi removed — voice channels feature
+     was dropped per user request. The Jitsi modal scaffold is
+     no longer built in buildGroupDetailScaffold either. */
+  function closeJitsi() { /* no-op kept for back-compat */ }
 
   function groupsInit() {
     // One-time cleanup: drop any leftover "general" group that
@@ -15508,13 +15457,7 @@ window.GROUPS = {
     var App = window.Capacitor.Plugins && window.Capacitor.Plugins.App;
     if (App && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android') {
       App.addListener('backButton', function () {
-        // Close Jitsi if open
-        var jitsi = document.getElementById('jitsiModal');
-        if (jitsi && !jitsi.hidden && jitsi.classList.contains('open')) {
-          var leave = document.getElementById('jitsiLeaveBtn');
-          if (leave) leave.click();
-          return;
-        }
+        // (Jitsi modal removed — voice channel feature dropped.)
         // Close group modal
         var gm = document.getElementById('groupModal');
         if (gm && !gm.hidden && gm.classList.contains('open')) {
