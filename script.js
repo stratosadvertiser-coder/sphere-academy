@@ -12944,7 +12944,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-nogen" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-voiceonly" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -14675,7 +14675,7 @@ window.GROUPS = {
       +   '<div class="jitsi-modal-backdrop" id="jitsiBackdrop"></div>'
       +   '<div class="jitsi-modal-content">'
       +     '<div class="jitsi-modal-header">'
-      +       '<div><h3 id="jitsiTitle">Voice room</h3><p id="jitsiSubtitle">Camera + screen share supported. Click Leave to exit.</p></div>'
+      +       '<div><h3 id="jitsiTitle">Voice call</h3><p id="jitsiSubtitle">Voice only by default. Turn on camera or share your screen anytime from the toolbar below.</p></div>'
       +       '<button type="button" class="jitsi-leave-btn" id="jitsiLeaveBtn">Leave voice</button>'
       +     '</div>'
       +     '<div class="jitsi-modal-frame-wrap"><iframe id="jitsiFrame" allow="camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>'
@@ -15071,7 +15071,17 @@ window.GROUPS = {
     var me = _meName();
     var displayName = (typeof AUTH !== 'undefined' && AUTH.getDisplayName) ? AUTH.getDisplayName() : (me || 'Guest');
     var roomName = ('SphereAcademy-' + groupId + '-' + channelId).replace(/[^a-zA-Z0-9_-]/g, '');
-    var hash = '#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.disableDeepLinking=true&userInfo.displayName=' + encodeURIComponent(displayName);
+    // Start as a VOICE-ONLY call by default. Mic is open so the
+    // user can talk immediately; camera is muted; screen-share is
+    // off. Users can still flip video and screen-share on later
+    // via the Jitsi toolbar buttons — they're just not auto-
+    // engaged when the call opens.
+    var hash = ''
+      + '#config.prejoinPageEnabled=false'
+      + '&config.startWithAudioMuted=false'
+      + '&config.startWithVideoMuted=true'
+      + '&config.disableDeepLinking=true'
+      + '&userInfo.displayName=' + encodeURIComponent(displayName);
     var src = 'https://meet.jit.si/' + roomName + hash;
 
     var frame = document.getElementById('jitsiFrame');
