@@ -7,6 +7,25 @@ Android `.apk` (and optionally iOS `.ipa`) using **Capacitor**.
 > never touch the GitHub Pages site. The web version keeps
 > working as before.
 
+## ✅ What's already done (committed to the repo)
+
+- ✅ Capacitor 6 + plugins installed (`package.json`)
+- ✅ Project config (`capacitor.config.json`) — app id, splash,
+  status bar, push opts, Android+iOS overrides
+- ✅ Web → native bundle script (`scripts/sync-web.js`)
+- ✅ Native Android project generated under `android/`
+- ✅ Source icon + splash assets in `assets/` (1024×1024 + 2732×2732)
+- ✅ 74 launcher + splash images generated for every Android density
+- ✅ AndroidManifest permissions: Internet, Camera, Photo gallery,
+  Push notifications, Audio (for Jitsi voice channels)
+- ✅ JS bridge in `script.js` that auto-detects Capacitor and
+  routes avatar upload → native camera, push token registration,
+  hardware back button, splash hide, status bar styling
+
+**Only thing still needed:** Install Android Studio so you can
+open `android/` and tap **Build → APK**. The whole project is
+already wired and waiting.
+
 ---
 
 ## What you need (one-time installs)

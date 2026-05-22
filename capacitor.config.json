@@ -2,7 +2,6 @@
   "appId": "com.stratos.sphereacademy",
   "appName": "Sphere Academy",
   "webDir": "www",
-  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
     "iosScheme": "https",
