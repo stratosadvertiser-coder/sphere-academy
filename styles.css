@@ -17625,3 +17625,56 @@ body.pwa-installed .pwa-install-banner { display: none !important; }
     flex-wrap: nowrap !important;
   }
 }
+
+/* ============================================================
+   HERO EYEBROW — make it more visible (user feedback)
+   Bumped: bigger text, more padding, stronger background +
+   border, brighter pulse dot. Placed in the FINAL OVERRIDES
+   block so it wins against all earlier eyebrow rules.
+   ============================================================ */
+.hero.hero-v2 .hero-eyebrow {
+  padding: 9px 18px !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  border-radius: 999px !important;
+  gap: 10px !important;
+  margin-bottom: 28px !important;
+  /* Stronger background + border = more visible chip */
+  background: rgba(99, 91, 255, 0.08) !important;
+  border: 1px solid rgba(99, 91, 255, 0.30) !important;
+  color: var(--text) !important;
+  box-shadow: 0 4px 14px -4px rgba(99, 91, 255, 0.25),
+              0 0 0 1px rgba(99, 91, 255, 0.04) inset !important;
+}
+[data-theme="dark"] .hero.hero-v2 .hero-eyebrow {
+  background: rgba(139, 124, 255, 0.14) !important;
+  border-color: rgba(139, 124, 255, 0.40) !important;
+  color: #e9e6ff !important;
+  box-shadow: 0 4px 16px -4px rgba(139, 124, 255, 0.35),
+              0 0 0 1px rgba(139, 124, 255, 0.08) inset !important;
+}
+
+/* Brighter pulse dot — bigger, more glow */
+.hero.hero-v2 .hero-eyebrow .hero-pulse {
+  width: 10px !important;
+  height: 10px !important;
+  background: #635bff !important;
+  box-shadow: 0 0 0 5px rgba(99, 91, 255, 0.22),
+              0 0 12px 2px rgba(99, 91, 255, 0.45) !important;
+}
+[data-theme="dark"] .hero.hero-v2 .hero-eyebrow .hero-pulse {
+  background: #8b7cff !important;
+  box-shadow: 0 0 0 5px rgba(139, 124, 255, 0.28),
+              0 0 14px 2px rgba(139, 124, 255, 0.55) !important;
+}
+
+/* On mobile, slightly tone down padding so it doesn't dominate */
+@media (max-width: 600px) {
+  .hero.hero-v2 .hero-eyebrow {
+    padding: 7px 14px !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.05em !important;
+  }
+}
