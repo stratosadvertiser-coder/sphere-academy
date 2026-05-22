@@ -12940,7 +12940,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-trust" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-discord" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -14251,6 +14251,7 @@ window.renderSavedSection = function () {
           // Hide initials fallback if present
           var initials = document.querySelectorAll('.nav-avatar-initials, #avatarInitials');
           initials.forEach(function (el) { el.style.display = 'none'; });
+          // NOTE: GROUPS module appended at end of file via the next Edit.
 
           try { localStorage.setItem(flagKey, '1'); } catch (_) {}
 
@@ -14287,5 +14288,874 @@ window.renderSavedSection = function () {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
+  }
+})();
+
+// ============================================================
+// GROUPS — Discord-style server/channel system
+// Each group is a "server" with text channels, voice channels
+// (Jitsi-backed), events, and members with roles.
+// ============================================================
+window.GROUPS = {
+  STORAGE_KEY: 'community_groups',
+  COLLECTION: 'sphere_groups',
+  currentId: 'general',
+  currentChannelId: 'general',
+
+  _defaults: [{
+    id: 'general',
+    name: 'General',
+    description: 'Everyone in the academy.',
+    icon: '💬',
+    ownerUsername: null,
+    members: [],
+    channels: [
+      { id: 'general', name: 'general', type: 'text', topic: 'Main hangout', createdAt: 0 },
+      { id: 'announcements', name: 'announcements', type: 'text', topic: 'Important updates only', createdAt: 0 },
+      { id: 'voice-lounge', name: 'Voice Lounge', type: 'voice', topic: 'Drop in to chat', createdAt: 0 }
+    ],
+    events: [],
+    createdAt: 0
+  }],
+
+  _load: function () {
+    try {
+      var raw = localStorage.getItem(this.STORAGE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch (_) { return null; }
+  },
+  _save: function (list) {
+    try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(list || [])); } catch (_) {}
+  },
+
+  _normalize: function (g) {
+    if (!g || !g.id) return null;
+    g.name = g.name || g.id;
+    g.description = g.description || '';
+    g.icon = g.icon || '💬';
+    g.ownerUsername = (g.ownerUsername === undefined) ? (g.createdBy || null) : g.ownerUsername;
+    g.members = Array.isArray(g.members) ? g.members : [];
+    if (!Array.isArray(g.channels) || g.channels.length === 0) {
+      g.channels = [
+        { id: 'general', name: 'general', type: 'text', topic: '', createdAt: g.createdAt || 0 },
+        { id: 'voice-lounge', name: 'Voice Lounge', type: 'voice', topic: '', createdAt: g.createdAt || 0 }
+      ];
+    }
+    g.events = Array.isArray(g.events) ? g.events : [];
+    g.createdAt = g.createdAt || 0;
+    return g;
+  },
+
+  getAll: function () {
+    var stored = this._load();
+    if (!stored) {
+      this._save(this._defaults.slice());
+      return this._defaults.slice();
+    }
+    var self = this;
+    return stored.map(function (g) { return self._normalize(g); }).filter(Boolean);
+  },
+
+  get: function (id) {
+    return this.getAll().find(function (g) { return g.id === id; }) || null;
+  },
+
+  create: function (data) {
+    data = data || {};
+    var name = String(data.name || '').trim().slice(0, 60);
+    if (!name) return null;
+    var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+    var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+      || 'group-' + Date.now().toString(36);
+    var entry = {
+      id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      name: name,
+      description: String(data.description || '').slice(0, 200),
+      icon: String(data.icon || '💬').slice(0, 4),
+      ownerUsername: u,
+      members: u ? [{ username: u, role: 'owner', joinedAt: Date.now() }] : [],
+      channels: [
+        { id: 'general', name: 'general', type: 'text', topic: '', createdAt: Date.now() },
+        { id: 'voice-' + slug, name: 'Voice', type: 'voice', topic: '', createdAt: Date.now() }
+      ],
+      events: [],
+      createdAt: Date.now()
+    };
+    var list = this.getAll();
+    list.push(entry);
+    this._save(list);
+    this._syncToFirestore(entry);
+    return entry;
+  },
+
+  update: function (id, fields) {
+    var list = this.getAll();
+    var idx = list.findIndex(function (g) { return g.id === id; });
+    if (idx === -1) return null;
+    var allowed = ['name', 'description', 'icon'];
+    allowed.forEach(function (k) {
+      if (fields[k] !== undefined) list[idx][k] = String(fields[k]).slice(0, k === 'description' ? 200 : 60);
+    });
+    this._save(list);
+    this._syncToFirestore(list[idx]);
+    return list[idx];
+  },
+
+  remove: function (id) {
+    if (id === 'general') return false;
+    var list = this.getAll().filter(function (g) { return g.id !== id; });
+    this._save(list);
+    try {
+      if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
+        DATA_SYNC.db.collection(this.COLLECTION).doc(id).delete().catch(function () {});
+      }
+    } catch (_) {}
+    return true;
+  },
+
+  addChannel: function (groupId, name, type) {
+    var list = this.getAll();
+    var g = list.find(function (x) { return x.id === groupId; });
+    if (!g) return null;
+    var clean = String(name || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32);
+    if (!clean) return null;
+    if (g.channels.some(function (c) { return c.id === clean; })) return null;
+    var channel = {
+      id: clean,
+      name: type === 'voice' ? String(name).slice(0, 40) : clean,
+      type: type === 'voice' ? 'voice' : 'text',
+      topic: '',
+      createdAt: Date.now()
+    };
+    g.channels.push(channel);
+    this._save(list);
+    this._syncToFirestore(g);
+    return channel;
+  },
+  removeChannel: function (groupId, channelId) {
+    var list = this.getAll();
+    var g = list.find(function (x) { return x.id === groupId; });
+    if (!g) return false;
+    if (g.channels.length <= 1) return false;
+    g.channels = g.channels.filter(function (c) { return c.id !== channelId; });
+    this._save(list);
+    this._syncToFirestore(g);
+    return true;
+  },
+
+  addMember: function (groupId, username) {
+    if (!username) return false;
+    var list = this.getAll();
+    var g = list.find(function (x) { return x.id === groupId; });
+    if (!g) return false;
+    if (g.members.some(function (m) { return m.username === username; })) return true;
+    g.members.push({ username: username, role: 'member', joinedAt: Date.now() });
+    this._save(list);
+    this._syncToFirestore(g);
+    return true;
+  },
+  setMemberRole: function (groupId, username, role) {
+    if (['owner', 'moderator', 'member'].indexOf(role) === -1) return false;
+    var list = this.getAll();
+    var g = list.find(function (x) { return x.id === groupId; });
+    if (!g) return false;
+    var m = g.members.find(function (x) { return x.username === username; });
+    if (m) m.role = role;
+    else g.members.push({ username: username, role: role, joinedAt: Date.now() });
+    this._save(list);
+    this._syncToFirestore(g);
+    return true;
+  },
+  removeMember: function (groupId, username) {
+    var list = this.getAll();
+    var g = list.find(function (x) { return x.id === groupId; });
+    if (!g) return false;
+    g.members = g.members.filter(function (m) { return m.username !== username; });
+    this._save(list);
+    this._syncToFirestore(g);
+    return true;
+  },
+  getMemberRole: function (groupId, username) {
+    if (!username) return 'member';
+    if (typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin()) return 'owner';
+    var g = this.get(groupId);
+    if (!g) return 'member';
+    var m = g.members.find(function (x) { return x.username === username; });
+    return m ? m.role : 'member';
+  },
+  isOwner: function (groupId, username) {
+    return this.getMemberRole(groupId, username) === 'owner';
+  },
+  isModerator: function (groupId, username) {
+    var r = this.getMemberRole(groupId, username);
+    return r === 'owner' || r === 'moderator';
+  },
+  canManage: function (groupId, username) {
+    return this.isModerator(groupId, username);
+  },
+
+  addEvent: function (groupId, data) {
+    data = data || {};
+    if (!data.title || !data.datetime) return null;
+    var list = this.getAll();
+    var g = list.find(function (x) { return x.id === groupId; });
+    if (!g) return null;
+    var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+    var ev = {
+      id: 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      title: String(data.title).slice(0, 120),
+      description: String(data.description || '').slice(0, 500),
+      datetime: data.datetime,
+      createdBy: u,
+      createdAt: Date.now(),
+      rsvps: []
+    };
+    g.events.push(ev);
+    this._save(list);
+    this._syncToFirestore(g);
+    return ev;
+  },
+  removeEvent: function (groupId, eventId) {
+    var list = this.getAll();
+    var g = list.find(function (x) { return x.id === groupId; });
+    if (!g) return false;
+    g.events = g.events.filter(function (e) { return e.id !== eventId; });
+    this._save(list);
+    this._syncToFirestore(g);
+    return true;
+  },
+  toggleRSVP: function (groupId, eventId, username) {
+    if (!username) return false;
+    var list = this.getAll();
+    var g = list.find(function (x) { return x.id === groupId; });
+    if (!g) return false;
+    var ev = g.events.find(function (e) { return e.id === eventId; });
+    if (!ev) return false;
+    ev.rsvps = ev.rsvps || [];
+    var i = ev.rsvps.indexOf(username);
+    if (i >= 0) ev.rsvps.splice(i, 1);
+    else ev.rsvps.push(username);
+    this._save(list);
+    this._syncToFirestore(g);
+    return i < 0;
+  },
+
+  _syncToFirestore: function (group) {
+    try {
+      if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+      var payload = Object.assign({}, group, { updatedAt: Date.now() });
+      DATA_SYNC.db.collection(this.COLLECTION).doc(group.id).set(payload, { merge: true })
+        .catch(function (e) { console.warn('[GROUPS] sync:', e.message); });
+    } catch (_) {}
+  },
+  fetchRemote: async function () {
+    try {
+      if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return this.getAll();
+      var snap = await DATA_SYNC.db.collection(this.COLLECTION).get();
+      var remote = [];
+      snap.forEach(function (d) { remote.push(d.data()); });
+      if (remote.length > 0) {
+        var self = this;
+        var normalized = remote.map(function (g) { return self._normalize(g); }).filter(Boolean);
+        if (!normalized.some(function (g) { return g.id === 'general'; })) {
+          normalized.unshift(this._defaults[0]);
+        }
+        this._save(normalized);
+      }
+      return this.getAll();
+    } catch (e) {
+      console.warn('[GROUPS] fetchRemote:', e.message);
+      return this.getAll();
+    }
+  },
+  _listener: null,
+  startLiveListener: function (onUpdate) {
+    if (typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+    this.stopLiveListener();
+    var self = this;
+    try {
+      this._listener = DATA_SYNC.db.collection(this.COLLECTION).onSnapshot(function (snap) {
+        var remote = [];
+        snap.forEach(function (d) { remote.push(d.data()); });
+        var normalized = remote.map(function (g) { return self._normalize(g); }).filter(Boolean);
+        if (!normalized.some(function (g) { return g.id === 'general'; })) {
+          normalized.unshift(self._defaults[0]);
+        }
+        self._save(normalized);
+        if (typeof onUpdate === 'function') onUpdate(self.getAll());
+      }, function (e) { console.warn('[GROUPS] live:', e.message); });
+    } catch (e) { console.warn('[GROUPS] startLiveListener:', e.message); }
+  },
+  stopLiveListener: function () {
+    if (typeof this._listener === 'function') { try { this._listener(); } catch (_) {} }
+    this._listener = null;
+  }
+};
+
+// ============================================================
+// GROUP DETAIL VIEW — Discord-style channels + voice + events
+// ============================================================
+(function () {
+  var pageName = (location.pathname.split('/').pop() || '').toLowerCase();
+  if (pageName !== 'dashboard.html' && pageName !== '') return;
+
+  function _esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function _meName() { return (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null; }
+
+  function renderGroupsList() {
+    var list = document.getElementById('groupsList');
+    if (!list) return;
+    var groups = GROUPS.getAll();
+    if (groups.length === 0) {
+      list.innerHTML = '<div class="dash-empty"><p>No groups yet.</p></div>';
+      return;
+    }
+    list.innerHTML = groups.map(function (g) {
+      var channelCount = (g.channels || []).length;
+      var sub = g.description || (channelCount + ' channels');
+      return '<a class="group-card" data-group-id="' + _esc(g.id) + '" href="#">'
+        + '<div class="group-card-icon">' + (g.icon || '💬') + '</div>'
+        + '<div class="group-card-body">'
+        +   '<div class="group-card-title">' + _esc(g.name) + '</div>'
+        +   '<div class="group-card-desc">' + _esc(sub) + '</div>'
+        + '</div>'
+        + '<div class="group-card-meta"><span class="group-card-chevron">›</span></div>'
+        + '</a>';
+    }).join('');
+    list.querySelectorAll('.group-card').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        e.preventDefault();
+        openGroup(card.dataset.groupId);
+      });
+    });
+  }
+
+  function openGroup(groupId) {
+    var g = GROUPS.get(groupId);
+    if (!g) return;
+    GROUPS.currentId = groupId;
+    var firstText = (g.channels || []).find(function (c) { return c.type === 'text'; });
+    GROUPS.currentChannelId = firstText ? firstText.id : (g.channels[0] ? g.channels[0].id : 'general');
+
+    var listView = document.getElementById('groupsView');
+    var chatViewLegacy = document.getElementById('groupChatView');
+    if (listView) listView.style.display = 'none';
+    if (chatViewLegacy) chatViewLegacy.style.display = 'none';
+    if (!document.getElementById('groupDetailView')) buildGroupDetailScaffold();
+    var detailView = document.getElementById('groupDetailView');
+    if (detailView) detailView.style.display = 'flex';
+
+    renderGroupDetail();
+  }
+  function closeGroup() {
+    var listView = document.getElementById('groupsView');
+    var detailView = document.getElementById('groupDetailView');
+    if (detailView) detailView.style.display = 'none';
+    if (listView) listView.style.display = 'block';
+    renderGroupsList();
+  }
+
+  function buildGroupDetailScaffold() {
+    var panel = document.querySelector('.dash-panel[data-panel="chat"]');
+    if (!panel) return;
+    if (document.getElementById('groupDetailView')) return;
+
+    var v = document.createElement('div');
+    v.id = 'groupDetailView';
+    v.className = 'group-detail-view';
+    v.style.display = 'none';
+    v.innerHTML =
+        '<div class="group-detail-header">'
+      +   '<button type="button" class="group-detail-back" id="groupDetailBack" aria-label="Back">'
+      +     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
+      +   '</button>'
+      +   '<div class="group-detail-icon" id="groupDetailIcon">💬</div>'
+      +   '<div class="group-detail-title"><h2 id="groupDetailName">Group</h2><p id="groupDetailDesc"></p></div>'
+      +   '<button type="button" class="group-detail-settings" id="groupDetailSettings" title="Settings" style="display:none;">'
+      +     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+      +   '</button>'
+      + '</div>'
+      + '<div class="group-detail-body">'
+      +   '<aside class="group-channels" id="groupChannels"></aside>'
+      +   '<main class="group-main" id="groupMain"></main>'
+      + '</div>'
+      + '<div class="jitsi-modal" id="jitsiModal" hidden>'
+      +   '<div class="jitsi-modal-backdrop" id="jitsiBackdrop"></div>'
+      +   '<div class="jitsi-modal-content">'
+      +     '<div class="jitsi-modal-header">'
+      +       '<div><h3 id="jitsiTitle">Voice room</h3><p id="jitsiSubtitle">Camera + screen share supported. Click Leave to exit.</p></div>'
+      +       '<button type="button" class="jitsi-leave-btn" id="jitsiLeaveBtn">Leave voice</button>'
+      +     '</div>'
+      +     '<div class="jitsi-modal-frame-wrap"><iframe id="jitsiFrame" allow="camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="group-modal" id="groupModal" hidden>'
+      +   '<div class="group-modal-backdrop" data-close-modal></div>'
+      +   '<div class="group-modal-content" id="groupModalContent"></div>'
+      + '</div>';
+    panel.appendChild(v);
+
+    document.getElementById('groupDetailBack').addEventListener('click', closeGroup);
+    document.getElementById('jitsiLeaveBtn').addEventListener('click', closeJitsi);
+    document.getElementById('jitsiBackdrop').addEventListener('click', closeJitsi);
+    document.querySelectorAll('#groupModal [data-close-modal]').forEach(function (el) {
+      el.addEventListener('click', closeModal);
+    });
+    document.getElementById('groupDetailSettings').addEventListener('click', openSettingsModal);
+  }
+
+  function renderGroupDetail() {
+    var g = GROUPS.get(GROUPS.currentId);
+    if (!g) return;
+    var me = _meName();
+    var canManage = GROUPS.canManage(g.id, me);
+
+    var iconEl = document.getElementById('groupDetailIcon');
+    var nameEl = document.getElementById('groupDetailName');
+    var descEl = document.getElementById('groupDetailDesc');
+    var settingsBtn = document.getElementById('groupDetailSettings');
+    if (iconEl) iconEl.textContent = g.icon || '💬';
+    if (nameEl) nameEl.textContent = g.name;
+    if (descEl) descEl.textContent = g.description || '';
+    if (settingsBtn) settingsBtn.style.display = canManage ? 'inline-flex' : 'none';
+
+    renderChannelsSidebar(g);
+    renderMainContent(g);
+  }
+
+  function renderChannelsSidebar(g) {
+    var sidebar = document.getElementById('groupChannels');
+    if (!sidebar) return;
+    var me = _meName();
+    var canManage = GROUPS.canManage(g.id, me);
+    var textChannels = (g.channels || []).filter(function (c) { return c.type === 'text'; });
+    var voiceChannels = (g.channels || []).filter(function (c) { return c.type === 'voice'; });
+
+    function chanItem(c, isActive) {
+      var prefix = c.type === 'voice'
+        ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>'
+        : '<span class="channel-hash">#</span>';
+      var delBtn = canManage && c.id !== 'general' ? '<button type="button" class="channel-del" data-channel-id="' + _esc(c.id) + '" title="Delete channel">×</button>' : '';
+      return '<div class="group-channel' + (isActive ? ' is-active' : '') + '" data-channel-id="' + _esc(c.id) + '" data-channel-type="' + c.type + '">'
+        + prefix + '<span class="channel-name">' + _esc(c.name) + '</span>' + delBtn
+        + '</div>';
+    }
+
+    var html = '';
+    html += '<div class="group-channels-section">'
+      +   '<div class="group-channels-section-head">'
+      +     '<span class="group-channels-label">Text channels</span>'
+      +     (canManage ? '<button type="button" class="group-channels-add" data-add-channel="text" title="Add text channel">+</button>' : '')
+      +   '</div>'
+      +   textChannels.map(function (c) { return chanItem(c, c.id === GROUPS.currentChannelId); }).join('')
+      + '</div>';
+    html += '<div class="group-channels-section">'
+      +   '<div class="group-channels-section-head">'
+      +     '<span class="group-channels-label">Voice channels</span>'
+      +     (canManage ? '<button type="button" class="group-channels-add" data-add-channel="voice" title="Add voice channel">+</button>' : '')
+      +   '</div>'
+      +   voiceChannels.map(function (c) { return chanItem(c, false); }).join('')
+      + '</div>';
+    html += '<div class="group-channels-section group-channels-meta">'
+      +   '<div class="group-channel' + (GROUPS.currentChannelId === '__events' ? ' is-active' : '') + '" data-channel-id="__events">'
+      +     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+      +     '<span class="channel-name">Events</span>'
+      +     ((g.events || []).length > 0 ? '<span class="channel-badge">' + (g.events || []).length + '</span>' : '')
+      +   '</div>'
+      +   '<div class="group-channel' + (GROUPS.currentChannelId === '__members' ? ' is-active' : '') + '" data-channel-id="__members">'
+      +     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'
+      +     '<span class="channel-name">Members</span>'
+      +   '</div>'
+      + '</div>';
+
+    sidebar.innerHTML = html;
+
+    sidebar.querySelectorAll('.group-channel').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('.channel-del')) return;
+        var cid = el.dataset.channelId;
+        var ctype = el.dataset.channelType;
+        if (ctype === 'voice') { openJitsi(g.id, cid); return; }
+        GROUPS.currentChannelId = cid;
+        renderGroupDetail();
+      });
+    });
+    sidebar.querySelectorAll('.channel-del').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!confirm('Delete this channel?')) return;
+        GROUPS.removeChannel(g.id, btn.dataset.channelId);
+        if (GROUPS.currentChannelId === btn.dataset.channelId) {
+          var still = GROUPS.get(g.id).channels.find(function (c) { return c.type === 'text'; });
+          GROUPS.currentChannelId = still ? still.id : 'general';
+        }
+        renderGroupDetail();
+      });
+    });
+    sidebar.querySelectorAll('[data-add-channel]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openAddChannelModal(g.id, btn.dataset.addChannel);
+      });
+    });
+  }
+
+  function renderMainContent(g) {
+    var main = document.getElementById('groupMain');
+    if (!main) return;
+    if (GROUPS.currentChannelId === '__events') { renderEventsPanel(g, main); return; }
+    if (GROUPS.currentChannelId === '__members') { renderMembersPanel(g, main); return; }
+
+    var channel = (g.channels || []).find(function (c) { return c.id === GROUPS.currentChannelId; });
+    if (!channel || channel.type !== 'text') {
+      main.innerHTML = '<div class="dash-empty"><p>Select a channel.</p></div>';
+      return;
+    }
+
+    main.innerHTML = ''
+      + '<div class="group-channel-header">'
+      +   '<span class="channel-hash">#</span>'
+      +   '<h3>' + _esc(channel.name) + '</h3>'
+      +   (channel.topic ? '<span class="channel-topic">' + _esc(channel.topic) + '</span>' : '')
+      + '</div>'
+      + '<div class="chat-window">'
+      +   '<div class="chat-empty" id="chatEmpty">'
+      +     '<div class="chat-empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>'
+      +     '<p>Be the first to post in #' + _esc(channel.name) + '!</p>'
+      +   '</div>'
+      +   '<div class="chat-messages" id="chatMessages"></div>'
+      + '</div>'
+      + '<div class="chat-composer">'
+      +   '<input type="text" id="chatInput" maxlength="1000" placeholder="Message #' + _esc(channel.name) + '…" autocomplete="off">'
+      +   '<button class="btn btn-primary" id="chatSendBtn" disabled>Send</button>'
+      + '</div>';
+
+    GROUPS.currentId = g.id;
+    try {
+      if (typeof renderChat === 'function') renderChat();
+      if (typeof bindChatComposer === 'function') bindChatComposer();
+    } catch (e) {}
+  }
+
+  function renderEventsPanel(g, root) {
+    var me = _meName();
+    var canManage = GROUPS.canManage(g.id, me);
+    var events = (g.events || []).slice().sort(function (a, b) {
+      return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
+    });
+    var html = '<div class="group-events-header">'
+      + '<h3>Events</h3>'
+      + (canManage ? '<button type="button" class="btn btn-primary btn-sm" id="newGroupEventBtn">+ New event</button>' : '')
+      + '</div>';
+    if (events.length === 0) {
+      html += '<div class="dash-empty"><p>No events scheduled. ' + (canManage ? 'Click "New event" to add one.' : 'Check back soon.') + '</p></div>';
+    } else {
+      html += '<div class="group-events-list">';
+      events.forEach(function (ev) {
+        var when = new Date(ev.datetime);
+        var whenValid = !isNaN(when.getTime());
+        var dateStr = whenValid ? when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ev.datetime;
+        var rsvped = me && (ev.rsvps || []).indexOf(me) !== -1;
+        var rsvpCount = (ev.rsvps || []).length;
+        html += '<div class="group-event-card">'
+          + '<div class="group-event-date">' + (whenValid ? '<strong>' + when.toLocaleDateString(undefined, { month: 'short' }).toUpperCase() + '</strong><span>' + when.getDate() + '</span>' : '<strong>—</strong>') + '</div>'
+          + '<div class="group-event-body">'
+          +   '<h4>' + _esc(ev.title) + '</h4>'
+          +   '<span class="group-event-time">' + _esc(dateStr) + '</span>'
+          +   (ev.description ? '<p>' + _esc(ev.description) + '</p>' : '')
+          + '</div>'
+          + '<div class="group-event-actions">'
+          +   '<button type="button" class="btn btn-' + (rsvped ? 'primary' : 'outline') + ' btn-sm group-event-rsvp" data-event-id="' + _esc(ev.id) + '">' + (rsvped ? '✓ Going' : 'RSVP') + ' (' + rsvpCount + ')</button>'
+          +   (canManage ? '<button type="button" class="group-event-del" data-event-id="' + _esc(ev.id) + '" title="Delete">×</button>' : '')
+          + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+    }
+    root.innerHTML = html;
+
+    if (canManage) {
+      var newBtn = document.getElementById('newGroupEventBtn');
+      if (newBtn) newBtn.addEventListener('click', function () { openEventModal(g.id); });
+      root.querySelectorAll('.group-event-del').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (!confirm('Delete this event?')) return;
+          GROUPS.removeEvent(g.id, btn.dataset.eventId);
+          renderGroupDetail();
+        });
+      });
+    }
+    root.querySelectorAll('.group-event-rsvp').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!me) { if (window.toast) toast('Sign in to RSVP', 'warn'); return; }
+        GROUPS.toggleRSVP(g.id, btn.dataset.eventId, me);
+        renderGroupDetail();
+      });
+    });
+  }
+
+  function renderMembersPanel(g, root) {
+    var me = _meName();
+    var iAmOwner = GROUPS.isOwner(g.id, me);
+    var presenceUsers = (typeof _MEMBERS_CACHE !== 'undefined' && Array.isArray(_MEMBERS_CACHE)) ? _MEMBERS_CACHE : [];
+    var byUsername = {};
+    presenceUsers.forEach(function (u) {
+      byUsername[u.username] = {
+        username: u.username,
+        displayName: u.displayName,
+        avatar: u.avatar,
+        avatarIsDefault: u.avatarIsDefault,
+        role: 'member'
+      };
+    });
+    (g.members || []).forEach(function (m) {
+      if (!byUsername[m.username]) byUsername[m.username] = { username: m.username, displayName: m.username, role: m.role };
+      else byUsername[m.username].role = m.role;
+    });
+    var members = Object.keys(byUsername).map(function (k) { return byUsername[k]; }).sort(function (a, b) {
+      var order = { owner: 0, moderator: 1, member: 2 };
+      if (order[a.role] !== order[b.role]) return order[a.role] - order[b.role];
+      return String(a.displayName).localeCompare(String(b.displayName));
+    });
+
+    var html = '<div class="group-members-header"><h3>Members <span class="group-members-count">' + members.length + '</span></h3></div>';
+    if (members.length === 0) {
+      html += '<div class="dash-empty"><p>No members yet.</p></div>';
+    } else {
+      html += '<div class="group-members-list">';
+      members.forEach(function (m) {
+        var hasRealAvatar = m.avatar && m.avatarIsDefault !== true;
+        var avatarHTML = hasRealAvatar
+          ? '<img src="' + _esc(m.avatar) + '" alt="">'
+          : '<span>' + _esc((m.displayName || m.username || 'U').slice(0, 1).toUpperCase()) + '</span>';
+        html += '<div class="group-member">'
+          + '<div class="group-member-avatar">' + avatarHTML + '</div>'
+          + '<div class="group-member-info">'
+          +   '<div class="group-member-name">' + _esc(m.displayName || m.username) + '</div>'
+          +   '<span class="group-member-role role-' + m.role + '">' + (m.role === 'owner' ? 'Owner' : m.role === 'moderator' ? 'Moderator' : 'Member') + '</span>'
+          + '</div>'
+          + (iAmOwner && m.username !== me
+              ? '<div class="group-member-actions">'
+                + '<button type="button" class="group-member-action" data-action="promote" data-username="' + _esc(m.username) + '" title="' + (m.role === 'moderator' ? 'Demote' : 'Promote to moderator') + '">' + (m.role === 'moderator' ? '↓' : '↑') + '</button>'
+                + '<button type="button" class="group-member-action group-member-action-danger" data-action="kick" data-username="' + _esc(m.username) + '" title="Remove from group">×</button>'
+                + '</div>'
+              : '')
+          + '</div>';
+      });
+      html += '</div>';
+    }
+    root.innerHTML = html;
+
+    if (iAmOwner) {
+      root.querySelectorAll('.group-member-action').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var u = btn.dataset.username;
+          var act = btn.dataset.action;
+          if (act === 'promote') {
+            var current = GROUPS.getMemberRole(g.id, u);
+            var next = current === 'moderator' ? 'member' : 'moderator';
+            GROUPS.setMemberRole(g.id, u, next);
+          } else if (act === 'kick') {
+            if (!confirm('Remove ' + u + ' from the group?')) return;
+            GROUPS.removeMember(g.id, u);
+          }
+          renderGroupDetail();
+        });
+      });
+    }
+  }
+
+  function openModal(html) {
+    var modal = document.getElementById('groupModal');
+    var content = document.getElementById('groupModalContent');
+    if (!modal || !content) return;
+    content.innerHTML = html;
+    modal.hidden = false;
+    setTimeout(function () { modal.classList.add('open'); }, 10);
+  }
+  function closeModal() {
+    var modal = document.getElementById('groupModal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    setTimeout(function () { modal.hidden = true; }, 180);
+  }
+
+  function openAddChannelModal(groupId, type) {
+    openModal(''
+      + '<h3>Add ' + (type === 'voice' ? 'voice' : 'text') + ' channel</h3>'
+      + '<p class="group-modal-sub">Choose a short name.</p>'
+      + '<input type="text" id="newChannelName" maxlength="32" placeholder="' + (type === 'voice' ? 'e.g. Study Hall' : 'e.g. help') + '">'
+      + '<div class="group-modal-actions">'
+      +   '<button type="button" class="btn btn-outline btn-sm" data-close-modal>Cancel</button>'
+      +   '<button type="button" class="btn btn-primary btn-sm" id="newChannelCreate">Create</button>'
+      + '</div>');
+    document.querySelector('#groupModal [data-close-modal]').addEventListener('click', closeModal);
+    var input = document.getElementById('newChannelName');
+    setTimeout(function () { input && input.focus(); }, 100);
+    function submit() {
+      var name = (input.value || '').trim();
+      if (!name) { input.focus(); return; }
+      GROUPS.addChannel(groupId, name, type);
+      closeModal();
+      renderGroupDetail();
+    }
+    document.getElementById('newChannelCreate').addEventListener('click', submit);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') submit();
+      if (e.key === 'Escape') closeModal();
+    });
+  }
+
+  function openEventModal(groupId) {
+    var nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    openModal(''
+      + '<h3>New event</h3>'
+      + '<label class="group-modal-label">Title</label>'
+      + '<input type="text" id="newEventTitle" maxlength="120" placeholder="e.g. Office hours">'
+      + '<label class="group-modal-label">When</label>'
+      + '<input type="datetime-local" id="newEventDate" value="' + nowLocal + '">'
+      + '<label class="group-modal-label">Description (optional)</label>'
+      + '<textarea id="newEventDesc" rows="3" maxlength="500" placeholder="Agenda, link to meeting room, etc."></textarea>'
+      + '<div class="group-modal-actions">'
+      +   '<button type="button" class="btn btn-outline btn-sm" data-close-modal>Cancel</button>'
+      +   '<button type="button" class="btn btn-primary btn-sm" id="newEventCreate">Create event</button>'
+      + '</div>');
+    document.querySelector('#groupModal [data-close-modal]').addEventListener('click', closeModal);
+    setTimeout(function () { document.getElementById('newEventTitle').focus(); }, 100);
+    document.getElementById('newEventCreate').addEventListener('click', function () {
+      var title = (document.getElementById('newEventTitle').value || '').trim();
+      var datetime = document.getElementById('newEventDate').value;
+      var desc = document.getElementById('newEventDesc').value;
+      if (!title || !datetime) return;
+      GROUPS.addEvent(groupId, { title: title, datetime: datetime, description: desc });
+      closeModal();
+      renderGroupDetail();
+    });
+  }
+
+  function openSettingsModal() {
+    var g = GROUPS.get(GROUPS.currentId);
+    if (!g) return;
+    var me = _meName();
+    var iAmOwner = GROUPS.isOwner(g.id, me);
+    openModal(''
+      + '<h3>Group settings</h3>'
+      + '<label class="group-modal-label">Group name</label>'
+      + '<input type="text" id="setGroupName" maxlength="60" value="' + _esc(g.name) + '">'
+      + '<label class="group-modal-label">Description</label>'
+      + '<textarea id="setGroupDesc" rows="2" maxlength="200">' + _esc(g.description || '') + '</textarea>'
+      + '<label class="group-modal-label">Icon (emoji)</label>'
+      + '<input type="text" id="setGroupIcon" maxlength="4" value="' + _esc(g.icon || '💬') + '" style="width:90px;">'
+      + '<div class="group-modal-actions">'
+      +   (iAmOwner && g.id !== 'general' ? '<button type="button" class="btn btn-outline btn-sm" id="deleteGroupBtn" style="margin-right:auto;color:#dc2626;border-color:#dc2626;">Delete group</button>' : '')
+      +   '<button type="button" class="btn btn-outline btn-sm" data-close-modal>Cancel</button>'
+      +   '<button type="button" class="btn btn-primary btn-sm" id="saveGroupBtn">Save</button>'
+      + '</div>');
+    document.querySelector('#groupModal [data-close-modal]').addEventListener('click', closeModal);
+    document.getElementById('saveGroupBtn').addEventListener('click', function () {
+      GROUPS.update(g.id, {
+        name: document.getElementById('setGroupName').value,
+        description: document.getElementById('setGroupDesc').value,
+        icon: document.getElementById('setGroupIcon').value
+      });
+      closeModal();
+      renderGroupDetail();
+    });
+    if (iAmOwner && g.id !== 'general') {
+      document.getElementById('deleteGroupBtn').addEventListener('click', function () {
+        if (!confirm('Delete this entire group? Cannot be undone.')) return;
+        GROUPS.remove(g.id);
+        closeModal();
+        closeGroup();
+      });
+    }
+  }
+
+  function openJitsi(groupId, channelId) {
+    var g = GROUPS.get(groupId);
+    if (!g) return;
+    var channel = (g.channels || []).find(function (c) { return c.id === channelId; });
+    if (!channel) return;
+    var me = _meName();
+    var displayName = (typeof AUTH !== 'undefined' && AUTH.getDisplayName) ? AUTH.getDisplayName() : (me || 'Guest');
+    var roomName = ('SphereAcademy-' + groupId + '-' + channelId).replace(/[^a-zA-Z0-9_-]/g, '');
+    var hash = '#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.disableDeepLinking=true&userInfo.displayName=' + encodeURIComponent(displayName);
+    var src = 'https://meet.jit.si/' + roomName + hash;
+
+    var frame = document.getElementById('jitsiFrame');
+    var title = document.getElementById('jitsiTitle');
+    if (title) title.textContent = (channel.name || 'Voice') + ' · ' + g.name;
+    if (frame) frame.src = src;
+    var modal = document.getElementById('jitsiModal');
+    if (modal) {
+      modal.hidden = false;
+      setTimeout(function () { modal.classList.add('open'); }, 10);
+    }
+  }
+  function closeJitsi() {
+    var modal = document.getElementById('jitsiModal');
+    var frame = document.getElementById('jitsiFrame');
+    if (!modal) return;
+    modal.classList.remove('open');
+    setTimeout(function () {
+      modal.hidden = true;
+      if (frame) frame.src = 'about:blank';
+    }, 180);
+  }
+
+  function groupsInit() {
+    var all = GROUPS.getAll();
+    if (!all.some(function (g) { return g.id === 'general'; })) {
+      var list = all.slice();
+      list.unshift(GROUPS._defaults[0]);
+      GROUPS._save(list);
+    }
+
+    var newBtn = document.getElementById('newGroupBtn');
+    if (newBtn) {
+      newBtn.style.display = '';
+      newBtn.addEventListener('click', function () {
+        var modal = document.getElementById('groupCreateModal');
+        if (modal) modal.style.display = 'flex';
+      });
+    }
+    var cancelBtn = document.getElementById('newGroupCancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', function () {
+      document.getElementById('groupCreateModal').style.display = 'none';
+    });
+    var createBtn = document.getElementById('newGroupCreate');
+    if (createBtn) createBtn.addEventListener('click', function () {
+      var name = document.getElementById('newGroupName').value;
+      var desc = document.getElementById('newGroupDesc').value;
+      var emoji = document.getElementById('newGroupEmoji').value;
+      var g = GROUPS.create({ name: name, description: desc, icon: emoji });
+      if (g) {
+        document.getElementById('groupCreateModal').style.display = 'none';
+        document.getElementById('newGroupName').value = '';
+        document.getElementById('newGroupDesc').value = '';
+        document.getElementById('newGroupEmoji').value = '';
+        renderGroupsList();
+        openGroup(g.id);
+      }
+    });
+
+    renderGroupsList();
+    GROUPS.fetchRemote().then(function () { renderGroupsList(); }).catch(function () {});
+    GROUPS.startLiveListener(function () {
+      var detailVisible = document.getElementById('groupDetailView');
+      if (detailVisible && detailVisible.style.display !== 'none') {
+        renderGroupDetail();
+      } else {
+        renderGroupsList();
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', groupsInit);
+  } else {
+    groupsInit();
   }
 })();
