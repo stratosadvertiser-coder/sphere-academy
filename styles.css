@@ -12371,6 +12371,24 @@ body { overflow-x: hidden; }
   .hero.hero-v2 .hero-title {
     max-width: 100% !important;
   }
+
+  /* Shrink the CTA buttons on mobile so they read as subordinate
+     to the big headline. Less padding, smaller font, smaller
+     gap — they're still tap-friendly (44px+ tall) but no longer
+     visually dominate the hero. */
+  .hero.hero-v2 .hero-cta-primary,
+  .hero.hero-v2 .hero-actions .btn-outline {
+    padding: 10px 18px !important;
+    font-size: 0.84rem !important;
+    width: auto !important;
+    box-shadow: 0 4px 12px -4px rgba(99, 91, 255, 0.30) !important;
+  }
+  .hero.hero-v2 .hero-actions {
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    margin-bottom: 28px !important;
+  }
 }
 
 /* The grid itself sits on a pseudo-element so we can fade it
