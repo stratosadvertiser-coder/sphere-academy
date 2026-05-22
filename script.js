@@ -577,6 +577,11 @@ const PRESENCE = {
           username: doc.id,
           displayName: data.displayName || doc.id,
           avatar: data.avatar || null,
+          // True when the avatar is the auto-generated Sphere logo
+          // (set by applyLogoAvatar) and the user hasn't replaced
+          // it with their own photo yet. Lets UI like the hero
+          // trust strip skip these and show initials instead.
+          avatarIsDefault: data.avatarIsDefault === true,
           role: data.role || 'student',
           earnedBadges: Array.isArray(data.earnedBadges) ? data.earnedBadges : [],
           lastSeenMs: this._toMs(data.lastSeen) || this._toMs(data.lastActive) || 0
@@ -6071,12 +6076,20 @@ if (avatarUpload) {
         safeSetItem('auth_avatar', dataUrl);
         const _user = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
         if (_user) safeSetItem('avatar_' + _user, dataUrl);
+        // The user just uploaded their OWN photo — clear the
+        // "default Sphere logo" flag so UI like the hero trust
+        // strip starts showing this avatar as a real student photo.
+        if (_user) {
+          try { localStorage.removeItem('avatar_is_default_' + _user); } catch (e) {}
+        }
         // Push to Firestore so the avatar follows the user across
         // browsers / devices (lives on the same sphere_users doc).
+        // Explicitly set avatarIsDefault: false to clear any prior
+        // logo-default flag on the doc.
         try {
           if (_user && typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
             DATA_SYNC.db.collection('sphere_users').doc(_user).set(
-              { avatar: dataUrl }, { merge: true }
+              { avatar: dataUrl, avatarIsDefault: false }, { merge: true }
             ).catch(e => console.warn('[AVATAR] sync:', e.message));
           }
         } catch (e) {}
@@ -8092,12 +8105,33 @@ if (currentPage === 'index.html') {
         else liveEl.textContent = onlineCount + ' members online';
       }
 
-      // Trust strip — pick up to 3 most-recently-active students,
-      // prefer ones with avatars uploaded
+      // Trust strip — pick up to 3 students, prioritizing real
+      // uploaded photos. Treat the auto-applied Sphere logo
+      // avatar as "no real photo" (avatarIsDefault === true) so
+      // we don't end up with 3 identical Sphere planet icons
+      // making the hero look like an unfinished placeholder.
       if (trustEl) {
+        // Fallback for existing users whose docs predate the
+        // avatarIsDefault flag: count duplicate avatar URLs across
+        // the user list. If 3+ users share the same avatar dataURL,
+        // it's the auto-generated default and should also be
+        // treated as "no real photo".
+        const avatarCounts = {};
+        list.forEach(u => {
+          if (u.avatar) avatarCounts[u.avatar] = (avatarCounts[u.avatar] || 0) + 1;
+        });
+        function hasRealPhoto(u) {
+          if (!u.avatar) return false;
+          if (u.avatarIsDefault === true) return false;
+          if ((avatarCounts[u.avatar] || 0) >= 3) return false; // duplicate dedup
+          return true;
+        }
         const sorted = list.slice().sort((a, b) => {
-          // Avatar-having users first, then by recent activity
-          if (!!a.avatar !== !!b.avatar) return a.avatar ? -1 : 1;
+          // Real-photo users first, then recently-active, then
+          // by display name (stable order).
+          const aHas = hasRealPhoto(a) ? 1 : 0;
+          const bHas = hasRealPhoto(b) ? 1 : 0;
+          if (aHas !== bHas) return bHas - aHas;
           return (b.lastSeenMs || 0) - (a.lastSeenMs || 0);
         });
         const top = sorted.slice(0, 3);
@@ -8112,11 +8146,15 @@ if (currentPage === 'index.html') {
         top.forEach(u => {
           const display = u.displayName || u.username || '?';
           const safeName = _esc(display);
-          if (u.avatar) {
+          if (hasRealPhoto(u)) {
+            // Real photo: render the image
             html += '<span class="trust-avatar trust-avatar-photo" title="' + safeName + '">'
                   +   '<img src="' + _esc(u.avatar) + '" alt="' + safeName + '">'
                   + '</span>';
           } else {
+            // Default Sphere-logo avatar OR no avatar — show colorful
+            // initials with a per-student gradient so each circle
+            // looks unique rather than three duplicate planet icons.
             html += '<span class="trust-avatar" title="' + safeName + '" '
                   +   'style="background:' + pickGradient(u.username || display) + '">'
                   +   _esc(initialsFor(display))
@@ -12902,7 +12940,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-tooltip" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-trust" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -14185,13 +14223,20 @@ window.renderSavedSection = function () {
           // per-username key (matches the manual upload path).
           try { localStorage.setItem('auth_avatar', dataUrl); } catch (_) {}
           try { localStorage.setItem('avatar_' + user, dataUrl); } catch (_) {}
+          // Mark this avatar as the system default so UI like the
+          // hero trust strip can treat it as "no real photo" and
+          // show initials instead — otherwise every student lands
+          // with the same Sphere planet, which looks like a
+          // template placeholder.
+          try { localStorage.setItem('avatar_is_default_' + user, '1'); } catch (_) {}
 
           // Sync to Firestore so the avatar follows the user
-          // across devices.
+          // across devices. avatarIsDefault flag lets other clients
+          // make the same decision.
           try {
             if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
               DATA_SYNC.db.collection('sphere_users').doc(user).set(
-                { avatar: dataUrl }, { merge: true }
+                { avatar: dataUrl, avatarIsDefault: true }, { merge: true }
               ).catch(function (e) { console.warn('[LOGO AVATAR] sync:', e.message); });
             }
           } catch (_) {}
