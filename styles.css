@@ -12350,6 +12350,15 @@ code, pre, .lesson-id, .phase-week {
     radial-gradient(ellipse 90% 75% at 50% 35%, #1d1d22 0%, #141417 70%, #0e0e11 100%);
 }
 
+/* Safety: keep horizontal scroll off even if the no-wrap H1 line
+   overflows slightly on very narrow phones (iPhone SE etc.) —
+   the hero shows the visible portion, page won't side-scroll. */
+body { overflow-x: hidden; }
+.hero.hero-v2 .hero-line {
+  overflow: hidden !important;
+  text-overflow: clip !important;
+}
+
 /* The grid itself sits on a pseudo-element so we can fade it
    at the corners via a radial mask — keeps the lines feeling
    premium instead of "graph paper". */
