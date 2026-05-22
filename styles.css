@@ -10441,10 +10441,11 @@ button.notif-item.is-clickable:hover .notif-item-text strong::after { opacity: 1
   justify-content: center;
   padding: 24px;
   opacity: 0;
+  pointer-events: none;          /* never trap clicks while invisible */
   transition: opacity 0.2s ease;
   cursor: zoom-out;
 }
-.lightbox.is-open { opacity: 1; }
+.lightbox.is-open { opacity: 1; pointer-events: auto; }
 .lightbox[hidden] { display: none; }
 
 .lightbox-stage {
@@ -16372,9 +16373,17 @@ img.avatar-inner {
 /* On card hover the buttons settle into place and become visible */
 .post-item:hover .post-corner-btn,
 .win-item:hover .post-corner-btn,
-.ann-item:hover .post-corner-btn {
+.ann-item:hover .post-corner-btn,
+.post-item:focus-within .post-corner-btn,
+.win-item:focus-within .post-corner-btn,
+.ann-item:focus-within .post-corner-btn {
   opacity: 0.92;
   transform: translateY(0);
+}
+/* Touch devices have no hover — show the buttons permanently
+   so users can still edit / delete their own posts on phones. */
+@media (hover: none), (pointer: coarse) {
+  .post-corner-btn { opacity: 0.7 !important; transform: translateY(0) !important; }
 }
 .post-corner-btn:hover {
   background: rgba(99, 91, 255, 0.10);
@@ -17249,10 +17258,11 @@ img.avatar-inner {
   align-items: center;
   justify-content: center;
   opacity: 0;
+  pointer-events: none;          /* never capture clicks while invisible */
   transition: opacity 0.18s ease;
 }
 .jitsi-modal[hidden] { display: none; }
-.jitsi-modal.open { opacity: 1; }
+.jitsi-modal.open { opacity: 1; pointer-events: auto; }
 .jitsi-modal-backdrop {
   position: absolute;
   inset: 0;
@@ -17303,10 +17313,11 @@ img.avatar-inner {
   align-items: center;
   justify-content: center;
   opacity: 0;
+  pointer-events: none;          /* never capture clicks while invisible */
   transition: opacity 0.18s ease;
 }
 .group-modal[hidden] { display: none; }
-.group-modal.open { opacity: 1; }
+.group-modal.open { opacity: 1; pointer-events: auto; }
 .group-modal-backdrop {
   position: absolute;
   inset: 0;

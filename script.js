@@ -2982,13 +2982,19 @@ const IDLE_TIMEOUT = {
       if (countdown <= 0) clearInterval(this._countdownInterval);
     }, 1000);
 
-    document.getElementById('idleStayBtn').addEventListener('click', () => {
-      this._closeWarning();
-      this._onActivity();
-    });
-    document.getElementById('idleLogoutBtn').addEventListener('click', () => {
-      this._doLogout(true);
-    });
+    const stayBtn = document.getElementById('idleStayBtn');
+    if (stayBtn) {
+      stayBtn.addEventListener('click', () => {
+        this._closeWarning();
+        this._onActivity();
+      });
+    }
+    const logoutBtn = document.getElementById('idleLogoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        this._doLogout(true);
+      });
+    }
   },
 
   _closeWarning() {
@@ -12944,7 +12950,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-btnfix" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-21-audit" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -13595,8 +13601,26 @@ window.NOTES = {
       refreshDot();
 
       // Pull latest from Firestore (in case the student typed on
-      // another device — newer wins)
-      try { NOTES.fetchRemote().then(refreshDot); } catch (_) {}
+      // another device — newer wins). After the remote merge, also
+      // refresh the textarea contents if the drawer is currently
+      // open, so the user sees newer notes that arrived after they
+      // opened the drawer.
+      try {
+        NOTES.fetchRemote().then(function () {
+          refreshDot();
+          if (drawer.classList.contains('open')) {
+            var fresh = NOTES.get(weekId) || '';
+            // Only overwrite if the user hasn't started editing,
+            // so we don't clobber in-progress typing.
+            if (!ta.dataset.editing) ta.value = fresh;
+          }
+        });
+      } catch (_) {}
+
+      // Mark textarea as "editing" while the user types so the
+      // fetchRemote completion above doesn't clobber their input.
+      ta.addEventListener('focus', function () { ta.dataset.editing = '1'; });
+      ta.addEventListener('blur',  function () { delete ta.dataset.editing; });
     }
   }
 
