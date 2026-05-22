@@ -12359,6 +12359,20 @@ body { overflow-x: hidden; }
   text-overflow: clip !important;
 }
 
+/* On mobile: shrink the hero container's side padding so the
+   big H1 has more horizontal room before it overflows. The big
+   font-size from index.html needs every pixel it can get on
+   narrow Pixel/iPhone widths. */
+@media (max-width: 600px) {
+  .hero.hero-v2 .container {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  .hero.hero-v2 .hero-title {
+    max-width: 100% !important;
+  }
+}
+
 /* The grid itself sits on a pseudo-element so we can fade it
    at the corners via a radial mask — keeps the lines feeling
    premium instead of "graph paper". */
