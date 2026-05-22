@@ -15299,3 +15299,211 @@ window.GROUPS = {
     }
   });
 })();
+
+// ============================================================
+// CAPACITOR — native phone-app integration
+// When the app is running inside the Capacitor Android/iOS shell,
+// `window.Capacitor` is defined. We can then upgrade certain
+// web features (file picker, notifications, status bar) to
+// their native equivalents. On the web, this whole block is a
+// no-op so nothing changes for browser users.
+// ============================================================
+(function () {
+  // Detect Capacitor runtime
+  var isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) {
+    // Add a body class so CSS can target "running as PWA in
+    // browser" vs "running as native app" if needed later.
+    document.body.classList.add('runtime-web');
+    return;
+  }
+  document.body.classList.add('runtime-native');
+  document.body.classList.add('runtime-' + (window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'native'));
+
+  // ----- Status bar styling -----
+  try {
+    var StatusBar = window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar;
+    if (StatusBar) {
+      StatusBar.setStyle({ style: 'DARK' }).catch(function () {});
+      if (window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android') {
+        StatusBar.setBackgroundColor({ color: '#18181B' }).catch(function () {});
+      }
+    }
+  } catch (_) {}
+
+  // ----- Hide the native splash once the app shell is interactive -----
+  try {
+    var SplashScreen = window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen;
+    if (SplashScreen) {
+      // Small delay so the first paint settles, then fade out.
+      setTimeout(function () { SplashScreen.hide({ fadeOutDuration: 240 }).catch(function () {}); }, 350);
+    }
+  } catch (_) {}
+
+  // ----- Camera plugin → bridges to <input type="file"> -----
+  // When a user taps "Take photo" via a file input, intercept
+  // the click and invoke the native Camera plugin instead so they
+  // get the proper native camera UI (with crop, preview, etc.).
+  try {
+    var Camera = window.Capacitor.Plugins && window.Capacitor.Plugins.Camera;
+    if (Camera) {
+      window._nativeCameraPick = async function (opts) {
+        opts = opts || {};
+        try {
+          var photo = await Camera.getPhoto({
+            quality: opts.quality || 86,
+            allowEditing: !!opts.allowEditing,
+            resultType: 'dataUrl',
+            source: opts.source || 'PROMPT',  // user picks: Camera / Photos
+            saveToGallery: false,
+            width: opts.width || 1920,
+            correctOrientation: true,
+            promptLabelHeader: 'Choose source',
+            promptLabelPhoto: 'Photo Library',
+            promptLabelPicture: 'Take Picture'
+          });
+          return photo && photo.dataUrl ? photo.dataUrl : null;
+        } catch (e) {
+          // User cancelled or denied permission
+          console.warn('[Camera]', e && e.message);
+          return null;
+        }
+      };
+
+      // Override the avatar upload to use native camera on first tap.
+      // Listen for clicks on file inputs that accept images and
+      // route through the native picker.
+      document.addEventListener('click', function (e) {
+        var label = e.target && e.target.closest && e.target.closest('label[for="avatarUpload"]');
+        if (!label) return;
+        e.preventDefault();
+        e.stopPropagation();
+        window._nativeCameraPick({ source: 'PROMPT', allowEditing: true, quality: 82, width: 800 })
+          .then(function (dataUrl) {
+            if (!dataUrl) return;
+            // Dispatch the dataUrl as if the file input had loaded it.
+            // The existing avatar handler reads from FileReader → here
+            // we just call the same persist path directly.
+            try {
+              if (typeof safeSetItem === 'function') safeSetItem('auth_avatar', dataUrl);
+              var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : '';
+              if (u && typeof safeSetItem === 'function') safeSetItem('avatar_' + u, dataUrl);
+              if (u) try { localStorage.removeItem('avatar_is_default_' + u); } catch (_) {}
+              if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db && u) {
+                DATA_SYNC.db.collection('sphere_users').doc(u).set(
+                  { avatar: dataUrl, avatarIsDefault: false }, { merge: true }
+                ).catch(function () {});
+              }
+              // Update visible avatars on the page
+              document.querySelectorAll('#avatarImg, .nav-avatar img, .nav-avatar-img').forEach(function (el) {
+                el.src = dataUrl; el.style.display = 'block';
+              });
+              if (window.toast) toast('Profile photo updated!', 'success');
+            } catch (err) { console.warn('[Camera avatar]', err.message); }
+          });
+      }, true);
+    }
+  } catch (_) {}
+
+  // ----- Push notifications -----
+  // Request permission on first launch, then register for FCM/APNS
+  // and listen for incoming notifications. Forward them to our
+  // existing NOTIFS module so they appear in the in-app bell too.
+  try {
+    var PushNotifications = window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+    if (PushNotifications) {
+      (async function () {
+        try {
+          var perm = await PushNotifications.checkPermissions();
+          if (perm.receive !== 'granted') {
+            perm = await PushNotifications.requestPermissions();
+          }
+          if (perm.receive === 'granted') {
+            await PushNotifications.register();
+          }
+        } catch (e) { console.warn('[Push register]', e.message); }
+
+        PushNotifications.addListener('registration', function (token) {
+          // Save the device token under the current user so the
+          // backend can target this device. Lives at
+          // sphere_users/{username}/pushTokens/{token}
+          try {
+            var u = (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : null;
+            if (!u || typeof DATA_SYNC === 'undefined' || !DATA_SYNC.db) return;
+            var platform = window.Capacitor.getPlatform();
+            DATA_SYNC.db.collection('sphere_users').doc(u).set({
+              pushTokens: { [token.value]: { platform: platform, updatedAt: Date.now() } }
+            }, { merge: true }).catch(function () {});
+          } catch (_) {}
+        });
+
+        PushNotifications.addListener('registrationError', function (err) {
+          console.warn('[Push registration error]', err);
+        });
+
+        PushNotifications.addListener('pushNotificationReceived', function (notif) {
+          // Bridge into our in-app NOTIFS module so the bell badge
+          // updates too. Tapping the OS notif still works.
+          try {
+            if (typeof NOTIFS !== 'undefined' && NOTIFS.add) {
+              NOTIFS.add(notif.title + (notif.body ? ' — ' + notif.body : ''), '', notif.data && notif.data.link);
+            }
+          } catch (_) {}
+        });
+
+        PushNotifications.addListener('pushNotificationActionPerformed', function (action) {
+          // User tapped the notification → navigate to the link if one was provided.
+          try {
+            var link = action && action.notification && action.notification.data && action.notification.data.link;
+            if (link) window.location.href = link;
+          } catch (_) {}
+        });
+      })();
+    }
+  } catch (_) {}
+
+  // ----- Hardware back button (Android) -----
+  // Map to in-app back behavior: close modals first, otherwise let
+  // the WebView navigate back.
+  try {
+    var App = window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (App && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android') {
+      App.addListener('backButton', function () {
+        // Close Jitsi if open
+        var jitsi = document.getElementById('jitsiModal');
+        if (jitsi && !jitsi.hidden && jitsi.classList.contains('open')) {
+          var leave = document.getElementById('jitsiLeaveBtn');
+          if (leave) leave.click();
+          return;
+        }
+        // Close group modal
+        var gm = document.getElementById('groupModal');
+        if (gm && !gm.hidden && gm.classList.contains('open')) {
+          gm.classList.remove('open');
+          setTimeout(function () { gm.hidden = true; }, 180);
+          return;
+        }
+        // Close search overlay
+        var so = document.getElementById('searchOverlay');
+        if (so && so.classList.contains('active')) {
+          so.classList.remove('active');
+          return;
+        }
+        // Close notes drawer
+        var nd = document.getElementById('lessonNotesDrawer');
+        if (nd && nd.classList.contains('open')) {
+          nd.classList.remove('open');
+          var nb = document.getElementById('lessonNotesBackdrop');
+          if (nb) nb.classList.remove('open');
+          return;
+        }
+        // Otherwise, browser back; if no history, minimize the app.
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          App.exitApp();
+        }
+      });
+    }
+  } catch (_) {}
+})();

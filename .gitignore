@@ -22,6 +22,15 @@ yarn-error.log
 # Build outputs
 dist/
 build/
+www/
+
+# Capacitor native projects (regenerated on `npx cap add`)
+android/
+ios/
+.capacitor/
+
+# npm
+package-lock.json
 
 # Temp files
 *.tmp
