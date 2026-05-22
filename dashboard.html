@@ -9,12 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Home - Sphere Academy</title>
   <meta name="description" content="Your home — progress, community feed, big wins, and the next lesson.">
-  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-21-discord">
-  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-21-discord">
+  <link rel="icon" type="image/png" href="favicon.png?v=2025-05-21-discord2">
+  <link rel="apple-touch-icon" href="favicon.png?v=2025-05-21-discord2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2025-05-21-discord">
+  <link rel="stylesheet" href="styles.css?v=2025-05-21-discord2">
 </head>
 <body class="page-loaded">
 
@@ -23,7 +23,7 @@
     <div class="container">
       <div class="nav-left">
         <a href="index.html" class="logo">
-          <div class="logo-icon"><img src="logo.png?v=2025-05-21-discord" alt="Sphere Academy"></div>
+          <div class="logo-icon"><img src="logo.png?v=2025-05-21-discord2" alt="Sphere Academy"></div>
           Sphere Academy
         </a>
       </div>
@@ -652,7 +652,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="script.js?v=2025-05-21-discord"></script>
+  <script src="script.js?v=2025-05-21-discord2"></script>
 
   <!-- Sidebar action wiring — search, theme, logout buttons in the
        new icon rail delegate to their existing handlers in the
@@ -872,224 +872,53 @@
     })();
   </script>
 
-  <!-- ============================================================
-       GROUPS MODULE — multi-group chat. Admin can create groups;
-       all users see them in the Groups list. Each group has its
-       own chat (messages stored with groupId field). A default
-       "General" group is auto-created so existing chat history
-       remains accessible.
-       ============================================================ -->
+  <!-- Legacy inline groups module removed — superseded by the
+       Discord-style GROUPS module in script.js. A migration helper
+       below converts any existing sphere_groups data into the new
+       community_groups shape so users don't lose their old groups. -->
   <script>
     (function () {
-      var STORAGE_KEY = 'sphere_groups';
-      var DEFAULT_GROUP = {
-        id: 'general',
-        name: 'General',
-        description: 'Everyone in the academy.',
-        emoji: '💬',
-        createdAt: 0,
-        createdBy: 'system'
-      };
-
-      function esc(s) {
-        return String(s == null ? '' : s)
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      }
-      function load() {
-        var arr = [];
-        try { arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (_) {}
-        // Always include the default General group first
-        if (!arr.some(function (g) { return g.id === 'general'; })) {
-          arr.unshift(DEFAULT_GROUP);
-        }
-        return arr;
-      }
-      function save(list) {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (_) {}
-        try {
-          if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
-            DATA_SYNC.db.collection('sphere_settings').doc('groups')
-              .set({ groups: list, updatedAt: Date.now() }, { merge: true })
-              .catch(function () {});
-          }
-        } catch (_) {}
-      }
-
-      window.GROUPS = {
-        list: load,
-        currentId: 'general',
-        getCurrent: function () {
-          var groups = load();
-          var current = groups.find(function (g) { return g.id === GROUPS.currentId; });
-          return current || groups[0] || DEFAULT_GROUP;
-        }
-      };
-
-      // Pull from Firestore on load (so groups created on another
-      // device show up here too)
+      // One-time migration: copy legacy sphere_groups → community_groups
+      // (the new GROUPS module's storage key) with the new shape.
       try {
-        if (typeof DATA_SYNC !== 'undefined' && DATA_SYNC.db) {
-          DATA_SYNC.db.collection('sphere_settings').doc('groups').get()
-            .then(function (snap) {
-              if (!snap.exists) return;
-              var remote = (snap.data() || {}).groups;
-              if (Array.isArray(remote) && remote.length) {
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); } catch (_) {}
-                renderGroupsList();
-              }
-            }).catch(function () {});
-        }
-      } catch (_) {}
+        var raw = localStorage.getItem('sphere_groups');
+        if (!raw) return;
+        var legacy = JSON.parse(raw);
+        if (!Array.isArray(legacy) || legacy.length === 0) return;
 
-      function renderGroupsList() {
-        var list = document.getElementById('groupsList');
-        if (!list) return;
-        var groups = load();
-        var html = '';
-        groups.forEach(function (g) {
-          var emoji = g.emoji || (g.id === 'general' ? '💬' : '👥');
-          html += '<button type="button" class="group-card" data-group-id="' + esc(g.id) + '">'
-            + '<div class="group-card-icon">' + esc(emoji) + '</div>'
-            + '<div class="group-card-body">'
-            +   '<strong>' + esc(g.name) + '</strong>'
-            +   (g.description ? '<p>' + esc(g.description) + '</p>' : '')
-            + '</div>'
-            + '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-card-arrow"><polyline points="9 18 15 12 9 6"/></svg>'
-            + '</button>';
-        });
-        list.innerHTML = html;
-        // Wire each card to open the group's chat
-        list.querySelectorAll('.group-card').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            openGroup(btn.dataset.groupId);
+        var existingRaw = localStorage.getItem('community_groups');
+        var existing = [];
+        try { existing = existingRaw ? JSON.parse(existingRaw) : []; } catch (_) {}
+        if (!Array.isArray(existing)) existing = [];
+
+        var existingIds = {};
+        existing.forEach(function (g) { if (g && g.id) existingIds[g.id] = true; });
+
+        legacy.forEach(function (g) {
+          if (!g || !g.id || existingIds[g.id]) return;
+          var slug = (g.id || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'voice';
+          existing.push({
+            id: g.id,
+            name: g.name || g.id,
+            description: g.description || '',
+            icon: g.emoji || g.icon || '💬',
+            ownerUsername: g.createdBy || null,
+            members: g.createdBy ? [{ username: g.createdBy, role: 'owner', joinedAt: g.createdAt || Date.now() }] : [],
+            channels: [
+              { id: 'general',      name: 'general',    type: 'text',  topic: '', createdAt: g.createdAt || Date.now() },
+              { id: 'voice-' + slug, name: 'Voice',     type: 'voice', topic: '', createdAt: g.createdAt || Date.now() }
+            ],
+            events: [],
+            createdAt: g.createdAt || Date.now()
           });
         });
-      }
 
-      function openGroup(id) {
-        var groups = load();
-        var g = groups.find(function (gg) { return gg.id === id; });
-        if (!g) return;
-        GROUPS.currentId = id;
-        document.getElementById('groupsView').style.display = 'none';
-        document.getElementById('groupChatView').style.display = 'block';
-        document.getElementById('groupChatName').textContent = (g.emoji || '') + ' ' + g.name;
-        document.getElementById('groupChatDesc').textContent = g.description || '';
-        // Admin-only delete button (except for General)
-        var delBtn = document.getElementById('groupChatDelete');
-        if (delBtn) {
-          var canDelete = id !== 'general'
-            && typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin();
-          delBtn.style.display = canDelete ? 'inline-block' : 'none';
-        }
-        // Trigger the existing CHAT module's render — it should
-        // filter by GROUPS.currentId so each group shows its
-        // own messages. (Falls back to showing all if CHAT
-        // hasn't been updated yet — backward compat.)
-        try {
-          if (typeof renderChat === 'function') renderChat();
-        } catch (_) {}
-      }
-
-      // Wire back button — return to group list
-      var backBtn = document.getElementById('groupChatBack');
-      if (backBtn) {
-        backBtn.addEventListener('click', function () {
-          document.getElementById('groupsView').style.display = 'block';
-          document.getElementById('groupChatView').style.display = 'none';
-          // Refresh the group list (counts may have changed)
-          renderGroupsList();
-        });
-      }
-
-      // Wire delete button
-      var deleteBtn = document.getElementById('groupChatDelete');
-      if (deleteBtn) {
-        deleteBtn.addEventListener('click', function () {
-          var id = GROUPS.currentId;
-          if (id === 'general') return;
-          var g = load().find(function (gg) { return gg.id === id; });
-          if (!g) return;
-          if (!confirm('Delete the group "' + g.name + '"?\n\nThis hides the group from the list. Existing messages are kept in the database in case you want to restore it later.')) return;
-          var arr = load().filter(function (gg) { return gg.id !== id; });
-          save(arr);
-          if (typeof window.toast === 'function') window.toast('Group deleted', 'success');
-          backBtn && backBtn.click();
-        });
-      }
-
-      // Show "+ New Group" button for admins
-      try {
-        if (typeof AUTH !== 'undefined' && AUTH.isAdmin && AUTH.isAdmin()) {
-          var newBtn = document.getElementById('newGroupBtn');
-          if (newBtn) newBtn.style.display = 'inline-block';
-        }
-      } catch (_) {}
-
-      // New Group modal wiring
-      var newGroupBtn = document.getElementById('newGroupBtn');
-      var modal = document.getElementById('groupCreateModal');
-      var backdrop = document.getElementById('groupCreateBackdrop');
-      var cancelBtn = document.getElementById('newGroupCancel');
-      var createBtn = document.getElementById('newGroupCreate');
-      function closeModal() {
-        if (modal) modal.style.display = 'none';
-        ['newGroupName', 'newGroupDesc', 'newGroupEmoji'].forEach(function (id) {
-          var el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-      }
-      if (newGroupBtn) newGroupBtn.addEventListener('click', function () {
-        if (modal) {
-          modal.style.display = 'flex';
-          setTimeout(function () {
-            var n = document.getElementById('newGroupName');
-            if (n) n.focus();
-          }, 50);
-        }
-      });
-      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-      if (backdrop) backdrop.addEventListener('click', closeModal);
-      if (createBtn) createBtn.addEventListener('click', function () {
-        var name = (document.getElementById('newGroupName').value || '').trim();
-        if (!name) {
-          if (typeof window.toast === 'function') window.toast('Please give the group a name', 'warn');
-          return;
-        }
-        var desc = (document.getElementById('newGroupDesc').value || '').trim();
-        var emoji = (document.getElementById('newGroupEmoji').value || '').trim();
-        var newGroup = {
-          id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-          name: name,
-          description: desc,
-          emoji: emoji,
-          createdAt: Date.now(),
-          createdBy: (typeof AUTH !== 'undefined' && AUTH.getUser) ? AUTH.getUser() : 'admin'
-        };
-        var arr = load();
-        arr.push(newGroup);
-        save(arr);
-        closeModal();
-        renderGroupsList();
-        if (typeof window.toast === 'function') window.toast('Group "' + name + '" created', 'success');
-      });
-
-      // Initial render
-      renderGroupsList();
-
-      // Also re-render when the user clicks the Groups sidebar nav
-      // (in case new groups were synced from Firestore in the meantime)
-      var chatNav = document.querySelector('.dash-sidebar-link[data-tab="chat"]');
-      if (chatNav) {
-        chatNav.addEventListener('click', function () {
-          setTimeout(function () {
-            // When entering Groups tab, default to the list view
-            document.getElementById('groupsView').style.display = 'block';
-            document.getElementById('groupChatView').style.display = 'none';
-            renderGroupsList();
-          }, 80);
-        });
+        localStorage.setItem('community_groups', JSON.stringify(existing));
+        // Keep sphere_groups around as a fallback — don't delete in case
+        // we need to re-migrate. Marked migrated via a sentinel key.
+        localStorage.setItem('community_groups_migrated_from_legacy', '1');
+      } catch (e) {
+        console.warn('[GROUPS migration]', e && e.message);
       }
     })();
   </script>
