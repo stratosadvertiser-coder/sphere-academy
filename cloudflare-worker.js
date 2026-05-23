@@ -3,26 +3,32 @@
  * ===========================================
  *
  * This Worker is the secure backend for the AI Marketing Copilot.
- * It holds the Anthropic API key (NEVER exposed to the browser)
- * and proxies messages to Claude with a marketing-coach system
- * prompt tuned for Filipino marketing interns.
  *
- * DEPLOYMENT
- *   See SETUP_AI_COACH.md for the 5-minute walkthrough. Short
- *   version:
+ * PRIMARY brain:  Cloudflare Workers AI (Llama 3.3 70B) — FREE.
+ *                 10,000 neurons/day on the free plan ≈ several
+ *                 hundred Sphere Coach messages every day. No
+ *                 credit card, no external API key.
+ *
+ * FALLBACK brain: Anthropic Claude (paid) — only used if you set
+ *                 the ANTHROPIC_API_KEY secret. Useful later if
+ *                 you outgrow the free tier or want Claude-quality
+ *                 responses.
+ *
+ * DEPLOYMENT (free path)
+ *   See SETUP_AI_COACH.md. Short version:
  *   1. cloudflare.com → Workers & Pages → Create Worker
- *   2. Paste this file's contents into the editor
- *   3. Settings → Variables → Add Secret:
- *        ANTHROPIC_API_KEY = sk-ant-...
- *        ALLOWED_ORIGINS   = https://stratosadvertiser-coder.github.io,http://localhost
- *   4. Save and Deploy
- *   5. Copy the *.workers.dev URL → set in the app via console:
- *        localStorage.setItem('sphere_coach_endpoint', 'https://your-worker.workers.dev/coach')
+ *   2. Paste this file into the editor → Deploy
+ *   3. Settings → Bindings → Add → "Workers AI"
+ *        Variable name: AI
+ *   4. (Optional) Settings → Variables → Add:
+ *        ALLOWED_ORIGINS = https://stratosadvertiser-coder.github.io,http://localhost
+ *   5. Save and deploy
+ *   6. Copy the *.workers.dev URL → in Sphere Academy, click the
+ *      Coach bubble and paste the URL into the setup card.
  *
- * FREE TIER
- *   Cloudflare Workers: 100,000 requests/day free, forever.
- *   Anthropic API: pay-as-you-go (Claude Sonnet ~$0.001 per
- *   short reply — about ₱0.05). $5 free credit on signup.
+ * To switch back to Anthropic Claude, just add the secret
+ * ANTHROPIC_API_KEY — the Worker auto-detects it and uses Claude
+ * instead of Llama.
  */
 
 const SYSTEM_PROMPT = `You are Sphere Coach, an AI marketing mentor inside Sphere Academy — a training platform for Filipino marketing interns built by Stratos Advertiser.
@@ -60,10 +66,14 @@ CONSTRAINTS
 
 You're talking inside Sphere Academy right now — they can see you in a small chat panel on the bottom-right. Be helpful, concise, and a little warm.`;
 
+// Default Workers AI model. Llama 3.3 70B = best free-tier quality.
+// If you want to stretch the daily neuron budget further, swap to
+// '@cf/meta/llama-3.1-8b-instruct-fast' (about 4-5x cheaper in
+// neurons per reply, but less nuanced).
+const WORKERS_AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+
 // ── CORS helpers ─────────────────────────────────────────────────
 function corsHeaders(req, env) {
-  // Parse allowed origins from env (comma-separated). Default
-  // permissive in dev so the user can test locally.
   const allowedRaw = (env && env.ALLOWED_ORIGINS) || '*';
   const allowed = allowedRaw === '*'
     ? ['*']
@@ -84,10 +94,6 @@ function corsHeaders(req, env) {
 }
 
 // ── Simple in-memory rate limit (per-Worker isolate) ────────────
-// Per-user soft limit. Resets every minute. Helps prevent rogue
-// spam from one student. Cloudflare KV / Durable Objects would be
-// better for production rate limiting but this works for a small
-// cohort.
 const RATE = new Map();
 const RATE_LIMIT = 30;            // requests
 const RATE_WINDOW_MS = 60 * 1000; // per minute
@@ -102,6 +108,90 @@ function rateLimited(userKey) {
   rec.count++;
   RATE.set(userKey, rec);
   return rec.count > RATE_LIMIT;
+}
+
+// ── Brain implementations ───────────────────────────────────────
+
+/**
+ * Cloudflare Workers AI — free tier, primary brain.
+ * Needs an "AI" binding configured on the Worker.
+ * Returns: { reply, model, source: 'workers-ai' }
+ */
+async function askWorkersAI(env, cleanMessages) {
+  if (!env.AI || typeof env.AI.run !== 'function') {
+    throw new Error('Workers AI binding "AI" is missing. Add it in Worker → Settings → Bindings.');
+  }
+
+  // Workers AI takes a flat messages array with the system role inline.
+  const payload = {
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...cleanMessages
+    ],
+    max_tokens: 800
+  };
+
+  const result = await env.AI.run(WORKERS_AI_MODEL, payload);
+
+  // Workers AI returns { response: "string" } for chat models.
+  // Some models nest it differently — handle both shapes defensively.
+  const reply = (result && (result.response || result.result || ''))
+    || (Array.isArray(result?.choices) ? (result.choices[0]?.message?.content || '') : '')
+    || '';
+
+  if (!reply) {
+    throw new Error('Workers AI returned an empty reply.');
+  }
+
+  return {
+    reply: String(reply).trim(),
+    model: WORKERS_AI_MODEL,
+    source: 'workers-ai'
+  };
+}
+
+/**
+ * Anthropic Claude — paid fallback. Only used when
+ * ANTHROPIC_API_KEY env var is set.
+ * Returns: { reply, model, usage, source: 'anthropic' }
+ */
+async function askAnthropic(env, cleanMessages) {
+  const apiPayload = {
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 800,
+    system: SYSTEM_PROMPT,
+    messages: cleanMessages
+  };
+
+  const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(apiPayload)
+  });
+
+  if (!apiResp.ok) {
+    const errBody = await apiResp.text().catch(() => '');
+    console.error('[Anthropic]', apiResp.status, errBody);
+    const err = new Error(`Anthropic HTTP ${apiResp.status}`);
+    err.status = apiResp.status;
+    throw err;
+  }
+
+  const data = await apiResp.json();
+  const reply = Array.isArray(data.content)
+    ? data.content.filter(b => b.type === 'text').map(b => b.text).join('\n\n')
+    : '';
+
+  return {
+    reply: String(reply).trim(),
+    model: data.model,
+    usage: data.usage,
+    source: 'anthropic'
+  };
 }
 
 // ── Main fetch handler ───────────────────────────────────────────
@@ -150,14 +240,6 @@ export default {
       );
     }
 
-    // Anthropic API key check
-    if (!env.ANTHROPIC_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'Server not configured: ANTHROPIC_API_KEY missing.' }),
-        { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Sanitize messages — strip anything other than role + content,
     // cap length so a single huge message can't drain tokens.
     const cleanMessages = messages
@@ -175,53 +257,32 @@ export default {
       );
     }
 
-    // Build Anthropic API payload
-    const apiPayload = {
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 800,
-      system: SYSTEM_PROMPT,
-      messages: cleanMessages
-    };
+    // ── Pick the brain ──────────────────────────────────────────
+    // If ANTHROPIC_API_KEY is set, use Claude (paid). Otherwise use
+    // Workers AI free Llama 3.3 70B. This lets you upgrade later
+    // by adding the secret, without touching code.
+    const usePaidClaude = !!env.ANTHROPIC_API_KEY;
 
-    // Call Anthropic
     try {
-      const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify(apiPayload)
-      });
-
-      if (!apiResp.ok) {
-        const errBody = await apiResp.text().catch(() => '');
-        console.error('[Anthropic]', apiResp.status, errBody);
-        return new Response(
-          JSON.stringify({ error: 'Upstream API error', status: apiResp.status }),
-          { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const data = await apiResp.json();
-      // Anthropic returns content as an array of blocks.
-      const reply = Array.isArray(data.content)
-        ? data.content.filter(b => b.type === 'text').map(b => b.text).join('\n\n')
-        : '';
+      const result = usePaidClaude
+        ? await askAnthropic(env, cleanMessages)
+        : await askWorkersAI(env, cleanMessages);
 
       return new Response(
-        JSON.stringify({
-          reply,
-          model: data.model,
-          usage: data.usage
-        }),
+        JSON.stringify(result),
         { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } }
       );
     } catch (e) {
       console.error('[Worker]', e && e.message);
+
+      // If Workers AI is down or unbound and the admin hasn't set
+      // up Claude either, return a friendly setup hint.
+      const hint = !usePaidClaude && /binding|AI/i.test(e.message || '')
+        ? 'Workers AI binding not configured. In your Worker settings, add a binding named "AI" of type Workers AI.'
+        : 'Coach is offline. Try again in a moment.';
+
       return new Response(
-        JSON.stringify({ error: 'Coach is offline. Try again in a moment.' }),
+        JSON.stringify({ error: hint, detail: e.message }),
         { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
       );
     }

@@ -14,7 +14,7 @@
    Firebase / Firestore / Storage / Jitsi requests are passed
    straight through so realtime sync + auth stay untouched.
    ============================================================ */
-const CACHE_VERSION = 'sphere-pwa-2025-05-22-net-first';
+const CACHE_VERSION = 'sphere-pwa-2025-05-23-free';
 const SHELL_CACHE = CACHE_VERSION + '-shell';
 
 const SHELL_URLS = [

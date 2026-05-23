@@ -12950,7 +12950,7 @@ document.addEventListener('mouseover', (e) => {
     brand.className = 'dash-sidebar-brand';
     brand.title = isLoggedIn ? 'Go to your profile' : 'Sphere Academy';
     brand.innerHTML =
-      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-22-coach2" alt=""></div>' +
+      '<div class="dash-sidebar-brand-logo"><img src="logo.png?v=2025-05-23-free" alt=""></div>' +
       '<span class="dash-sidebar-brand-text">Sphere Academy</span>';
 
     // ----- Toggle button -----
@@ -15500,8 +15500,9 @@ window.GROUPS = {
 // Architecture:
 //   1. Frontend renders chat bubble + panel + messages
 //   2. POST to a Cloudflare Worker (URL configured below)
-//   3. Worker holds the Anthropic API key + system prompt
-//   4. Worker returns Claude's response, frontend renders it
+//   3. Worker calls Cloudflare Workers AI (Llama 3.3 70B — FREE)
+//      or, if ANTHROPIC_API_KEY is set, falls back to Claude
+//   4. Worker returns the response, frontend renders it
 //
 // The Worker code is in `cloudflare-worker.js` and the setup
 // guide is `SETUP_AI_COACH.md`. Until that's deployed, the
@@ -15722,11 +15723,11 @@ window.SPHERE_COACH = (function () {
           + '<div class="sphere-coach-setup">'
           +   '<div class="sphere-coach-setup-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>'
           +   '<h3>One-time setup needed</h3>'
-          +   '<p>The AI Coach needs a backend Worker URL. <a href="SETUP_AI_COACH.md" target="_blank" rel="noopener">Read the 10-minute setup guide →</a></p>'
+          +   '<p>Free path — no credit card, no API key. <a href="SETUP_AI_COACH.md" target="_blank" rel="noopener">Read the 5-minute setup guide →</a></p>'
           +   '<div class="sphere-coach-setup-steps">'
-          +     '<div class="sphere-coach-setup-step"><span>1</span><div>Get an Anthropic API key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></div></div>'
-          +     '<div class="sphere-coach-setup-step"><span>2</span><div>Deploy <code>cloudflare-worker.js</code> to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">Cloudflare Workers</a> (free, ~5 min)</div></div>'
-          +     '<div class="sphere-coach-setup-step"><span>3</span><div>Paste your Worker URL below</div></div>'
+          +     '<div class="sphere-coach-setup-step"><span>1</span><div>Deploy <code>cloudflare-worker.js</code> to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">Cloudflare Workers</a> (free, no card)</div></div>'
+          +     '<div class="sphere-coach-setup-step"><span>2</span><div>In Worker → <b>Settings → Bindings</b>, add a <b>Workers AI</b> binding named <code>AI</code></div></div>'
+          +     '<div class="sphere-coach-setup-step"><span>3</span><div>Paste your Worker URL below (with <code>/coach</code> at the end)</div></div>'
           +   '</div>'
           +   '<label class="sphere-coach-setup-label">Worker URL</label>'
           +   '<div class="sphere-coach-setup-row">'
@@ -15780,7 +15781,7 @@ window.SPHERE_COACH = (function () {
             } else if (resp.ok) {
               hint.innerHTML = '<span style="color:#f59e0b;">⚠ Worker responded but no reply field.</span> Check your Worker code.';
             } else {
-              hint.innerHTML = '<span style="color:#dc2626;">✕ HTTP ' + resp.status + '</span> — ' + _esc((data && data.error) || 'Worker returned an error. Check ANTHROPIC_API_KEY in Cloudflare dashboard.');
+              hint.innerHTML = '<span style="color:#dc2626;">✕ HTTP ' + resp.status + '</span> — ' + _esc((data && data.error) || 'Worker returned an error. Check the Workers AI binding (Settings → Bindings → add "AI").');
             }
           } catch (e) {
             hint.innerHTML = '<span style="color:#dc2626;">✕ Network error</span> — ' + _esc(e.message || 'Worker unreachable. Check the URL and CORS settings.');
